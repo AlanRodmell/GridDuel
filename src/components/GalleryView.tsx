@@ -21,6 +21,7 @@ import {
   formatTetraCode,
   getCardSellValue,
   getStatsPowerScore,
+  resolveCardAugment,
   toHexDigit,
 } from '../data/cards';
 import { AutoBuildStrategy, DECK_CAPACITY } from '../store/useProfile';
@@ -33,6 +34,7 @@ import {
   RolledCardInstance,
 } from '../types/game';
 import { sound } from '../utils/sound';
+import { DeckShelf } from './DeckShelf';
 import { GameCard } from './GameCard';
 
 interface GalleryViewProps {
@@ -41,6 +43,9 @@ interface GalleryViewProps {
   ownedUniqueCount: number;
   totalCards: number;
   onSelectDeckSlot: (index: number) => void;
+  onCreateDeck: (name?: string, duplicateFromIndex?: number) => { ok: boolean; message?: string };
+  onRenameDeck: (index: number, newName: string) => void;
+  onDeleteDeck: (index: number) => { ok: boolean; message?: string };
   onToggleDeckCard: (uidOrCardId: string) => { ok: boolean; message?: string };
   onAutoBuildDeck: (strategy: AutoBuildStrategy) => void;
   onSellCardInstance: (
@@ -90,6 +95,9 @@ export const GalleryView: React.FC<GalleryViewProps> = ({
   ownedUniqueCount,
   totalCards,
   onSelectDeckSlot,
+  onCreateDeck,
+  onRenameDeck,
+  onDeleteDeck,
   onToggleDeckCard,
   onAutoBuildDeck,
   onSellCardInstance,
@@ -191,7 +199,13 @@ export const GalleryView: React.FC<GalleryViewProps> = ({
       const owned = copies.length > 0;
       if (ownershipFilter === 'owned' && !owned) return false;
       if (ownershipFilter === 'duplicates' && copies.length < 2) return false;
-      if (ownershipFilter === 'augments' && !card.augment) return false;
+      if (
+        ownershipFilter === 'augments' &&
+        !card.augment &&
+        !copies.some((c) => Boolean(c.augmentId))
+      ) {
+        return false;
+      }
       if (ownershipFilter === 'locked' && owned) return false;
       if (rarityFilter !== 'all' && card.rarity !== rarityFilter) return false;
       if (
@@ -205,6 +219,10 @@ export const GalleryView: React.FC<GalleryViewProps> = ({
         q &&
         !card.name.toLowerCase().includes(q) &&
         !String(card.number).padStart(2, '0').includes(q) &&
+        !copies.some((c) => {
+          const aug = resolveCardAugment(card.id, c.augmentId);
+          return aug && (aug.name.toLowerCase().includes(q) || aug.description.toLowerCase().includes(q));
+        }) &&
         !(card.augment && card.augment.description.toLowerCase().includes(q))
       ) {
         return false;
@@ -248,7 +266,7 @@ export const GalleryView: React.FC<GalleryViewProps> = ({
   const pct = Math.round((ownedUniqueCount / totalCards) * 100);
 
   return (
-    <div className="w-full max-w-6xl mx-auto px-4 sm:px-6 py-5 sm:py-8 space-y-6">
+    <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 py-5 sm:py-8 space-y-6">
       {/* Floating Action Toast */}
       {feedbackToast && (
         <div className="fixed bottom-20 md:bottom-8 right-4 z-50 rounded-xl bg-slate-900/95 border border-amber-400/70 px-4 py-2.5 text-xs font-semibold text-amber-200 shadow-2xl flex items-center gap-2">
@@ -261,7 +279,7 @@ export const GalleryView: React.FC<GalleryViewProps> = ({
       <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-4">
         <div>
           <h1 className="font-[var(--font-display)] text-2xl sm:text-3xl font-bold text-slate-100 tracking-wide">
-            90-Card Compendium &amp; Rolled Vault
+            {totalCards}-Card Compendium &amp; Rolled Vault
           </h1>
           <div className="flex flex-wrap items-center gap-2 text-xs sm:text-sm text-slate-400 mt-1">
             <span className="font-mono tabular-nums text-amber-300 font-semibold">
@@ -347,38 +365,39 @@ export const GalleryView: React.FC<GalleryViewProps> = ({
         })}
       </div>
 
-      {/* Saved 7-Card Hand Showcase & Builder Pedestal */}
-      <section className="rounded-2xl bg-gradient-to-b from-[#152038] to-[#0e1526] border border-amber-500/30 p-4 sm:p-5 space-y-4 shadow-[0_14px_34px_rgba(0,0,0,0.45)]">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
-          {/* 3 Hand Slot Tabs */}
-          <div className="inline-flex items-center gap-1 p-1 rounded-xl bg-[#0a101d] border border-slate-800 self-start">
-            {profile.decks.map((slot, idx) => {
-              const active = idx === profile.activeDeckIndex;
-              return (
-                <button
-                  key={slot.id}
-                  type="button"
-                  onClick={() => {
-                    sound.select();
-                    onSelectDeckSlot(idx);
-                  }}
-                  className={`min-h-[38px] px-3.5 py-1.5 rounded-lg text-xs font-medium transition-colors whitespace-nowrap cursor-pointer ${
-                    active
-                      ? 'bg-gradient-to-b from-amber-400 to-amber-500 text-slate-950 font-bold shadow'
-                      : 'text-slate-400 hover:text-slate-100'
-                  }`}
-                >
-                  {slot.name} ({slot.cards.length}/{DECK_CAPACITY})
-                </button>
-              );
-            })}
+      {/* Saved Decks Shelf & Active Deck Showcase */}
+      <section className="rounded-2xl bg-gradient-to-b from-[#152038] to-[#0e1526] border border-amber-500/30 p-4 sm:p-5 space-y-5 shadow-[0_14px_34px_rgba(0,0,0,0.45)]">
+        <DeckShelf
+          decks={profile.decks}
+          activeDeckIndex={profile.activeDeckIndex}
+          inventory={profile.inventory}
+          onSelectDeck={onSelectDeckSlot}
+          onCreateDeck={(name, dupIdx) => {
+            const res = onCreateDeck(name, dupIdx);
+            if (!res.ok && res.message) showToast(res.message);
+            return res;
+          }}
+          onRenameDeck={onRenameDeck}
+          onDeleteDeck={(idx) => {
+            const res = onDeleteDeck(idx);
+            if (!res.ok && res.message) showToast(res.message);
+            return res;
+          }}
+        />
+
+        <div className="pt-4 border-t border-slate-800/90 flex flex-col md:flex-row md:items-center justify-between gap-3">
+          <div className="text-sm font-[var(--font-display)] font-bold text-slate-100">
+            Active Deck: <span className="text-amber-200">{activeDeck.name}</span>{' '}
+            <span className="font-mono text-xs text-slate-400">
+              ({activeDeckInstances.length}/{DECK_CAPACITY})
+            </span>
           </div>
 
           {/* One-Tap Smart Auto-Builders */}
           <div className="flex flex-wrap items-center gap-2">
             <span className="text-xs text-slate-400 flex items-center gap-1">
               <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-              Auto-Forge 7-Card Hand:
+              Auto-Forge {DECK_CAPACITY}-Card Deck:
             </span>
             <button
               type="button"
@@ -412,19 +431,20 @@ export const GalleryView: React.FC<GalleryViewProps> = ({
           </div>
         </div>
 
-        {/* Large Swipeable Cards on Mobile, 7-Col Grid on Desktop */}
-        <div className="flex gap-2.5 overflow-x-auto pb-2 snap-x sm:grid sm:grid-cols-7 sm:overflow-visible sm:pb-0">
+        {/* Large Cards for Maximum Visibility (4-Col Grid on Desktop) */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
           {activeDeckInstances.map((inst) => (
             <div
               key={inst.uid}
-              className="w-[104px] sm:w-auto shrink-0 snap-start space-y-1.5"
+              className="space-y-1.5"
             >
               <GameCard
                 cardId={inst.cardId}
                 stats={inst.stats}
                 arrows={inst.arrows}
+                augmentId={inst.augmentId}
                 owner="player"
-                size="sm"
+                size="md"
                 showName
                 onClick={() => {
                   sound.select();
@@ -518,7 +538,7 @@ export const GalleryView: React.FC<GalleryViewProps> = ({
             type="search"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Find card, #01–#90, or augment..."
+            placeholder={`Find card, #01–#${totalCards}, or augment...`}
             aria-label="Search cards by name, number, or augment"
             className="w-full min-h-[38px] pl-8 pr-3 py-1.5 rounded-xl bg-[#10182a] border border-slate-800 text-xs text-slate-100 placeholder:text-slate-500 focus:outline-none focus:border-amber-400"
           />
@@ -534,7 +554,7 @@ export const GalleryView: React.FC<GalleryViewProps> = ({
           </p>
         </div>
       ) : (
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3.5 sm:gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-5">
           {filteredCards.map((card) => {
             const copies = profile.inventory[card.id] ?? [];
             const count = copies.length;
@@ -555,7 +575,7 @@ export const GalleryView: React.FC<GalleryViewProps> = ({
                     setInspectedId(card.id);
                     setSelectedCopyUid(null);
                   }}
-                  className="group relative aspect-square rounded-xl border border-dashed border-slate-700/80 bg-[#0d1424] hover:border-amber-500/45 flex flex-col items-center justify-center p-3 text-center transition-all hover:-translate-y-1 cursor-pointer"
+                  className="card-grid-item group relative aspect-[5/7] rounded-xl border border-dashed border-slate-700/80 bg-[#0d1424] hover:border-amber-500/45 flex flex-col items-center justify-center p-3 text-center transition-transform duration-150 hover:-translate-y-1 cursor-pointer"
                 >
                   <Lock className="w-6 h-6 text-slate-600 group-hover:text-amber-400/75 transition-colors mb-1.5" />
                   <span className="font-mono text-xs text-slate-400 tabular-nums font-semibold">
@@ -577,12 +597,13 @@ export const GalleryView: React.FC<GalleryViewProps> = ({
             }
 
             return (
-              <div key={card.id} className="space-y-1.5">
+              <div key={card.id} className="card-grid-item space-y-1.5">
                 <div className="relative">
                   <GameCard
                     cardId={card.id}
                     stats={bestCopy?.stats}
                     arrows={bestCopy?.arrows}
+                    augmentId={bestCopy?.augmentId}
                     owner={inDeck ? 'player' : 'neutral'}
                     showName
                     size="md"
@@ -629,32 +650,32 @@ export const GalleryView: React.FC<GalleryViewProps> = ({
         </div>
       )}
 
-      {/* Card Inspector & Rolled Copy Vault Modal */}
+      {/* Card Inspector & Rolled Copy Vault Modal — Wide 2-Column Showcase */}
       {inspectedCard && (
         <div
-          className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/80 backdrop-blur-sm p-0 sm:p-4"
+          className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-[#04070f]/88 p-0 sm:p-5"
           role="dialog"
           aria-modal="true"
           aria-labelledby="inspector-title"
           onClick={() => setInspectedId(null)}
         >
           <div
-            className="w-full sm:max-w-lg max-h-[92dvh] flex flex-col rounded-t-3xl sm:rounded-2xl bg-[#11192c] border border-slate-700/80 shadow-2xl overflow-hidden"
+            className="w-full max-w-4xl max-h-[94dvh] flex flex-col rounded-t-3xl sm:rounded-3xl bg-[#11192c] border border-amber-400/35 shadow-[0_30px_80px_rgba(0,0,0,0.9)] overflow-hidden"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="sm:hidden w-10 h-1 rounded-full bg-slate-600 mx-auto mt-2.5" />
 
-            <div className="flex items-center justify-between px-5 py-4 border-b border-slate-800">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-800">
               <div>
                 <h2
                   id="inspector-title"
-                  className="font-[var(--font-display)] text-lg font-bold text-slate-100"
+                  className="font-[var(--font-display)] text-xl sm:text-2xl font-bold text-slate-100"
                 >
                   {inspectedCopies.length > 0
                     ? `#${String(inspectedCard.number).padStart(2, '0')} ${inspectedCard.name}`
                     : `Locked Card #${String(inspectedCard.number).padStart(2, '0')}`}
                 </h2>
-                <div className="flex items-center gap-2 text-xs text-slate-400 mt-0.5">
+                <div className="flex items-center gap-2 text-xs sm:text-sm text-slate-400 mt-0.5">
                   <span className={RARITY_TEXT_COLOR[inspectedCard.rarity]}>
                     {RARITY_LABEL[inspectedCard.rarity]} (Stats{' '}
                     {RARITY_STAT_RANGE[inspectedCard.rarity].label} · Arrows{' '}
@@ -677,35 +698,50 @@ export const GalleryView: React.FC<GalleryViewProps> = ({
               </button>
             </div>
 
-            <div className="overflow-y-auto p-5 space-y-4">
-              {inspectedCard.augment && (
-                <div className="rounded-xl bg-violet-950/60 border border-violet-400/50 p-3 flex items-start gap-2.5 text-xs text-violet-100">
-                  <Wand2 className="w-4 h-4 text-violet-300 shrink-0 mt-0.5" />
-                  <div>
-                    <div className="font-bold text-violet-200">
-                      Battlefield Augment — {inspectedCard.augment.name} (
-                      {inspectedCard.augment.shortTag})
-                    </div>
-                    <p className="text-slate-300 mt-0.5">{inspectedCard.augment.description}</p>
-                  </div>
-                </div>
-              )}
-
+            <div className="overflow-y-auto p-5 sm:p-6">
               {inspectedCopies.length > 0 && activeInspectedCopy ? (
-                <>
-                  <div className="max-w-[205px] mx-auto">
-                    <GameCard
-                      cardId={inspectedCard.id}
-                      stats={activeInspectedCopy.stats}
-                      arrows={activeInspectedCopy.arrows}
-                      owner={
-                        activeDeck.cards.includes(activeInspectedCopy.uid)
-                          ? 'player'
-                          : 'neutral'
-                      }
-                      size="lg"
-                    />
+                <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-start">
+                  {/* Left: Full-Size Collector Tarot Card Showcase */}
+                  <div className="md:col-span-5 flex flex-col items-center">
+                    <div className="w-full max-w-[330px]">
+                      <GameCard
+                        cardId={inspectedCard.id}
+                        stats={activeInspectedCopy.stats}
+                        arrows={activeInspectedCopy.arrows}
+                        augmentId={activeInspectedCopy.augmentId}
+                        owner={
+                          activeDeck.cards.includes(activeInspectedCopy.uid)
+                            ? 'player'
+                            : 'neutral'
+                        }
+                        variant="tarot"
+                        size="lg"
+                      />
+                    </div>
                   </div>
+
+                  {/* Right: Augment Info, Stat Breakdown & Rolled Copy Vault */}
+                  <div className="md:col-span-7 space-y-4">
+                    {(() => {
+                      const activeAug = resolveCardAugment(
+                        inspectedCard.id,
+                        activeInspectedCopy?.augmentId
+                      );
+                      if (!activeAug) return null;
+                      const isCrafted = Boolean(activeInspectedCopy?.augmentId);
+                      return (
+                        <div className="rounded-xl bg-violet-950/60 border border-violet-400/50 p-3.5 flex items-start gap-2.5 text-xs sm:text-sm text-violet-100">
+                          <Wand2 className="w-4 h-4 text-violet-300 shrink-0 mt-0.5" />
+                          <div>
+                            <div className="font-bold text-violet-200">
+                              {isCrafted ? 'Crafted Runeforge Augment' : 'Innate Mythic Trait'} —{' '}
+                              {activeAug.name} ({activeAug.shortTag})
+                            </div>
+                            <p className="text-slate-300 mt-0.5">{activeAug.description}</p>
+                          </div>
+                        </div>
+                      );
+                    })()}
 
                   {/* Selected Copy Stat Breakdown */}
                   <div className="grid grid-cols-4 gap-2 text-center rounded-xl bg-[#0c1322] border border-slate-800 p-3">
@@ -833,6 +869,16 @@ export const GalleryView: React.FC<GalleryViewProps> = ({
                                       In {activeDeck.name}
                                     </span>
                                   )}
+                                  {copy.augmentId && (() => {
+                                    const copyAug = resolveCardAugment(inspectedCard.id, copy.augmentId);
+                                    if (!copyAug) return null;
+                                    return (
+                                      <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-violet-950/90 border border-violet-400/50 text-[10px] font-mono font-semibold text-violet-200">
+                                        <Wand2 className="w-2.5 h-2.5 text-violet-300" />
+                                        <span>{copyAug.name}</span>
+                                      </span>
+                                    );
+                                  })()}
                                 </div>
                                 <div className="text-[11px] text-slate-400">
                                   Pwr {toHexDigit(copy.stats.power)} · P.Def{' '}
@@ -899,7 +945,8 @@ export const GalleryView: React.FC<GalleryViewProps> = ({
                       })}
                     </div>
                   </div>
-                </>
+                  </div>
+                </div>
               ) : (
                 <div className="py-4 text-center space-y-4">
                   <div className="w-28 h-28 mx-auto rounded-xl border border-dashed border-slate-700 bg-[#0c1322] flex flex-col items-center justify-center">

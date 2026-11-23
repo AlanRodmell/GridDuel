@@ -24,6 +24,8 @@ export type AugmentTargetScope =
   | 'type_A_allies'
   | 'adjacent_rivals';
 
+export type AugmentTier = 'minor' | 'major' | 'sovereign';
+
 export interface CardAugment {
   id: string;
   name: string;
@@ -34,6 +36,11 @@ export interface CardAugment {
   powerDelta: number;
   pDefDelta: number;
   mDefDelta: number;
+}
+
+export interface CraftableAugment extends CardAugment {
+  tier: AugmentTier;
+  craftCost: number;
 }
 
 export interface CardDef {
@@ -86,6 +93,7 @@ export interface RolledCardInstance {
   cardId: string;
   stats: TetraStats;
   arrows: ArrowDir[];
+  augmentId?: string; // Optional crafted augment rune imbued at the Shop Runeforge
 }
 
 export interface DeckSlot {
@@ -99,6 +107,7 @@ export interface HandCard {
   cardId: string;
   stats: TetraStats;
   arrows: ArrowDir[];
+  augmentId?: string;
 }
 
 export interface PlacedCard {
@@ -108,6 +117,7 @@ export interface PlacedCard {
   stats: TetraStats;
   baseStats: TetraStats; // Original rolled stats before board augments
   arrows: ArrowDir[];
+  augmentId?: string;
   justPlaced?: boolean;
   lastFlippedAt?: number;
   lastAugmented?: {

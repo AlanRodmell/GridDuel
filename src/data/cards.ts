@@ -4,6 +4,7 @@ import {
   CardAugment,
   CardDef,
   CardRole,
+  CraftableAugment,
   Rarity,
   RolledCardInstance,
   TetraStats,
@@ -1037,337 +1038,395 @@ const RAW_CARDS: RawEntry[] = [
     price: 680,
     accentGradient: 'from-amber-600 via-red-950 to-slate-950',
   },
+
+  // =========================================================================
+  // EXPANSION I — SPREN OF THE PRIMAL FORCES (#91 to #100)
+  // =========================================================================
+  {
+    id: 'windspren',
+    name: 'Windspren',
+    rarity: 'common',
+    stats: [4, 'X', 3, 4],
+    arrows: ['n', 'ne', 'e', 'w'],
+    image: IMG.wisp,
+    artFilter: 'hue-rotate-180 saturate-150 brightness-110',
+    price: 85,
+    accentGradient: 'from-cyan-950 via-sky-950 to-slate-950',
+  },
+  {
+    id: 'riverspren',
+    name: 'Riverspren',
+    rarity: 'common',
+    stats: [3, 'M', 3, 5],
+    arrows: ['n', 'e', 'se', 'sw'],
+    image: IMG.slime,
+    artFilter: 'hue-rotate-15 saturate-150 brightness-105',
+    price: 85,
+    accentGradient: 'from-sky-950 via-teal-950 to-slate-950',
+  },
+  {
+    id: 'flamespren',
+    name: 'Flamespren',
+    rarity: 'common',
+    stats: [5, 'M', 2, 4],
+    arrows: ['n', 'nw', 'ne', 's'],
+    image: IMG.wisp,
+    artFilter: '-hue-rotate-30 saturate-200 contrast-110',
+    price: 85,
+    accentGradient: 'from-orange-950 via-red-950 to-slate-950',
+  },
+  {
+    id: 'stonespren',
+    name: 'Stonespren',
+    rarity: 'rare',
+    stats: [6, 'P', 9, 5],
+    arrows: ['n', 'e', 's', 'w', 'se'],
+    image: IMG.golem,
+    artFilter: 'hue-rotate-30 saturate-125 contrast-115',
+    price: 185,
+    accentGradient: 'from-stone-800 via-amber-950 to-slate-950',
+  },
+  {
+    id: 'lifespren',
+    name: 'Lifespren',
+    rarity: 'rare',
+    stats: [6, 'M', 6, 8],
+    arrows: ['n', 'ne', 'se', 'sw', 'nw'],
+    image: IMG.sprite,
+    artFilter: 'hue-rotate-15 saturate-150 brightness-110',
+    price: 185,
+    accentGradient: 'from-emerald-950 via-lime-950 to-slate-950',
+  },
+  {
+    id: 'lightspren',
+    name: 'Lightspren',
+    rarity: 'rare',
+    stats: [7, 'X', 5, 8],
+    arrows: ['n', 'ne', 'e', 's', 'sw', 'nw'],
+    image: IMG.archon,
+    artFilter: '-hue-rotate-15 brightness-110 saturate-125',
+    price: 195,
+    accentGradient: 'from-amber-900 via-yellow-950 to-slate-950',
+  },
+  {
+    id: 'stormspren',
+    name: 'Stormspren',
+    rarity: 'epic',
+    stats: [11, 'M', 7, 11],
+    arrows: ['n', 'ne', 'e', 'se', 'sw', 'nw'],
+    image: IMG.djinn,
+    artFilter: 'hue-rotate-15 saturate-150 contrast-110',
+    price: 340,
+    accentGradient: 'from-indigo-950 via-cyan-950 to-slate-950',
+  },
+  {
+    id: 'darkspren',
+    name: 'Darkspren',
+    rarity: 'epic',
+    stats: [11, 'A', 8, 10],
+    arrows: ['n', 'ne', 'e', 'se', 's', 'sw', 'nw'],
+    image: IMG.lich,
+    artFilter: 'hue-rotate-90 contrast-125 brightness-90',
+    price: 355,
+    accentGradient: 'from-slate-900 via-purple-950 to-slate-950',
+  },
+  {
+    id: 'highspren',
+    name: 'Highspren',
+    rarity: 'mythic',
+    stats: [13, 'A', 12, 14],
+    arrows: ['n', 'ne', 'e', 'se', 's', 'sw', 'nw'],
+    image: IMG.archon,
+    artFilter: 'hue-rotate-180 contrast-115 saturate-150',
+    price: 620,
+    accentGradient: 'from-sky-900 via-indigo-950 to-slate-950',
+  },
+  {
+    id: 'voidspren',
+    name: 'Voidspren',
+    rarity: 'mythic',
+    stats: [14, 'A', 13, 13],
+    arrows: ['n', 'ne', 'e', 'se', 's', 'sw', 'w', 'nw'],
+    image: IMG.voidDragon,
+    artFilter: 'hue-rotate-60 saturate-150 contrast-115',
+    price: 650,
+    accentGradient: 'from-fuchsia-950 via-rose-950 to-slate-950',
+  },
+
+  // =========================================================================
+  // EXPANSION II — WILDWOOD, FEY, SPRITES & ENTS (#101 to #110)
+  // =========================================================================
+  {
+    id: 'moonpetal-sprite',
+    name: 'Moonpetal Sprite',
+    rarity: 'common',
+    stats: [4, 'M', 2, 5],
+    arrows: ['n', 'ne', 'sw', 'nw'],
+    image: IMG.sprite,
+    artFilter: 'hue-rotate-180 saturate-125',
+    price: 85,
+    accentGradient: 'from-teal-950 via-indigo-950 to-slate-950',
+  },
+  {
+    id: 'mossback-sapling',
+    name: 'Mossback Sapling',
+    rarity: 'common',
+    stats: [3, 'P', 5, 3],
+    arrows: ['n', 'e', 's'],
+    image: IMG.golem,
+    artFilter: 'saturate-125 brightness-105',
+    price: 80,
+    accentGradient: 'from-emerald-950 via-stone-900 to-slate-950',
+  },
+  {
+    id: 'dewdrop-pixie',
+    name: 'Dewdrop Pixie',
+    rarity: 'common',
+    stats: [4, 'X', 3, 4],
+    arrows: ['ne', 'e', 'sw', 'w'],
+    image: IMG.wisp,
+    artFilter: 'hue-rotate-90 saturate-150 brightness-105',
+    price: 90,
+    accentGradient: 'from-emerald-950 via-cyan-950 to-slate-950',
+  },
+  {
+    id: 'bramble-ent',
+    name: 'Bramble Ent',
+    rarity: 'rare',
+    stats: [8, 'P', 9, 4],
+    arrows: ['n', 'e', 'se', 's', 'w'],
+    image: IMG.titan,
+    artFilter: 'hue-rotate-30 contrast-110',
+    price: 185,
+    accentGradient: 'from-emerald-950 via-stone-900 to-slate-950',
+  },
+  {
+    id: 'sylvan-feyblade',
+    name: 'Sylvan Feyblade',
+    rarity: 'rare',
+    stats: [8, 'X', 6, 7],
+    arrows: ['n', 'ne', 'e', 'sw', 'nw'],
+    image: IMG.ranger,
+    artFilter: '-hue-rotate-15 saturate-150',
+    price: 195,
+    accentGradient: 'from-emerald-900 via-teal-950 to-slate-950',
+  },
+  {
+    id: 'glade-nymph',
+    name: 'Glade Nymph',
+    rarity: 'rare',
+    stats: [7, 'M', 5, 8],
+    arrows: ['n', 'ne', 'e', 'se', 'sw', 'nw'],
+    image: IMG.sprite,
+    artFilter: 'hue-rotate-90 saturate-150',
+    price: 190,
+    accentGradient: 'from-teal-900 via-emerald-950 to-slate-950',
+  },
+  {
+    id: 'ancient-heartwood-ent',
+    name: 'Ancient Heartwood Ent',
+    rarity: 'epic',
+    stats: [11, 'P', 12, 8],
+    arrows: ['n', 'e', 'se', 's', 'sw', 'w'],
+    image: IMG.titan,
+    artFilter: 'saturate-125 contrast-110',
+    price: 335,
+    accentGradient: 'from-emerald-900 via-amber-950 to-slate-950',
+  },
+  {
+    id: 'thornbark-fey-queen',
+    name: 'Thornbark Fey Queen',
+    rarity: 'epic',
+    stats: [10, 'A', 9, 11],
+    arrows: ['n', 'ne', 'e', 'se', 's', 'sw', 'nw'],
+    image: IMG.empress,
+    artFilter: 'hue-rotate-90 saturate-125',
+    price: 355,
+    accentGradient: 'from-emerald-900 via-violet-950 to-slate-950',
+  },
+  {
+    id: 'verdant-archdruid',
+    name: 'Verdant Archdruid',
+    rarity: 'epic',
+    stats: [11, 'M', 8, 11],
+    arrows: ['n', 'ne', 'e', 's', 'sw', 'w', 'nw'],
+    image: IMG.cleric,
+    artFilter: 'hue-rotate-90 saturate-150',
+    price: 345,
+    accentGradient: 'from-emerald-900 via-teal-950 to-slate-950',
+  },
+  {
+    id: 'worldtree-sovereign',
+    name: 'Worldtree Sovereign',
+    rarity: 'mythic',
+    stats: [14, 'A', 14, 13],
+    arrows: ['n', 'ne', 'e', 'se', 's', 'sw', 'w', 'nw'],
+    image: IMG.titan,
+    artFilter: 'hue-rotate-60 saturate-150 brightness-105',
+    price: 660,
+    accentGradient: 'from-emerald-800 via-amber-950 to-slate-950',
+  },
+
+  // =========================================================================
+  // EXPANSION III — CRYPT & UNDEAD LEGION (#111 to #120)
+  // =========================================================================
+  {
+    id: 'crypt-skeleton',
+    name: 'Crypt Skeleton',
+    rarity: 'common',
+    stats: [4, 'P', 4, 2],
+    arrows: ['n', 'e', 'w'],
+    image: IMG.squire,
+    artFilter: 'grayscale contrast-125 brightness-90',
+    price: 80,
+    accentGradient: 'from-slate-800 via-zinc-900 to-slate-950',
+  },
+  {
+    id: 'cemetery-ghoul',
+    name: 'Cemetery Ghoul',
+    rarity: 'common',
+    stats: [5, 'P', 3, 2],
+    arrows: ['n', 'ne', 'se', 'w'],
+    image: IMG.goblin,
+    artFilter: 'hue-rotate-90 saturate-75 contrast-125',
+    price: 85,
+    accentGradient: 'from-emerald-950 via-stone-900 to-slate-950',
+  },
+  {
+    id: 'mourning-wraith',
+    name: 'Mourning Wraith',
+    rarity: 'common',
+    stats: [4, 'M', 2, 5],
+    arrows: ['nw', 'ne', 'sw', 'se'],
+    image: IMG.necromancer,
+    artFilter: 'hue-rotate-180 brightness-95',
+    price: 85,
+    accentGradient: 'from-indigo-950 via-slate-900 to-slate-950',
+  },
+  {
+    id: 'hollow-revenant',
+    name: 'Hollow Revenant',
+    rarity: 'rare',
+    stats: [8, 'P', 7, 5],
+    arrows: ['n', 'ne', 'e', 's', 'w'],
+    image: IMG.knight,
+    artFilter: 'hue-rotate-90 saturate-75 contrast-125',
+    price: 185,
+    accentGradient: 'from-teal-950 via-slate-900 to-slate-950',
+  },
+  {
+    id: 'wailing-banshee',
+    name: 'Wailing Banshee',
+    rarity: 'rare',
+    stats: [8, 'M', 4, 8],
+    arrows: ['n', 'nw', 'ne', 'sw', 'se'],
+    image: IMG.empress,
+    artFilter: 'hue-rotate-60 saturate-75 contrast-125',
+    price: 190,
+    accentGradient: 'from-violet-950 via-slate-900 to-slate-950',
+  },
+  {
+    id: 'nightborn-vampire',
+    name: 'Nightborn Vampire',
+    rarity: 'rare',
+    stats: [8, 'X', 6, 7],
+    arrows: ['n', 'ne', 'e', 'se', 'sw', 'nw'],
+    image: IMG.rogue,
+    artFilter: '-hue-rotate-45 saturate-150 contrast-115',
+    price: 195,
+    accentGradient: 'from-rose-950 via-slate-900 to-slate-950',
+  },
+  {
+    id: 'crimson-nosferatu',
+    name: 'Crimson Nosferatu',
+    rarity: 'epic',
+    stats: [11, 'A', 9, 10],
+    arrows: ['n', 'ne', 'e', 'se', 's', 'nw'],
+    image: IMG.samurai,
+    artFilter: '-hue-rotate-15 saturate-150 contrast-125',
+    price: 350,
+    accentGradient: 'from-rose-950 via-red-950 to-slate-950',
+  },
+  {
+    id: 'dread-deathknight',
+    name: 'Dread Deathknight',
+    rarity: 'epic',
+    stats: [12, 'P', 11, 8],
+    arrows: ['n', 'ne', 'e', 'se', 's', 'sw', 'w'],
+    image: IMG.knight,
+    artFilter: 'hue-rotate-180 contrast-125 brightness-90',
+    price: 345,
+    accentGradient: 'from-sky-950 via-slate-900 to-slate-950',
+  },
+  {
+    id: 'bone-behemoth',
+    name: 'Bone Behemoth',
+    rarity: 'epic',
+    stats: [11, 'P', 12, 7],
+    arrows: ['n', 'e', 'se', 's', 'sw', 'w'],
+    image: IMG.behemoth,
+    artFilter: 'grayscale contrast-125 brightness-95',
+    price: 335,
+    accentGradient: 'from-stone-800 via-slate-900 to-slate-950',
+  },
+  {
+    id: 'skeletal-dracolich',
+    name: 'Skeletal Dracolich',
+    rarity: 'mythic',
+    stats: [15, 'A', 13, 13],
+    arrows: ['n', 'ne', 'e', 'se', 's', 'sw', 'w', 'nw'],
+    image: IMG.wyvern,
+    artFilter: 'hue-rotate-90 contrast-125 saturate-125',
+    price: 680,
+    accentGradient: 'from-violet-950 via-emerald-950 to-slate-950',
+  },
 ];
 
 function computeCardShopPrice(entry: RawEntry, cardNumber: number): number {
   if (entry.rarity === 'mythic') {
-    // Mythic cards (#81-#90) cannot be purchased in the shop — earned only from High-Tier RNG or Boss spoils
+    // Mythic cards cannot be purchased in the shop — earned only from High-Tier RNG or Boss spoils
     return 0;
   }
   const arrowCount = entry.arrows.length;
   const type = entry.stats[1];
 
   if (entry.rarity === 'common') {
+    const tierOffset = Math.min(29, Math.max(0, cardNumber - 1));
     const raw =
       140 +
-      (cardNumber - 1) * 5 +
+      tierOffset * 5 +
       Math.max(0, arrowCount - 3) * 20 +
       (type === 'X' ? 35 : 0);
     return Math.round(raw / 10) * 10; // 140g – 340g
   }
 
   if (entry.rarity === 'rare') {
+    const tierOffset = Math.min(29, Math.max(0, cardNumber - 31));
     const raw =
       950 +
-      (cardNumber - 31) * 26 +
+      tierOffset * 26 +
       Math.max(0, arrowCount - 4) * 75 +
       (type === 'X' ? 110 : 0);
     return Math.round(raw / 10) * 10; // 950g – 1,980g
   }
 
-  // Epic (#61-#80): Major prestige investment (3,800g – 6,500g)
+  // Epic: Major prestige investment (3,800g – 6,500g)
+  const tierOffset = Math.min(19, Math.max(0, cardNumber - 61));
   const raw =
     3800 +
-    (cardNumber - 61) * 95 +
+    tierOffset * 95 +
     Math.max(0, arrowCount - 5) * 220 +
     (type === 'A' ? 450 : type === 'X' ? 200 : 0);
   return Math.round(raw / 50) * 50;
 }
 
+/**
+ * Innate Legendary Augments — reserved exclusively for select Mythic cards so
+ * augments feel rare and special. All other cards can be customized by crafting
+ * Runes onto specific card copies at the Shop Runeforge!
+ */
 export const CARD_AUGMENTS: Record<string, CardAugment> = {
-  // === COMMON TIER AUGMENTS ===
-  'iron-squire': {
-    id: 'aug-squire-bulwark',
-    name: 'Squire’s Shieldwall',
-    shortTag: '+1 P.Def (Type P)',
-    badgeLabel: 'P +1 P.DEF',
-    description: 'On Play: All friendly P-type cards already on the board gain +1 P.Def.',
-    scope: 'type_P_allies',
-    powerDelta: 0,
-    pDefDelta: 1,
-    mDefDelta: 0,
-  },
-  'moss-golem': {
-    id: 'aug-moss-bark',
-    name: 'Earthen Barkskin',
-    shortTag: '+1 DEF (Adj. Allies)',
-    badgeLabel: 'ADJ +1 DEF',
-    description: 'On Play: Adjacent friendly cards on the board gain +1 P.Def & +1 M.Def.',
-    scope: 'adjacent_allies',
-    powerDelta: 0,
-    pDefDelta: 1,
-    mDefDelta: 1,
-  },
-  'lantern-wisp': {
-    id: 'aug-wisp-ward',
-    name: 'Lantern Veil',
-    shortTag: '+1 M.Def (Type M)',
-    badgeLabel: 'M +1 M.DEF',
-    description: 'On Play: All friendly M-type cards already on the board gain +1 M.Def.',
-    scope: 'type_M_allies',
-    powerDelta: 0,
-    pDefDelta: 0,
-    mDefDelta: 1,
-  },
-  'crystal-slime': {
-    id: 'aug-crystal-refraction',
-    name: 'Prism Ward',
-    shortTag: '+1 DEF (Type M)',
-    badgeLabel: 'M +1 DEF',
-    description: 'On Play: All friendly M-type cards on the board gain +1 P.Def & +1 M.Def.',
-    scope: 'type_M_allies',
-    powerDelta: 0,
-    pDefDelta: 1,
-    mDefDelta: 1,
-  },
-  'clockwork-owl': {
-    id: 'aug-owl-gyro',
-    name: 'Clockwork Matrix',
-    shortTag: '+1 DEF (Type X)',
-    badgeLabel: 'X +1 DEF',
-    description: 'On Play: All friendly X-type cards already on the board gain +1 P.Def & +1 M.Def.',
-    scope: 'type_X_allies',
-    powerDelta: 0,
-    pDefDelta: 1,
-    mDefDelta: 1,
-  },
-  'crypt-acolyte': {
-    id: 'aug-crypt-hex',
-    name: 'Wither Rite',
-    shortTag: '-1 DEF (Adj. Rivals)',
-    badgeLabel: 'FOE -1 DEF',
-    description: 'On Play: Adjacent rival cards on the board lose -1 P.Def & -1 M.Def.',
-    scope: 'adjacent_rivals',
-    powerDelta: 0,
-    pDefDelta: -1,
-    mDefDelta: -1,
-  },
-  'brass-sentinel': {
-    id: 'aug-brass-guard',
-    name: 'Brass Phalanx',
-    shortTag: '+1 DEF (Type P)',
-    badgeLabel: 'P +1 DEF',
-    description: 'On Play: All friendly P-type cards on the board gain +1 P.Def & +1 M.Def.',
-    scope: 'type_P_allies',
-    powerDelta: 0,
-    pDefDelta: 1,
-    mDefDelta: 1,
-  },
-  'alley-cutpurse': {
-    id: 'aug-cutpurse-feint',
-    name: 'Guildmaster’s Edge',
-    shortTag: '+1 PWR (Type X)',
-    badgeLabel: 'X +1 PWR',
-    description: 'On Play: All friendly X-type cards already on the board gain +1 Power.',
-    scope: 'type_X_allies',
-    powerDelta: 1,
-    pDefDelta: 0,
-    mDefDelta: 0,
-  },
-  'shrine-novice': {
-    id: 'aug-shrine-blessing',
-    name: 'Sanctuary Prayer',
-    shortTag: '+1 M.Def (All Allies)',
-    badgeLabel: 'ALL +1 M.DEF',
-    description: 'On Play: All friendly cards currently on the board gain +1 M.Def.',
-    scope: 'all_allies',
-    powerDelta: 0,
-    pDefDelta: 0,
-    mDefDelta: 1,
-  },
-  'mist-archer': {
-    id: 'aug-mist-tailwind',
-    name: 'Mist Screen',
-    shortTag: '+2 DEF (Type X)',
-    badgeLabel: 'X +2 DEF',
-    description: 'On Play: All friendly X-type cards on the board gain +2 P.Def & +1 M.Def.',
-    scope: 'type_X_allies',
-    powerDelta: 0,
-    pDefDelta: 2,
-    mDefDelta: 1,
-  },
-
-  // === RARE TIER AUGMENTS ===
-  'runic-knight': {
-    id: 'aug-runic-aegis',
-    name: 'Runic Bastion',
-    shortTag: '+2 P.Def (Type P)',
-    badgeLabel: 'P +2 P.DEF',
-    description: 'On Play: All friendly P-type cards on the board gain +2 P.Def & +1 M.Def.',
-    scope: 'type_P_allies',
-    powerDelta: 0,
-    pDefDelta: 2,
-    mDefDelta: 1,
-  },
-  'glacial-mage': {
-    id: 'aug-glacial-ward',
-    name: 'Rime Barrier',
-    shortTag: '+2 M.Def (Type M)',
-    badgeLabel: 'M +2 M.DEF',
-    description: 'On Play: All friendly M-type cards on the board gain +1 P.Def & +2 M.Def.',
-    scope: 'type_M_allies',
-    powerDelta: 0,
-    pDefDelta: 1,
-    mDefDelta: 2,
-  },
-  'storm-griffin': {
-    id: 'aug-griffin-gale',
-    name: 'Tempest Guard',
-    shortTag: '+2 DEF (Type X)',
-    badgeLabel: 'X +2 DEF',
-    description: 'On Play: All friendly X-type cards on the board gain +2 P.Def & +2 M.Def.',
-    scope: 'type_X_allies',
-    powerDelta: 0,
-    pDefDelta: 2,
-    mDefDelta: 2,
-  },
-  'shadow-rogue': {
-    id: 'aug-rogue-sabotage',
-    name: 'Armor Sunder',
-    shortTag: '-2 DEF (Adj. Rivals)',
-    badgeLabel: 'FOE -2 DEF',
-    description: 'On Play: Adjacent rival cards on the board lose -2 P.Def & -2 M.Def.',
-    scope: 'adjacent_rivals',
-    powerDelta: 0,
-    pDefDelta: -2,
-    mDefDelta: -2,
-  },
-  'sun-cleric': {
-    id: 'aug-sun-benediction',
-    name: 'Solar Benediction',
-    shortTag: '+1 DEF (All Allies)',
-    badgeLabel: 'ALL +1 DEF',
-    description: 'On Play: All friendly cards currently on the board gain +1 P.Def & +1 M.Def.',
-    scope: 'all_allies',
-    powerDelta: 0,
-    pDefDelta: 1,
-    mDefDelta: 1,
-  },
-  'silver-paladin': {
-    id: 'aug-paladin-rally',
-    name: 'Crusader’s Rally',
-    shortTag: '+1 PWR/+2 DEF (Type P)',
-    badgeLabel: 'P +1P/+2D',
-    description: 'On Play: Friendly P-type cards on the board gain +1 Power & +2 P.Def.',
-    scope: 'type_P_allies',
-    powerDelta: 1,
-    pDefDelta: 2,
-    mDefDelta: 0,
-  },
-  'radiant-bishop': {
-    id: 'aug-bishop-sanctum',
-    name: 'Cathedral Ward',
-    shortTag: '+2 DEF (Adj. Allies)',
-    badgeLabel: 'ADJ +2 DEF',
-    description: 'On Play: Adjacent friendly cards on the board gain +2 P.Def & +2 M.Def.',
-    scope: 'adjacent_allies',
-    powerDelta: 0,
-    pDefDelta: 2,
-    mDefDelta: 2,
-  },
-  'prismatic-jelly': {
-    id: 'aug-jelly-carapace',
-    name: 'Chromatic Shell',
-    shortTag: '+2 DEF (Type X)',
-    badgeLabel: 'X +2 DEF',
-    description: 'On Play: All friendly X-type cards on the board gain +2 P.Def & +2 M.Def.',
-    scope: 'type_X_allies',
-    powerDelta: 0,
-    pDefDelta: 2,
-    mDefDelta: 2,
-  },
-  'chronos-owl': {
-    id: 'aug-chronos-haste',
-    name: 'Temporal Resonance',
-    shortTag: '+1 PWR/+2 DEF (Type X)',
-    badgeLabel: 'X +1P/+2D',
-    description: 'On Play: Friendly X-type cards on the board gain +1 Power, +2 P.Def & +2 M.Def.',
-    scope: 'type_X_allies',
-    powerDelta: 1,
-    pDefDelta: 2,
-    mDefDelta: 2,
-  },
-
-  // === EPIC TIER AUGMENTS ===
-  'stone-behemoth': {
-    id: 'aug-behemoth-citadel',
-    name: 'Monolith Fortification',
-    shortTag: '+2 P.Def (All Allies)',
-    badgeLabel: 'ALL +2 P.DEF',
-    description: 'On Play: All friendly cards on the board gain +2 P.Def & +1 M.Def.',
-    scope: 'all_allies',
-    powerDelta: 0,
-    pDefDelta: 2,
-    mDefDelta: 1,
-  },
-  'valkyrie-lancer': {
-    id: 'aug-valkyrie-vanguard',
-    name: 'Valkyrie Aegis',
-    shortTag: '+2 PWR/+2 DEF (Type X)',
-    badgeLabel: 'X +2P/+2D',
-    description: 'On Play: Friendly X-type cards on the board gain +2 Power, +2 P.Def & +2 M.Def.',
-    scope: 'type_X_allies',
-    powerDelta: 2,
-    pDefDelta: 2,
-    mDefDelta: 2,
-  },
-  'abyssal-lich': {
-    id: 'aug-lich-blight',
-    name: 'Abyssal Curse',
-    shortTag: '-2 ALL (Adj. Rivals)',
-    badgeLabel: 'FOE -2 ALL',
-    description: 'On Play: Adjacent rival cards on the board lose -2 Power, -2 P.Def & -2 M.Def.',
-    scope: 'adjacent_rivals',
-    powerDelta: -2,
-    pDefDelta: -2,
-    mDefDelta: -2,
-  },
-  'cathedral-sentinel': {
-    id: 'aug-cathedral-bulwark',
-    name: 'Gargoyle Bulwark',
-    shortTag: '+3 DEF (Type X)',
-    badgeLabel: 'X +3 DEF',
-    description: 'On Play: All friendly X-type cards on the board gain +3 P.Def & +3 M.Def.',
-    scope: 'type_X_allies',
-    powerDelta: 0,
-    pDefDelta: 3,
-    mDefDelta: 3,
-  },
-  'aegis-crusader': {
-    id: 'aug-aegis-decree',
-    name: 'Grand Aegis',
-    shortTag: '+2 PWR/+3 P.Def (Type P)',
-    badgeLabel: 'P +2P/+3D',
-    description: 'On Play: Friendly P-type cards on the board gain +2 Power & +3 P.Def.',
-    scope: 'type_P_allies',
-    powerDelta: 2,
-    pDefDelta: 3,
-    mDefDelta: 1,
-  },
-  'astral-archmage': {
-    id: 'aug-archmage-conduit',
-    name: 'Astral Sanctum',
-    shortTag: '+2 PWR/+3 M.Def (Type M)',
-    badgeLabel: 'M +2P/+3D',
-    description: 'On Play: Friendly M-type cards on the board gain +2 Power & +3 M.Def.',
-    scope: 'type_M_allies',
-    powerDelta: 2,
-    pDefDelta: 1,
-    mDefDelta: 3,
-  },
-  'eclipse-assassin': {
-    id: 'aug-eclipse-overdrive',
-    name: 'Eclipse Resonance',
-    shortTag: '+2 ALL (Type A)',
-    badgeLabel: 'A +2 ALL',
-    description: 'On Play: Friendly A-type cards on the board gain +2 Power, +2 P.Def & +2 M.Def.',
-    scope: 'type_A_allies',
-    powerDelta: 2,
-    pDefDelta: 2,
-    mDefDelta: 2,
-  },
-
-  // === MYTHIC TIER AUGMENTS ===
+  // === MYTHIC LEGENDARY INNATE TRAITS ===
   'emerald-titan': {
     id: 'aug-titan-earthshaker',
     name: 'Worldtree Bastion',
@@ -1423,7 +1482,208 @@ export const CARD_AUGMENTS: Record<string, CardAugment> = {
     pDefDelta: 3,
     mDefDelta: 3,
   },
+  'voidspren': {
+    id: 'aug-voidspren-rift',
+    name: 'Void Resonance',
+    shortTag: '-3 DEF (Adj. Rivals)',
+    badgeLabel: 'FOE -3 DEF',
+    description: 'On Play: Adjacent rival cards on the board lose -2 Power, -3 P.Def & -3 M.Def.',
+    scope: 'adjacent_rivals',
+    powerDelta: -2,
+    pDefDelta: -3,
+    mDefDelta: -3,
+  },
+  'worldtree-sovereign': {
+    id: 'aug-worldtree-canopy',
+    name: 'Canopy Blessing',
+    shortTag: '+2 ALL (All Allies)',
+    badgeLabel: 'ALL +2 ALL',
+    description: 'On Play: All friendly cards on the board gain +2 Power, +2 P.Def & +2 M.Def.',
+    scope: 'all_allies',
+    powerDelta: 2,
+    pDefDelta: 2,
+    mDefDelta: 2,
+  },
+  'skeletal-dracolich': {
+    id: 'aug-dracolich-dread',
+    name: 'Phylactery Dread',
+    shortTag: '-3 DEF (Adj. Rivals)',
+    badgeLabel: 'FOE -3 DEF',
+    description: 'On Play: Adjacent rival cards on the board lose -2 Power, -3 P.Def & -3 M.Def.',
+    scope: 'adjacent_rivals',
+    powerDelta: -2,
+    pDefDelta: -3,
+    mDefDelta: -3,
+  },
 };
+
+/**
+ * Craftable Augment Runes — available to imbue onto any owned non-innate card copy
+ * at the Shop Runeforge using Gold.
+ */
+export const CRAFTABLE_AUGMENTS: CraftableAugment[] = [
+  // === MINOR RUNES (Early & Mid-Game Tactical Boosts) ===
+  {
+    id: 'rune-iron-bulwark',
+    tier: 'minor',
+    craftCost: 350,
+    name: 'Iron Bulwark',
+    shortTag: '+1 P.Def (Type P)',
+    badgeLabel: 'P +1 P.DEF',
+    description: 'On Play: All friendly P-type cards already on the board gain +1 P.Def.',
+    scope: 'type_P_allies',
+    powerDelta: 0,
+    pDefDelta: 1,
+    mDefDelta: 0,
+  },
+  {
+    id: 'rune-arcane-veil',
+    tier: 'minor',
+    craftCost: 350,
+    name: 'Arcane Veil',
+    shortTag: '+1 M.Def (Type M)',
+    badgeLabel: 'M +1 M.DEF',
+    description: 'On Play: All friendly M-type cards already on the board gain +1 M.Def.',
+    scope: 'type_M_allies',
+    powerDelta: 0,
+    pDefDelta: 0,
+    mDefDelta: 1,
+  },
+  {
+    id: 'rune-barkskin-aura',
+    tier: 'minor',
+    craftCost: 420,
+    name: 'Barkskin Aura',
+    shortTag: '+1 DEF (Adj. Allies)',
+    badgeLabel: 'ADJ +1 DEF',
+    description: 'On Play: Adjacent friendly cards on the board gain +1 P.Def & +1 M.Def.',
+    scope: 'adjacent_allies',
+    powerDelta: 0,
+    pDefDelta: 1,
+    mDefDelta: 1,
+  },
+  {
+    id: 'rune-wither-hex',
+    tier: 'minor',
+    craftCost: 450,
+    name: 'Wither Hex',
+    shortTag: '-1 DEF (Adj. Rivals)',
+    badgeLabel: 'FOE -1 DEF',
+    description: 'On Play: Adjacent rival cards on the board lose -1 P.Def & -1 M.Def.',
+    scope: 'adjacent_rivals',
+    powerDelta: 0,
+    pDefDelta: -1,
+    mDefDelta: -1,
+  },
+
+  // === MAJOR RUNES (Dedicated Deck Synergies) ===
+  {
+    id: 'rune-vanguard-rally',
+    tier: 'major',
+    craftCost: 1100,
+    name: 'Vanguard Rally',
+    shortTag: '+1 PWR/+2 P.Def (Type P)',
+    badgeLabel: 'P +1P/+2D',
+    description: 'On Play: Friendly P-type cards on the board gain +1 Power & +2 P.Def.',
+    scope: 'type_P_allies',
+    powerDelta: 1,
+    pDefDelta: 2,
+    mDefDelta: 0,
+  },
+  {
+    id: 'rune-astral-ward',
+    tier: 'major',
+    craftCost: 1100,
+    name: 'Astral Ward',
+    shortTag: '+1 PWR/+2 M.Def (Type M)',
+    badgeLabel: 'M +1P/+2D',
+    description: 'On Play: Friendly M-type cards on the board gain +1 Power & +2 M.Def.',
+    scope: 'type_M_allies',
+    powerDelta: 1,
+    pDefDelta: 0,
+    mDefDelta: 2,
+  },
+  {
+    id: 'rune-tempest-matrix',
+    tier: 'major',
+    craftCost: 1250,
+    name: 'Tempest Matrix',
+    shortTag: '+1 PWR/+2 DEF (Type X)',
+    badgeLabel: 'X +1P/+2D',
+    description: 'On Play: Friendly X-type cards on the board gain +1 Power, +2 P.Def & +2 M.Def.',
+    scope: 'type_X_allies',
+    powerDelta: 1,
+    pDefDelta: 2,
+    mDefDelta: 2,
+  },
+  {
+    id: 'rune-armor-sunder',
+    tier: 'major',
+    craftCost: 1400,
+    name: 'Armor Sunder',
+    shortTag: '-2 DEF (Adj. Rivals)',
+    badgeLabel: 'FOE -2 DEF',
+    description: 'On Play: Adjacent rival cards on the board lose -2 P.Def & -2 M.Def.',
+    scope: 'adjacent_rivals',
+    powerDelta: 0,
+    pDefDelta: -2,
+    mDefDelta: -2,
+  },
+
+  // === SOVEREIGN RUNES (Endgame Prestige Forging) ===
+  {
+    id: 'rune-sanctum-chorus',
+    tier: 'sovereign',
+    craftCost: 2800,
+    name: 'Sanctum Chorus',
+    shortTag: '+1 PWR/+2 DEF (All Allies)',
+    badgeLabel: 'ALL +1P/+2D',
+    description: 'On Play: All friendly cards on the board gain +1 Power, +2 P.Def & +2 M.Def.',
+    scope: 'all_allies',
+    powerDelta: 1,
+    pDefDelta: 2,
+    mDefDelta: 2,
+  },
+  {
+    id: 'rune-eclipse-overdrive',
+    tier: 'sovereign',
+    craftCost: 3000,
+    name: 'Eclipse Overdrive',
+    shortTag: '+2 ALL (Type A)',
+    badgeLabel: 'A +2 ALL',
+    description: 'On Play: Friendly A-type cards on the board gain +2 Power, +2 P.Def & +2 M.Def.',
+    scope: 'type_A_allies',
+    powerDelta: 2,
+    pDefDelta: 2,
+    mDefDelta: 2,
+  },
+  {
+    id: 'rune-abyssal-blight',
+    tier: 'sovereign',
+    craftCost: 3400,
+    name: 'Abyssal Blight',
+    shortTag: '-2 ALL (Adj. Rivals)',
+    badgeLabel: 'FOE -2 ALL',
+    description: 'On Play: Adjacent rival cards on the board lose -2 Power, -2 P.Def & -2 M.Def.',
+    scope: 'adjacent_rivals',
+    powerDelta: -2,
+    pDefDelta: -2,
+    mDefDelta: -2,
+  },
+];
+
+export const CRAFTABLE_AUGMENT_MAP: Record<string, CraftableAugment> =
+  Object.fromEntries(CRAFTABLE_AUGMENTS.map((a) => [a.id, a]));
+
+export function resolveCardAugment(
+  cardId: string,
+  augmentId?: string
+): CardAugment | undefined {
+  if (augmentId && CRAFTABLE_AUGMENT_MAP[augmentId]) {
+    return CRAFTABLE_AUGMENT_MAP[augmentId];
+  }
+  return CARD_MAP[cardId]?.augment;
+}
 
 export const CARDS: CardDef[] = RAW_CARDS.map((entry, idx) => {
   const number = idx + 1;
@@ -1452,7 +1712,14 @@ export const CARD_MAP: Record<string, CardDef> = Object.fromEntries(
   CARDS.map((card) => [card.id, card])
 );
 
-// 10 starter cards unlocked right away so new players can build 7-card tactical hands immediately
+export function getCardThumbUrl(imagePath: string): string {
+  if (imagePath.startsWith('/src/assets/images/') && !imagePath.includes('/thumbs/')) {
+    return imagePath.replace('/src/assets/images/', '/src/assets/images/thumbs/');
+  }
+  return imagePath;
+}
+
+// 12 starter cards unlocked right away so new players can build 10-card tactical hands immediately
 export const STARTER_CARD_IDS = [
   'ember-imp',
   'iron-squire',
@@ -1464,6 +1731,8 @@ export const STARTER_CARD_IDS = [
   'crystal-slime',
   'clockwork-owl',
   'copper-cannoneer',
+  'timber-bowman',
+  'crypt-acolyte',
 ];
 
 export interface BoosterPackDef {

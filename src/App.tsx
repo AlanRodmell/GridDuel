@@ -2,6 +2,7 @@ import { useCallback, useState } from 'react';
 import {
   BookOpen,
   Coins,
+  Home,
   LayoutGrid,
   Music,
   ShoppingBag,
@@ -12,6 +13,7 @@ import {
 import { ArenaView } from './components/ArenaView';
 import { CardPreviewProvider } from './components/CardPreviewContext';
 import { GalleryView } from './components/GalleryView';
+import { HomeView, PlayLaunchIntent } from './components/HomeView';
 import { MusicModal } from './components/MusicModal';
 import { RulesModal } from './components/RulesModal';
 import { ShopView } from './components/ShopView';
@@ -19,7 +21,7 @@ import { useProfile } from './store/useProfile';
 import { MusicThemeId, music } from './utils/music';
 import { sound } from './utils/sound';
 
-type TabId = 'arena' | 'gallery' | 'shop';
+type TabId = 'home' | 'arena' | 'gallery' | 'shop';
 
 export default function App() {
   const {
@@ -29,17 +31,23 @@ export default function App() {
     totalCards,
     toggleSound,
     selectDeckSlot,
+    createDeck,
+    renameDeck,
+    deleteDeck,
     toggleDeckCard,
     autoBuildActiveDeck,
     buyCard,
     openBoosterPack,
+    craftAugmentOnCopy,
     recordMatchOutcome,
     claimSpoilCard,
     sellCardInstance,
     sellExtraCopies,
   } = useProfile();
 
-  const [activeTab, setActiveTab] = useState<TabId>('arena');
+  const [activeTab, setActiveTab] = useState<TabId>('home');
+  const [playIntent, setPlayIntent] = useState<PlayLaunchIntent>('choose');
+  const [playLaunchNonce, setPlayLaunchNonce] = useState(0);
   const [rulesOpen, setRulesOpen] = useState(false);
   const [musicModalOpen, setMusicModalOpen] = useState(false);
   const [musicEnabled, setMusicEnabled] = useState(false);
@@ -80,15 +88,21 @@ export default function App() {
     }
   };
 
+  const launchPlayFlow = (intent: PlayLaunchIntent) => {
+    setPlayIntent(intent);
+    setPlayLaunchNonce((n) => n + 1);
+    setActiveTab('arena');
+  };
+
   return (
     <CardPreviewProvider>
     <div className="min-h-dvh flex flex-col bg-[#0B111E] text-slate-100">
       {/* Desktop Top Navigation Bar & Compact Mobile Header */}
-      <header className="sticky top-0 z-30 h-[54px] md:h-16 bg-[#0B111E]/90 backdrop-blur-md border-b border-slate-800/80">
-        <div className="h-full max-w-6xl mx-auto px-4 sm:px-6 flex items-center justify-between gap-4 sm:gap-8">
+      <header className="sticky top-0 z-30 h-[54px] md:h-16 bg-[#0B111E]/96 border-b border-slate-800/80">
+        <div className="h-full max-w-7xl mx-auto px-4 sm:px-6 flex items-center justify-between gap-4 sm:gap-8">
           <button
             type="button"
-            onClick={() => switchTab('arena')}
+            onClick={() => switchTab('home')}
             className="font-[var(--font-display)] text-lg sm:text-xl font-bold tracking-wider text-amber-200 hover:text-amber-100 transition-colors whitespace-nowrap shrink-0 cursor-pointer"
           >
             Aether Triad
@@ -100,14 +114,28 @@ export default function App() {
           >
             <button
               type="button"
-              onClick={() => switchTab('arena')}
+              onClick={() => switchTab('home')}
+              className={`py-1 transition-colors whitespace-nowrap shrink-0 cursor-pointer ${
+                activeTab === 'home'
+                  ? 'text-amber-300 border-b-2 border-amber-400'
+                  : 'text-slate-400 hover:text-slate-100'
+              }`}
+            >
+              Home
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                sound.select();
+                launchPlayFlow('choose');
+              }}
               className={`py-1 transition-colors whitespace-nowrap shrink-0 cursor-pointer ${
                 activeTab === 'arena'
                   ? 'text-amber-300 border-b-2 border-amber-400'
                   : 'text-slate-400 hover:text-slate-100'
               }`}
             >
-              Arena
+              Play
             </button>
             <button
               type="button"
@@ -199,13 +227,32 @@ export default function App() {
       </header>
 
       <main className="flex-1 pb-20 md:pb-10">
+        {activeTab === 'home' && (
+          <HomeView
+            profile={profile}
+            ownedUniqueCount={ownedUniqueCount}
+            totalCards={totalCards}
+            onStartFlow={launchPlayFlow}
+            onOpenGallery={() => switchTab('gallery')}
+            onOpenShop={() => switchTab('shop')}
+            onOpenRules={() => setRulesOpen(true)}
+          />
+        )}
         {activeTab === 'arena' && (
           <ArenaView
             profile={profile}
             activeDeck={activeDeck}
+            initialIntent={playIntent}
+            launchNonce={playLaunchNonce}
             onSelectDeckSlot={selectDeckSlot}
+            onCreateDeck={createDeck}
+            onRenameDeck={renameDeck}
+            onDeleteDeck={deleteDeck}
+            onToggleDeckCard={toggleDeckCard}
+            onAutoBuildDeck={autoBuildActiveDeck}
             onRecordMatch={recordMatchOutcome}
             onClaimSpoil={claimSpoilCard}
+            onGoHome={() => switchTab('home')}
             onGoToGallery={() => switchTab('gallery')}
             onOpenRules={() => setRulesOpen(true)}
             onMatchThemeChange={handleMatchThemeChange}
@@ -218,6 +265,9 @@ export default function App() {
             ownedUniqueCount={ownedUniqueCount}
             totalCards={totalCards}
             onSelectDeckSlot={selectDeckSlot}
+            onCreateDeck={createDeck}
+            onRenameDeck={renameDeck}
+            onDeleteDeck={deleteDeck}
             onToggleDeckCard={toggleDeckCard}
             onAutoBuildDeck={autoBuildActiveDeck}
             onSellCardInstance={sellCardInstance}
@@ -228,8 +278,10 @@ export default function App() {
         {activeTab === 'shop' && (
           <ShopView
             profile={profile}
+            activeDeck={activeDeck}
             onBuyCard={buyCard}
             onOpenPack={openBoosterPack}
+            onCraftAugment={craftAugmentOnCopy}
             onSellCardInstance={sellCardInstance}
             onSellExtraCopies={sellExtraCopies}
           />
@@ -239,18 +291,32 @@ export default function App() {
       {/* Mobile Fixed Bottom Tab Bar */}
       <nav
         aria-label="Mobile navigation"
-        className="md:hidden fixed bottom-0 inset-x-0 z-40 bg-[#0B111E]/95 backdrop-blur-md border-t border-slate-800/90 pb-safe"
+        className="md:hidden fixed bottom-0 inset-x-0 z-40 bg-[#0B111E]/98 border-t border-slate-800/90 pb-safe"
       >
-        <div className="grid grid-cols-4 h-[58px] items-center">
+        <div className="grid grid-cols-5 h-[58px] items-center">
           <button
             type="button"
-            onClick={() => switchTab('arena')}
+            onClick={() => switchTab('home')}
+            className={`min-h-[48px] flex flex-col items-center justify-center gap-0.5 transition-colors cursor-pointer ${
+              activeTab === 'home' ? 'text-amber-300' : 'text-slate-400'
+            }`}
+          >
+            <Home className="w-5 h-5" />
+            <span className="text-[11px] font-medium">Home</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => {
+              sound.select();
+              launchPlayFlow('choose');
+            }}
             className={`min-h-[48px] flex flex-col items-center justify-center gap-0.5 transition-colors cursor-pointer ${
               activeTab === 'arena' ? 'text-amber-300' : 'text-slate-400'
             }`}
           >
             <Swords className="w-5 h-5" />
-            <span className="text-[11px] font-medium">Arena</span>
+            <span className="text-[11px] font-medium">Play</span>
           </button>
 
           <button

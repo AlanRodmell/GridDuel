@@ -1,15 +1,23 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Shield, Sparkles, Swords, Wand2, Zap } from 'lucide-react';
-import { CARD_MAP, toHexDigit } from '../data/cards';
-import { ArrowDir, AttackType, Owner, Rarity, TetraStats } from '../types/game';
+import {
+  ALL_ARROW_DIRS,
+  CARD_MAP,
+  getCardThumbUrl,
+  resolveCardAugment,
+  toHexDigit,
+} from '../data/cards';
+import { ArrowDir, AttackType, Owner, TetraStats } from '../types/game';
 import { sound } from '../utils/sound';
 import { useCardPreview } from '../context/cardPreviewContext';
+import { ATTACK_TYPE_RULES, CARD_RARITY_THEMES } from '../styles/cardThemes';
 
 interface GameCardProps {
   cardId: string;
   stats?: TetraStats;
   baseStats?: TetraStats;
   arrows?: ArrowDir[];
+  augmentId?: string;
   owner?: Owner | 'neutral';
   faceDown?: boolean;
   selected?: boolean;
@@ -18,6 +26,7 @@ interface GameCardProps {
   justPlaced?: boolean;
   flipKey?: number;
   size?: 'xs' | 'sm' | 'md' | 'lg';
+  variant?: 'square' | 'tarot';
   showName?: boolean;
   targetStatus?: 'unopposed' | 'clash' | null;
   highlightArrows?: ArrowDir[];
@@ -31,29 +40,6 @@ interface GameCardProps {
   className?: string;
 }
 
-const RARITY_FRAME: Record<Rarity, { ring: string; gem: string; innerBorder: string }> = {
-  common: {
-    ring: 'ring-slate-400/40',
-    gem: 'bg-slate-300 border-slate-100 shadow-[0_0_6px_rgba(203,213,225,0.65)]',
-    innerBorder: 'border-slate-300/25',
-  },
-  rare: {
-    ring: 'ring-sky-400/65',
-    gem: 'bg-sky-400 border-sky-100 shadow-[0_0_8px_rgba(56,189,248,0.85)]',
-    innerBorder: 'border-sky-300/45',
-  },
-  epic: {
-    ring: 'ring-violet-400/80',
-    gem: 'bg-violet-400 border-violet-100 shadow-[0_0_9px_rgba(167,139,250,0.9)]',
-    innerBorder: 'border-violet-300/55',
-  },
-  mythic: {
-    ring: 'ring-amber-400/95',
-    gem: 'bg-amber-400 border-amber-100 shadow-[0_0_10px_rgba(251,191,36,0.95)]',
-    innerBorder: 'border-amber-300/75',
-  },
-};
-
 const TYPE_COLOR: Record<AttackType, string> = {
   P: 'text-amber-300',
   M: 'text-sky-300',
@@ -61,28 +47,37 @@ const TYPE_COLOR: Record<AttackType, string> = {
   A: 'text-rose-300',
 };
 
-const ARROW_POSITIONS: Record<
-  ArrowDir,
-  { posClass: string; rotation: string }
-> = {
-  n: { posClass: 'top-0.5 left-1/2 -translate-x-1/2', rotation: 'rotate-0' },
-  ne: { posClass: 'top-0.5 right-0.5', rotation: 'rotate-45' },
-  e: { posClass: 'top-1/2 -translate-y-1/2 right-0.5', rotation: 'rotate-90' },
-  se: { posClass: 'bottom-0.5 right-0.5', rotation: 'rotate-[135deg]' },
-  s: { posClass: 'bottom-0.5 left-1/2 -translate-x-1/2', rotation: 'rotate-180' },
-  sw: { posClass: 'bottom-0.5 left-0.5', rotation: 'rotate-[225deg]' },
-  w: { posClass: 'top-1/2 -translate-y-1/2 left-0.5', rotation: 'rotate-[270deg]' },
-  nw: { posClass: 'top-0.5 left-0.5', rotation: 'rotate-[315deg]' },
+const CARD_ARROW_POLYGONS: Record<ArrowDir, string> = {
+  n: '50,1.2 53.8,6.4 46.2,6.4',
+  ne: '97.8,2.0 92.2,3.0 97.0,7.8',
+  e: '98.8,70 93.6,66.2 93.6,73.8',
+  se: '97.8,138.0 92.2,137.0 97.0,132.2',
+  s: '50,138.8 53.8,133.6 46.2,133.6',
+  sw: '2.2,138.0 7.8,137.0 3.0,132.2',
+  w: '1.2,70 6.4,66.2 6.4,73.8',
+  nw: '2.2,2.0 7.8,3.0 3.0,7.8',
+};
+
+const TAROT_ARROW_POLYGONS: Record<ArrowDir, string> = {
+  n: '150,4 158,15 142,15',
+  ne: '293,7 280,9.5 290.5,20',
+  e: '296,210 285,202 285,218',
+  se: '293,413 280,410.5 290.5,400',
+  s: '150,416 158,405 142,405',
+  sw: '7,413 20,410.5 9.5,400',
+  w: '4,210 15,202 15,218',
+  nw: '7,7 20,9.5 9.5,20',
 };
 
 const LONG_PRESS_MS = 380;
 const MOVE_CANCEL_PX = 10;
 
-export const GameCard: React.FC<GameCardProps> = ({
+const GameCardInner: React.FC<GameCardProps> = ({
   cardId,
   stats,
   baseStats,
   arrows,
+  augmentId,
   owner = 'neutral',
   faceDown = false,
   selected = false,
@@ -91,6 +86,7 @@ export const GameCard: React.FC<GameCardProps> = ({
   justPlaced = false,
   flipKey,
   size = 'md',
+  variant = 'square',
   showName = false,
   targetStatus = null,
   highlightArrows = [],
@@ -99,13 +95,19 @@ export const GameCard: React.FC<GameCardProps> = ({
   onClick,
   className = '',
 }) => {
-  const [imgFailed, setImgFailed] = useState(false);
+  const [imgStage, setImgStage] = useState<'thumb' | 'full' | 'failed'>(
+    variant === 'tarot' ? 'full' : 'thumb'
+  );
   const { openPreview } = useCardPreview();
   const longPressTimerRef = useRef<number | null>(null);
   const pressStartRef = useRef<{ x: number; y: number; pointerId: number } | null>(null);
   const suppressClickUntilRef = useRef<number>(0);
 
   const card = CARD_MAP[cardId];
+
+  useEffect(() => {
+    setImgStage(variant === 'tarot' ? 'full' : 'thumb');
+  }, [cardId, variant]);
 
   const clearLongPress = () => {
     if (longPressTimerRef.current !== null) {
@@ -125,8 +127,12 @@ export const GameCard: React.FC<GameCardProps> = ({
 
   if (!card) return null;
 
+  const theme = CARD_RARITY_THEMES[card.rarity];
+  const activeAugment = resolveCardAugment(card.id, augmentId);
   const effectiveStats = stats ?? card.stats;
   const effectiveArrows = arrows ?? card.arrows;
+  const activeArrowSet = new Set(effectiveArrows);
+  const highlightSet = highlightArrows.length > 0 ? new Set(highlightArrows) : null;
   const refStats = baseStats ?? effectiveStats;
 
   const pwrDelta = effectiveStats.power - refStats.power;
@@ -134,6 +140,13 @@ export const GameCard: React.FC<GameCardProps> = ({
   const mDefDelta = effectiveStats.mDef - refStats.mDef;
   const hasActiveBuff = pwrDelta > 0 || pDefDelta > 0 || mDefDelta > 0;
   const hasActiveDebuff = pwrDelta < 0 || pDefDelta < 0 || mDefDelta < 0;
+
+  const handleImgError = () => {
+    setImgStage((prev) => (prev === 'thumb' ? 'full' : 'failed'));
+  };
+
+  const imgSrc =
+    imgStage === 'thumb' ? getCardThumbUrl(card.image) : card.image;
 
   const handlePointerDown = (e: React.PointerEvent) => {
     if (faceDown || disableLongPress) return;
@@ -159,6 +172,7 @@ export const GameCard: React.FC<GameCardProps> = ({
         stats: effectiveStats,
         baseStats: refStats,
         arrows: effectiveArrows,
+        augmentId,
         owner,
         lastAugmented,
       });
@@ -189,63 +203,63 @@ export const GameCard: React.FC<GameCardProps> = ({
   };
 
   const isCompact = size === 'xs';
-  const statTextSize =
-    size === 'xs'
-      ? 'text-[10px] leading-none tracking-wider'
-      : size === 'sm'
-      ? 'text-[10px] sm:text-[11px] leading-none tracking-wider'
-      : size === 'lg'
-      ? 'text-sm sm:text-base leading-none tracking-widest'
-      : 'text-xs sm:text-[13px] leading-none tracking-wider';
-
-  const rarityStyle = RARITY_FRAME[card.rarity];
   const isFoil = card.rarity === 'epic' || card.rarity === 'mythic';
-
-  const ownerFrame =
-    owner === 'player'
-      ? 'border-blue-400 shadow-[0_6px_18px_rgba(37,99,235,0.28),inset_0_0_0_1px_rgba(147,197,253,0.45)]'
-      : owner === 'rival'
-      ? 'border-rose-500 shadow-[0_6px_18px_rgba(225,29,72,0.28),inset_0_0_0_1px_rgba(253,164,175,0.45)]'
-      : card.rarity === 'mythic'
-      ? 'border-amber-400/90 shadow-[0_8px_22px_rgba(245,158,11,0.28)]'
-      : card.rarity === 'epic'
-      ? 'border-violet-400/80 shadow-[0_6px_18px_rgba(139,92,246,0.22)]'
-      : card.rarity === 'rare'
-      ? 'border-sky-400/70 shadow-[0_4px_14px_rgba(14,165,233,0.18)]'
-      : 'border-amber-500/45 shadow-md';
-
-  const ownerTint =
-    owner === 'player'
-      ? 'from-blue-600/36 via-blue-950/15 to-blue-950/88'
-      : owner === 'rival'
-      ? 'from-rose-600/36 via-rose-950/15 to-rose-950/88'
-      : 'from-slate-900/15 via-transparent to-slate-950/88';
-
   const pwrHex = toHexDigit(effectiveStats.power);
   const pDefHex = toHexDigit(effectiveStats.pDef);
   const mDefHex = toHexDigit(effectiveStats.mDef);
 
+  const ownerShadow =
+    owner === 'player'
+      ? '0 0 0 2px rgba(96, 165, 250, 0.92), 0 6px 16px rgba(37, 99, 235, 0.36)'
+      : owner === 'rival'
+      ? '0 0 0 2px rgba(251, 113, 133, 0.92), 0 6px 16px rgba(225, 29, 72, 0.36)'
+      : theme.outerGlow;
+
+  const ownerWash =
+    owner === 'player'
+      ? 'radial-gradient(ellipse 100% 90% at 50% 0%, rgba(59, 130, 246, 0.26) 0%, rgba(29, 78, 216, 0.12) 55%, rgba(15, 23, 42, 0.1) 100%)'
+      : owner === 'rival'
+      ? 'radial-gradient(ellipse 100% 90% at 50% 0%, rgba(244, 63, 94, 0.28) 0%, rgba(190, 18, 60, 0.12) 55%, rgba(15, 23, 42, 0.1) 100%)'
+      : undefined;
+
   if (faceDown) {
+    const backTheme = CARD_RARITY_THEMES.mythic;
     return (
       <div
         onClick={disabled ? undefined : onClick}
-        className={`group relative aspect-square w-full overflow-hidden rounded-xl border-2 border-amber-500/55 bg-gradient-to-br from-[#231a3a] via-[#131c33] to-[#0a0f1d] shadow-[0_8px_20px_rgba(0,0,0,0.6)] select-none no-touch-callout transition-transform duration-150 ${
+        style={{
+          background: backTheme.bezelGradient,
+          boxShadow: '0 6px 16px rgba(0, 0, 0, 0.55)',
+        }}
+        className={`card-contain group relative aspect-[5/7] ${
+          variant === 'tarot' ? 'rounded-[16px] p-[3px]' : 'rounded-xl p-[2px]'
+        } w-full overflow-hidden select-none no-touch-callout transition-transform duration-150 ${
           onClick && !disabled
-            ? 'cursor-pointer hover:-translate-y-1 hover:border-amber-300 hover:shadow-[0_12px_25px_rgba(245,158,11,0.3)]'
+            ? 'cursor-pointer hover:-translate-y-1'
             : ''
         } ${className}`}
       >
-        {/* Ornate Card Back Pattern */}
         <div
-          className="absolute inset-0 opacity-20"
-          style={{
-            backgroundImage:
-              'radial-gradient(circle at 50% 50%, rgba(251, 191, 36, 0.45) 0%, transparent 65%)',
-          }}
-        />
-        <div className="absolute inset-1.5 rounded-lg border border-amber-400/35 flex items-center justify-center">
-          <div className="w-8 h-8 sm:w-10 sm:h-10 rotate-45 rounded-sm border-2 border-amber-400/50 flex items-center justify-center bg-gradient-to-br from-amber-500/20 to-amber-900/30 shadow-[0_0_15px_rgba(245,158,11,0.3)] group-hover:scale-110 transition-transform">
-            <Sparkles className="w-4 h-4 sm:w-5 sm:h-5 -rotate-45 text-amber-300" />
+          style={{ background: backTheme.surfaceGradient }}
+          className={`relative w-full h-full ${
+            variant === 'tarot' ? 'rounded-[13px]' : 'rounded-[10px]'
+          } flex items-center justify-center overflow-hidden`}
+        >
+          <div
+            style={{ borderColor: backTheme.hairline }}
+            className="absolute inset-2 rounded-[5px] border flex items-center justify-center"
+          >
+            <div
+              style={{
+                borderColor: backTheme.archBorder,
+                background: backTheme.archBackdrop,
+              }}
+              className="w-[62%] h-[68%] rounded-t-[999px] rounded-b-[4px] border flex items-center justify-center"
+            >
+              <div className="w-7 h-7 sm:w-9 sm:h-9 rotate-45 rounded-sm border border-amber-300/75 flex items-center justify-center bg-gradient-to-br from-amber-500/25 to-amber-950/60 group-hover:scale-110 transition-transform">
+                <Sparkles className="w-3.5 h-3.5 sm:w-4 sm:h-4 -rotate-45 text-amber-200" />
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -253,6 +267,313 @@ export const GameCard: React.FC<GameCardProps> = ({
   }
 
   const Tag = onClick ? 'button' : 'div';
+  const typeRule = ATTACK_TYPE_RULES[effectiveStats.type];
+
+  const renderStatValueColor = (delta: number, fallback: string) =>
+    delta > 0 ? 'text-emerald-300' : delta < 0 ? 'text-rose-300' : fallback;
+
+  const typeShortLabel: Record<AttackType, string> = {
+    P: 'Physical',
+    M: 'Magical',
+    X: 'Flexible',
+    A: 'Assault',
+  };
+
+  // =========================================================================
+  // FULL COLLECTOR TAROT VARIANT (Card Preview & Gallery Inspector)
+  // =========================================================================
+  if (variant === 'tarot') {
+    const tarotStats = [
+      {
+        label: 'Attack',
+        tooltip: `Attack · ${effectiveStats.power} (${pwrHex})`,
+        value: pwrHex,
+        colorClass: renderStatValueColor(pwrDelta, 'text-white'),
+      },
+      {
+        label: 'Type',
+        tooltip: `Type · ${typeShortLabel[effectiveStats.type]} (${effectiveStats.type})`,
+        value: effectiveStats.type,
+        colorClass: TYPE_COLOR[effectiveStats.type],
+      },
+      {
+        label: 'Phys Def',
+        tooltip: `Phys Def · ${effectiveStats.pDef} (${pDefHex})`,
+        value: pDefHex,
+        colorClass: renderStatValueColor(pDefDelta, 'text-slate-100'),
+      },
+      {
+        label: 'Magic Def',
+        tooltip: `Magic Def · ${effectiveStats.mDef} (${mDefHex})`,
+        value: mDefHex,
+        colorClass: renderStatValueColor(mDefDelta, 'text-slate-100'),
+      },
+    ];
+
+    return (
+      <Tag
+        type={onClick ? 'button' : undefined}
+        disabled={onClick ? disabled : undefined}
+        onClick={onClick ? handleCardClick : undefined}
+        onPointerDown={handlePointerDown}
+        onPointerMove={handlePointerMove}
+        onPointerUp={handlePointerEnd}
+        onPointerCancel={handlePointerEnd}
+        onPointerLeave={handlePointerEnd}
+        onContextMenu={(e) => {
+          if (!disableLongPress) e.preventDefault();
+        }}
+        aria-label={`${card.name}, ${card.rarity}, stats ${pwrHex}${effectiveStats.type}${pDefHex}${mDefHex}, ${effectiveArrows.length} arrows`}
+        style={{
+          background: theme.bezelGradient,
+          boxShadow: ownerShadow,
+        }}
+        className={`card-contain group relative aspect-[5/7] w-full rounded-[16px] p-[3.5px] text-left select-none no-touch-callout transition-transform duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 ${
+          justPlaced ? 'animate-card-drop' : ''
+        } ${className}`}
+      >
+        <div
+          key={flipKey ?? 'steady'}
+          style={{ background: theme.surfaceGradient }}
+          className={`relative w-full h-full rounded-[12.5px] overflow-hidden ${
+            flipKey ? 'animate-card-flip' : ''
+          }`}
+        >
+          {ownerWash && (
+            <div
+              className="pointer-events-none absolute inset-0 z-0"
+              style={{ background: ownerWash }}
+            />
+          )}
+
+          {/* Foil Shimmer (only animated on single Tarot showcase card) */}
+          {isFoil && (
+            <div className="pointer-events-none absolute inset-0 z-20 overflow-hidden opacity-35">
+              <div
+                className={`animate-foil-shimmer absolute -inset-y-16 w-1/2 bg-gradient-to-r from-transparent ${theme.foilVia} to-transparent`}
+              />
+            </div>
+          )}
+
+          {/* Single-SVG 8-Way Compass Perimeter Arrows */}
+          {showArrows && (
+            <svg
+              aria-hidden="true"
+              viewBox="0 0 300 420"
+              className="pointer-events-none absolute inset-0 w-full h-full z-20"
+            >
+              {ALL_ARROW_DIRS.map((dir) => {
+                const isActive = activeArrowSet.has(dir);
+                const isHighlighted = highlightSet?.has(dir) ?? false;
+                return (
+                  <polygon
+                    key={dir}
+                    points={TAROT_ARROW_POLYGONS[dir]}
+                    fill={
+                      isHighlighted
+                        ? '#34f5a8'
+                        : isActive
+                        ? '#ff7b1c'
+                        : 'rgba(255, 255, 255, 0.14)'
+                    }
+                    stroke={isActive || isHighlighted ? '#05070e' : undefined}
+                    strokeWidth={isActive || isHighlighted ? 2.4 : undefined}
+                    strokeLinejoin="round"
+                  />
+                );
+              })}
+            </svg>
+          )}
+
+          {/* Inner Hairline Frame — Proportional Inset Keeps Arrows Clear of Nameplate */}
+          <div className="relative z-10 h-full w-full px-[7.6%] py-[6%]">
+            <div
+              style={{ borderColor: theme.hairline }}
+              className="h-full w-full rounded-[4px] border px-2.5 py-2 flex flex-col justify-between gap-1.5"
+            >
+              {/* 1. Framed Serif Title Plate */}
+              <div
+                style={{ borderColor: theme.hairline }}
+                className="rounded-[2px] border bg-black/25 px-2 py-1 text-center shrink-0"
+              >
+                <div
+                  style={{ color: theme.titleColor }}
+                  className="font-[var(--font-display)] text-[13px] sm:text-[14.5px] font-bold uppercase tracking-[0.09em] leading-[1.15] [text-wrap:balance]"
+                >
+                  {card.name}
+                </div>
+                <div
+                  style={{ color: theme.subtitleColor }}
+                  className="font-[var(--font-serif)] italic text-[11px] sm:text-[12px] leading-tight truncate"
+                >
+                  #{String(card.number).padStart(2, '0')} ·{' '}
+                  {activeAugment ? activeAugment.name : typeRule.title}
+                </div>
+              </div>
+
+              {/* 2. Arched Dome Artwork Window */}
+              <div
+                style={{
+                  borderColor: theme.archBorder,
+                  background: theme.archBackdrop,
+                }}
+                className="relative flex-1 min-h-0 w-full overflow-hidden rounded-t-[999px] rounded-b-[4px] border-[1.5px]"
+              >
+                {imgStage !== 'failed' ? (
+                  <img
+                    src={imgSrc}
+                    alt={card.name}
+                    width={1024}
+                    height={1024}
+                    loading="eager"
+                    decoding="async"
+                    referrerPolicy="no-referrer"
+                    onError={handleImgError}
+                    className={`w-full h-full object-cover object-top pointer-events-none no-touch-callout ${
+                      card.artFilter ?? ''
+                    }`}
+                    draggable={false}
+                  />
+                ) : (
+                  <div
+                    className={`w-full h-full bg-gradient-to-br ${card.accentGradient} flex items-center justify-center`}
+                  >
+                    <Shield className="w-10 h-10 text-amber-300/80" />
+                  </div>
+                )}
+                <div className="pointer-events-none absolute inset-x-0 bottom-0 h-8 bg-gradient-to-t from-black/55 to-transparent" />
+              </div>
+
+              {/* 3. Role · Rarity Rule Divider */}
+              <div className="flex items-center gap-2 shrink-0 px-0.5">
+                <span
+                  style={{ backgroundColor: theme.hairline }}
+                  className="h-px flex-1"
+                />
+                <span
+                  style={{ color: theme.labelColor }}
+                  className="font-[var(--font-display)] text-[8.5px] sm:text-[9.5px] font-semibold uppercase tracking-[0.18em] whitespace-nowrap"
+                >
+                  {card.role} · {theme.tierLabel}
+                </span>
+                <span
+                  style={{ backgroundColor: theme.hairline }}
+                  className="h-px flex-1"
+                />
+              </div>
+
+              {/* 4. Framed Ability / Lore Box */}
+              <div
+                style={{ borderColor: theme.hairline }}
+                className="rounded-[2px] border bg-black/30 px-2 py-1.5 text-center space-y-0.5 shrink-0"
+              >
+                <p className="font-[var(--font-serif)] text-[11px] sm:text-[12px] leading-[1.25] text-slate-100/95 line-clamp-2">
+                  <strong style={{ color: theme.titleColor }} className="font-semibold">
+                    {activeAugment ? `${activeAugment.name}.` : `${typeRule.title}.`}
+                  </strong>{' '}
+                  {activeAugment ? activeAugment.description : typeRule.rule}
+                </p>
+                <p
+                  style={{ color: theme.subtitleColor }}
+                  className="font-[var(--font-serif)] italic text-[10px] sm:text-[11px] leading-tight truncate"
+                >
+                  {activeAugment ? `“${activeAugment.shortTag}”` : typeRule.flavor}
+                </p>
+              </div>
+
+              {/* 5. Four Full-Size Circular Metallic-Ringed Stat Orbs (Hover for Labels) */}
+              <div className="grid grid-cols-4 gap-2 pt-0.5 shrink-0">
+                {tarotStats.map((item, idx) => (
+                  <div
+                    key={item.label}
+                    title={item.tooltip}
+                    className="group/orb relative flex items-center justify-center"
+                  >
+                    <div
+                      style={{ background: theme.orbRingGradient }}
+                      className="w-11 h-11 sm:w-12 sm:h-12 rounded-full p-[1.5px] shadow-[0_2px_8px_rgba(0,0,0,0.65)] transition-transform duration-150 group-hover/orb:scale-108"
+                    >
+                      <div
+                        style={{ background: theme.orbFill }}
+                        className="w-full h-full rounded-full flex items-center justify-center"
+                      >
+                        <span
+                          className={`font-mono text-base sm:text-lg font-bold tabular-nums leading-none ${item.colorClass}`}
+                        >
+                          {item.value}
+                        </span>
+                      </div>
+                    </div>
+                    <span
+                      className={`pointer-events-none absolute -top-7 z-40 whitespace-nowrap rounded-md bg-slate-950/95 border border-amber-400/50 px-1.5 py-0.5 text-[10px] font-mono font-semibold text-amber-100 shadow-lg opacity-0 group-hover/orb:opacity-100 transition-opacity duration-150 ${
+                        idx === 0
+                          ? 'left-0'
+                          : idx === 3
+                          ? 'right-0'
+                          : 'left-1/2 -translate-x-1/2'
+                      }`}
+                    >
+                      {item.tooltip}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      </Tag>
+    );
+  }
+
+  // =========================================================================
+  // SQUARE TACTICAL BOARD / HAND / GALLERY / SHOP VARIANT
+  // =========================================================================
+  const innerInsetClass =
+    size === 'xs' ? 'p-[5px]' : 'px-[8.4%] py-[7%]';
+
+  const orbMaxClass =
+    size === 'sm'
+      ? 'max-w-[24px] sm:max-w-[28px] text-[9.5px] sm:text-[11.5px]'
+      : size === 'lg'
+      ? 'max-w-[38px] sm:max-w-[44px] text-sm sm:text-base'
+      : 'max-w-[30px] sm:max-w-[36px] text-xs sm:text-sm';
+
+  const nameplateTextClass =
+    size === 'sm'
+      ? 'text-[7px] sm:text-[8px]'
+      : size === 'lg'
+      ? 'text-[9px] sm:text-[10.5px]'
+      : 'text-[8px] sm:text-[9px]';
+
+  const squareOrbs = [
+    {
+      key: 'pwr',
+      tooltip: `Attack · ${effectiveStats.power} (${pwrHex})`,
+      value: pwrHex,
+      colorClass: renderStatValueColor(pwrDelta, 'text-white'),
+    },
+    {
+      key: 'type',
+      tooltip: `Type · ${typeShortLabel[effectiveStats.type]} (${effectiveStats.type})`,
+      value: effectiveStats.type,
+      colorClass: TYPE_COLOR[effectiveStats.type],
+    },
+    {
+      key: 'pdef',
+      tooltip: `Phys Def · ${effectiveStats.pDef} (${pDefHex})`,
+      value: pDefHex,
+      colorClass: renderStatValueColor(pDefDelta, 'text-slate-100'),
+    },
+    {
+      key: 'mdef',
+      tooltip: `Magic Def · ${effectiveStats.mDef} (${mDefHex})`,
+      value: mDefHex,
+      colorClass: renderStatValueColor(mDefDelta, 'text-slate-100'),
+    },
+  ];
+
+  const directionsToRender = isCompact ? effectiveArrows : ALL_ARROW_DIRS;
+  const showMediumDetails = size === 'md' || size === 'lg';
 
   return (
     <Tag
@@ -270,27 +591,29 @@ export const GameCard: React.FC<GameCardProps> = ({
         }
       }}
       aria-label={`${card.name}, stats ${pwrHex}${effectiveStats.type}${pDefHex}${mDefHex}, ${effectiveArrows.length} arrows${
-        card.augment ? `, Augment: ${card.augment.description}` : ''
+        activeAugment ? `, Augment: ${activeAugment.description}` : ''
       }`}
-      className={`group relative aspect-square w-full overflow-hidden rounded-xl border-2 ${ownerFrame} ${
-        owner === 'neutral' ? `ring-1 ${rarityStyle.ring}` : ''
-      } ${
+      style={{
+        background: theme.bezelGradient,
+        boxShadow: ownerShadow,
+      }}
+      className={`card-contain group relative aspect-[5/7] w-full overflow-hidden rounded-xl p-[2px] sm:p-[2.5px] ${
         hasActiveBuff
-          ? 'ring-2 ring-emerald-400/80'
+          ? 'ring-2 ring-emerald-400/90'
           : hasActiveDebuff
-          ? 'ring-2 ring-rose-400/80'
+          ? 'ring-2 ring-rose-400/90'
           : ''
-      } bg-slate-950 text-left select-none no-touch-callout transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 ${
+      } text-left select-none no-touch-callout transition-transform duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 ${
         selected
-          ? '-translate-y-2.5 scale-[1.05] ring-2 ring-amber-300 shadow-[0_16px_34px_rgba(245,158,11,0.45)] z-20'
+          ? '-translate-y-2.5 scale-[1.05] ring-2 ring-amber-300 z-20'
           : onClick && !disabled
-          ? 'cursor-pointer hover:-translate-y-1.5 hover:scale-[1.02] hover:shadow-[0_12px_26px_rgba(0,0,0,0.65)] active:scale-[0.97]'
+          ? 'cursor-pointer hover:-translate-y-1 hover:scale-[1.02] active:scale-[0.97]'
           : ''
       } ${
         targetStatus === 'unopposed'
-          ? 'ring-2 ring-emerald-400 shadow-[0_0_22px_rgba(52,211,153,0.65)]'
+          ? 'ring-2 ring-emerald-400'
           : targetStatus === 'clash'
-          ? 'ring-2 ring-amber-400 shadow-[0_0_22px_rgba(251,191,36,0.65)]'
+          ? 'ring-2 ring-amber-400'
           : ''
       } ${disabled ? 'opacity-50 cursor-not-allowed' : ''} ${
         justPlaced ? 'animate-card-drop' : ''
@@ -298,62 +621,190 @@ export const GameCard: React.FC<GameCardProps> = ({
     >
       <div
         key={flipKey ?? 'steady'}
-        className={`relative w-full h-full ${flipKey ? 'animate-card-flip' : ''}`}
+        style={{ background: theme.surfaceGradient }}
+        className={`relative w-full h-full rounded-[9.5px] overflow-hidden ${
+          flipKey ? 'animate-card-flip' : ''
+        }`}
       >
-        {/* Artwork with Unique Per-Card Visual Grading */}
-        {!imgFailed ? (
-          <img
-            src={card.image}
-            alt={card.name}
-            referrerPolicy="no-referrer"
-            onError={() => setImgFailed(true)}
-            className={`w-full h-full object-cover pointer-events-none no-touch-callout transition-transform duration-300 group-hover:scale-[1.04] ${
-              card.artFilter ?? ''
-            }`}
-            draggable={false}
-          />
-        ) : (
+        {ownerWash && (
           <div
-            className={`w-full h-full bg-gradient-to-br ${card.accentGradient} flex flex-col items-center justify-center p-2`}
-          >
-            <Shield className="w-7 h-7 text-amber-400/80 mb-1" />
-            <span className="text-[11px] font-medium text-slate-200 text-center leading-tight">
-              {card.name}
-            </span>
-          </div>
+            className="pointer-events-none absolute inset-0 z-0"
+            style={{ background: ownerWash }}
+          />
         )}
 
-        {/* Owner color scrim & bottom vignette */}
-        <div
-          className={`pointer-events-none absolute inset-0 bg-gradient-to-b ${ownerTint}`}
-        />
-
-        {/* Animated Foil Sheen for Epic & Mythic Cards */}
+        {/* Lightweight Static Foil Sheen on Epic/Mythic Grid Cards (Animates only when Selected) */}
         {isFoil && (
-          <div className="pointer-events-none absolute inset-0 overflow-hidden opacity-45">
-            <div className="animate-foil-shimmer absolute -inset-y-12 w-1/2 bg-gradient-to-r from-transparent via-white/35 to-transparent" />
+          <div className="pointer-events-none absolute inset-0 z-20 overflow-hidden opacity-30">
+            {selected ? (
+              <div
+                className={`animate-foil-shimmer absolute -inset-y-12 w-1/2 bg-gradient-to-r from-transparent ${theme.foilVia} to-transparent`}
+              />
+            ) : (
+              <div
+                className={`absolute inset-0 bg-gradient-to-tr from-transparent ${theme.foilVia} to-transparent opacity-50`}
+              />
+            )}
           </div>
         )}
 
-        {/* Sculpted Beveled Inner Frame + Rarity Gem */}
-        <div
-          className={`pointer-events-none absolute inset-1.5 rounded-[8px] border ${rarityStyle.innerBorder} shadow-[inset_0_1px_0_rgba(255,255,255,0.18)]`}
-        >
-          {!isCompact && (
-            <span
-              className={`absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 rotate-45 border ${rarityStyle.gem}`}
-            />
-          )}
+        {/* Inner Tarot Hairline Frame with Arched Artwork + Circular Stat Orbs */}
+        <div className={`relative z-10 w-full h-full ${innerInsetClass}`}>
+          <div
+            style={{
+              borderColor:
+                owner === 'player'
+                  ? 'rgba(147, 197, 253, 0.55)'
+                  : owner === 'rival'
+                  ? 'rgba(253, 164, 175, 0.55)'
+                  : theme.hairline,
+            }}
+            className="relative w-full h-full rounded-[4px] border flex flex-col items-center justify-between p-[3px] sm:p-[4px] gap-[2px] sm:gap-[3px] bg-black/15"
+          >
+            {/* Optional Serif Nameplate — Standardized Uniform Font Size, Never Truncated */}
+            {showName && !isCompact && !targetStatus && !hasActiveBuff && !hasActiveDebuff && (
+              <div
+                style={{ borderColor: theme.hairline }}
+                className="w-full rounded-[2px] border bg-black/45 px-1 py-[1.5px] text-center shrink-0"
+              >
+                <div
+                  style={{ color: theme.titleColor }}
+                  className={`font-[var(--font-display)] font-bold uppercase tracking-[0.04em] leading-[1.12] [text-wrap:balance] break-words ${nameplateTextClass}`}
+                >
+                  {card.name}
+                </div>
+              </div>
+            )}
+
+            {/* Arched Dome Portrait Frame */}
+            <div
+              style={{
+                borderColor: theme.archBorder,
+                background: theme.archBackdrop,
+              }}
+              className="relative flex-1 min-h-0 w-full overflow-hidden rounded-t-[999px] rounded-b-[3px] border"
+            >
+              {imgStage !== 'failed' ? (
+                <img
+                  src={imgSrc}
+                  alt={card.name}
+                  width={320}
+                  height={320}
+                  loading="lazy"
+                  decoding="async"
+                  referrerPolicy="no-referrer"
+                  onError={handleImgError}
+                  className={`w-full h-full object-cover object-top pointer-events-none no-touch-callout ${
+                    card.artFilter ?? ''
+                  }`}
+                  draggable={false}
+                />
+              ) : (
+                <div
+                  className={`w-full h-full bg-gradient-to-br ${card.accentGradient} flex flex-col items-center justify-center p-1`}
+                >
+                  <Shield className="w-5 h-5 text-amber-300/80" />
+                </div>
+              )}
+
+              <div className="pointer-events-none absolute inset-x-0 bottom-0 h-5 bg-gradient-to-t from-black/60 to-transparent" />
+
+              {!isCompact && activeAugment && !targetStatus && !hasActiveBuff && !hasActiveDebuff && (
+                <div
+                  title={`${activeAugment.name}: ${activeAugment.description}`}
+                  className="pointer-events-none absolute bottom-0.5 inset-x-0.5 z-10 flex justify-center"
+                >
+                  <span className="inline-flex items-center gap-0.5 rounded bg-violet-950/90 border border-violet-300/60 px-1 py-[0.5px] text-[7px] sm:text-[8px] font-mono font-bold text-violet-100 max-w-full">
+                    <Wand2 className="w-2 h-2 text-violet-300 shrink-0" />
+                    <span className="truncate">{activeAugment.badgeLabel}</span>
+                  </span>
+                </div>
+              )}
+            </div>
+
+            {/* Role · Rarity Divider on Medium/Large Rectangular Cards */}
+            {showMediumDetails && (
+              <div className="w-full flex items-center gap-1 px-0.5 shrink-0">
+                <span
+                  style={{ backgroundColor: theme.hairline }}
+                  className="h-px flex-1"
+                />
+                <span
+                  style={{ color: theme.labelColor }}
+                  className="font-[var(--font-display)] text-[6.5px] sm:text-[7.5px] font-semibold uppercase tracking-[0.14em] whitespace-nowrap leading-none"
+                >
+                  {card.role} · {theme.tierLabel}
+                </span>
+                <span
+                  style={{ backgroundColor: theme.hairline }}
+                  className="h-px flex-1"
+                />
+              </div>
+            )}
+
+            {/* Bottom Stat Orbs (4 Circular Metallic-Ringed Badges, or Compact Pill on xs) */}
+            {isCompact ? (
+              <div
+                style={{ borderColor: theme.hairline }}
+                className="inline-flex items-center gap-0.5 rounded bg-black/75 border px-1 py-[1px] font-mono text-[8.5px] font-bold leading-none tabular-nums shrink-0"
+              >
+                <span className={renderStatValueColor(pwrDelta, 'text-white')}>{pwrHex}</span>
+                <span className={TYPE_COLOR[effectiveStats.type]}>{effectiveStats.type}</span>
+                <span className={renderStatValueColor(pDefDelta, 'text-slate-200')}>{pDefHex}</span>
+                <span className={renderStatValueColor(mDefDelta, 'text-slate-200')}>{mDefHex}</span>
+              </div>
+            ) : (
+              <div className="w-full grid grid-cols-4 gap-[3px] sm:gap-[4px] place-items-center shrink-0 pt-[1px]">
+                {squareOrbs.map((orb, idx) => (
+                  <div
+                    key={orb.key}
+                    title={orb.tooltip}
+                    className="group/orb relative w-full flex items-center justify-center min-w-0"
+                  >
+                    <div
+                      style={{
+                        background:
+                          hasActiveBuff
+                            ? 'linear-gradient(145deg, #6ee7b7, #059669)'
+                            : hasActiveDebuff
+                            ? 'linear-gradient(145deg, #fda4af, #e11d48)'
+                            : theme.orbRingGradient,
+                      }}
+                      className={`w-full aspect-square ${orbMaxClass} rounded-full p-[1.25px] transition-transform duration-150 group-hover/orb:scale-108`}
+                    >
+                      <div
+                        style={{ background: theme.orbFill }}
+                        className="w-full h-full rounded-full flex items-center justify-center font-mono font-bold tabular-nums leading-none"
+                      >
+                        <span className={orb.colorClass}>{orb.value}</span>
+                      </div>
+                    </div>
+                    <span
+                      className={`pointer-events-none absolute -top-6 z-40 whitespace-nowrap rounded-md bg-slate-950/95 border border-amber-400/50 px-1.5 py-0.5 text-[9px] sm:text-[10px] font-mono font-semibold text-amber-100 shadow-lg opacity-0 group-hover/orb:opacity-100 transition-opacity duration-150 ${
+                        idx === 0
+                          ? 'left-0'
+                          : idx === 3
+                          ? 'right-0'
+                          : 'left-1/2 -translate-x-1/2'
+                      }`}
+                    >
+                      {orb.tooltip}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Live Board Target Indicator */}
         {targetStatus && (
-          <div className="pointer-events-none absolute inset-x-2 top-2.5 z-30 flex justify-center">
+          <div className="pointer-events-none absolute inset-x-2 top-3 z-30 flex justify-center">
             <span
-              className={`inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider shadow-lg border ${
+              className={`inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[9px] sm:text-[10px] font-bold uppercase tracking-wider shadow border ${
                 targetStatus === 'unopposed'
-                  ? 'bg-emerald-950/90 text-emerald-300 border-emerald-400/80'
-                  : 'bg-amber-950/90 text-amber-200 border-amber-400/80'
+                  ? 'bg-emerald-950/95 text-emerald-300 border-emerald-400/80'
+                  : 'bg-amber-950/95 text-amber-200 border-amber-400/80'
               }`}
             >
               {targetStatus === 'unopposed' ? (
@@ -371,11 +822,11 @@ export const GameCard: React.FC<GameCardProps> = ({
           </div>
         )}
 
-        {/* Active Board Augment Buff / Debuff Pill (when a placed card has been augmented on the board) */}
+        {/* Active Board Augment Buff / Debuff Pill */}
         {(hasActiveBuff || hasActiveDebuff || lastAugmented) && !targetStatus && (
-          <div className="pointer-events-none absolute top-2 inset-x-2 z-20 flex justify-center">
+          <div className="pointer-events-none absolute top-2.5 inset-x-2 z-30 flex justify-center">
             <span
-              className={`inline-flex items-center gap-0.5 rounded px-1.5 py-0.5 text-[9px] sm:text-[10px] font-mono font-bold tracking-tight border shadow ${
+              className={`inline-flex items-center gap-0.5 rounded px-1.5 py-0.5 text-[8.5px] sm:text-[9.5px] font-mono font-bold tracking-tight border shadow ${
                 hasActiveDebuff && !hasActiveBuff
                   ? 'bg-rose-950/95 text-rose-200 border-rose-400/80'
                   : 'bg-emerald-950/95 text-emerald-200 border-emerald-400/80'
@@ -396,128 +847,38 @@ export const GameCard: React.FC<GameCardProps> = ({
           </div>
         )}
 
-        {/* Optional Card Name Banner (Top inset when showName is true and no targetStatus overlay) */}
-        {showName && !targetStatus && !hasActiveBuff && !hasActiveDebuff && (
-          <div className="pointer-events-none absolute top-2 inset-x-2 z-10 flex flex-col items-center gap-0.5">
-            <span className="max-w-full truncate rounded-md bg-slate-950/85 backdrop-blur-[2px] px-1.5 py-0.5 text-[10px] sm:text-[11px] font-semibold text-slate-100 border border-amber-300/20 shadow-[0_2px_6px_rgba(0,0,0,0.85)]">
-              {card.name}
-            </span>
-            {card.augment && (
-              <span
-                title={card.augment.description}
-                className="inline-flex items-center gap-0.5 rounded bg-violet-950/90 border border-violet-400/60 px-1 py-0.2 text-[8px] sm:text-[9px] font-mono font-bold text-violet-200 shadow"
-              >
-                <Wand2 className="w-2 h-2 text-violet-300 shrink-0" />
-                <span>{card.augment.badgeLabel}</span>
-              </span>
-            )}
-          </div>
-        )}
-
-        {/* Compact Augment Crest when showName is false (e.g. on board or compact view) */}
-        {!showName && !isCompact && card.augment && !hasActiveBuff && !hasActiveDebuff && (
-          <div
-            title={`${card.augment.name}: ${card.augment.description}`}
-            className="pointer-events-none absolute top-2 inset-x-2 z-10 flex justify-center"
+        {/* Single-SVG 8-Way Compass Perimeter Arrows (5:7 Rectangular Coordinates) */}
+        {showArrows && (
+          <svg
+            aria-hidden="true"
+            viewBox="0 0 100 140"
+            className="pointer-events-none absolute inset-0 w-full h-full z-20"
           >
-            <span className="inline-flex items-center gap-0.5 rounded bg-violet-950/90 border border-violet-400/60 px-1 py-0.2 text-[8px] sm:text-[9px] font-mono font-bold text-violet-200 shadow">
-              <Wand2 className="w-2 h-2 text-violet-300 shrink-0" />
-              <span className="truncate">{card.augment.badgeLabel}</span>
-            </span>
-          </div>
-        )}
-
-        {/* Embossed FF9 4-Character Hex Stat Plate at Bottom */}
-        <div className="pointer-events-none absolute bottom-2.5 inset-x-1.5 z-10 flex justify-center">
-          <div
-            className={`inline-flex items-center gap-0.5 rounded-md bg-gradient-to-b from-slate-900/95 to-slate-950/95 px-1.5 py-0.5 border ${
-              hasActiveBuff
-                ? 'border-emerald-400/80 shadow-[0_0_10px_rgba(52,211,153,0.45)]'
-                : hasActiveDebuff
-                ? 'border-rose-400/80 shadow-[0_0_10px_rgba(244,63,94,0.45)]'
-                : owner === 'player'
-                ? 'border-blue-400/45'
-                : owner === 'rival'
-                ? 'border-rose-400/45'
-                : 'border-amber-400/35'
-            } shadow-[0_2px_8px_rgba(0,0,0,0.9)] font-mono font-bold tabular-nums ${statTextSize}`}
-            style={{ textShadow: '0 1px 2px rgba(0,0,0,0.95)' }}
-          >
-            <span
-              className={
-                pwrDelta > 0
-                  ? 'text-emerald-300'
-                  : pwrDelta < 0
-                  ? 'text-rose-300'
-                  : 'text-white'
-              }
-            >
-              {pwrHex}
-            </span>
-            <span className={TYPE_COLOR[effectiveStats.type]}>{effectiveStats.type}</span>
-            <span
-              className={
-                pDefDelta > 0
-                  ? 'text-emerald-300'
-                  : pDefDelta < 0
-                  ? 'text-rose-300'
-                  : 'text-slate-200'
-              }
-            >
-              {pDefHex}
-            </span>
-            <span
-              className={
-                mDefDelta > 0
-                  ? 'text-emerald-300'
-                  : mDefDelta < 0
-                  ? 'text-rose-300'
-                  : 'text-slate-200'
-              }
-            >
-              {mDefHex}
-            </span>
-          </div>
-        </div>
-
-        {/* 8-Way Perimeter Gold Arrows (N, NE, E, SE, S, SW, W, NW) */}
-        {showArrows &&
-          effectiveArrows.map((dir) => {
-            const cfg = ARROW_POSITIONS[dir];
-            const isHighlighted = highlightArrows.includes(dir);
-            return (
-              <span
-                key={dir}
-                aria-hidden="true"
-                className={`pointer-events-none absolute ${cfg.posClass} z-20 flex items-center justify-center`}
-              >
-                <svg
-                  viewBox="0 0 12 12"
-                  className={`${
-                    isCompact
-                      ? 'w-2.5 h-2.5'
-                      : size === 'sm'
-                      ? 'w-2.5 h-2.5 sm:w-3 sm:h-3'
-                      : 'w-3.5 h-3.5 sm:w-4 sm:h-4'
-                  } ${cfg.rotation} ${
+            {directionsToRender.map((dir) => {
+              const isActive = activeArrowSet.has(dir);
+              const isHighlighted = highlightSet?.has(dir) ?? false;
+              return (
+                <polygon
+                  key={dir}
+                  points={CARD_ARROW_POLYGONS[dir]}
+                  fill={
                     isHighlighted
-                      ? 'text-emerald-300 scale-125 drop-shadow-[0_0_6px_rgba(52,211,153,0.95)]'
-                      : selected
-                      ? 'text-amber-200 animate-arrow-pulse'
-                      : 'text-amber-300 drop-shadow-[0_1px_2px_rgba(0,0,0,0.95)]'
-                  }`}
-                  fill="currentColor"
-                >
-                  <path
-                    d="M6 0.6L11.2 10H0.8L6 0.6Z"
-                    stroke="rgba(15,23,42,0.85)"
-                    strokeWidth="0.9"
-                  />
-                </svg>
-              </span>
-            );
-          })}
+                      ? '#34f5a8'
+                      : isActive
+                      ? '#ff7b1c'
+                      : 'rgba(255, 255, 255, 0.14)'
+                  }
+                  stroke={isActive || isHighlighted ? '#05070e' : undefined}
+                  strokeWidth={isActive || isHighlighted ? 1.15 : undefined}
+                  strokeLinejoin="round"
+                />
+              );
+            })}
+          </svg>
+        )}
       </div>
     </Tag>
   );
 };
+
+export const GameCard = React.memo(GameCardInner);

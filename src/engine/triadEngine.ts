@@ -2,6 +2,7 @@ import {
   CARD_MAP,
   CARDS,
   getStatsPowerScore,
+  resolveCardAugment,
   rollCardArrows,
   rollCardStats,
 } from '../data/cards';
@@ -21,8 +22,9 @@ import {
   TetraStats,
 } from '../types/game';
 
-export const BOARD_SIZE = 5;
+export const BOARD_SIZE = 4;
 export const HAND_SIZE = 7;
+export const BLOCKED_TILE_COUNT = BOARD_SIZE * BOARD_SIZE - HAND_SIZE * 2; // 2 sealed tiles + 14 cards = full 16-tile 4x4 board
 
 export const EIGHT_DIRS: {
   dr: number;
@@ -60,8 +62,9 @@ export function cloneBoard(board: BoardCell[][]): BoardCell[][] {
 }
 
 /**
- * Creates a tactical 5x5 Sanctuary Board (25 tiles)
- * with 2 to 6 randomly placed stone monoliths (always leaving 19-23 open tiles for 14 played cards).
+ * Creates a tactical 4x4 Sanctuary Board (16 tiles)
+ * with 2 randomly placed sealed obsidian monoliths so 7 player cards + 7 rival cards (14 total)
+ * fill every open socket on the board by the final turn.
  */
 export function createBoard(): BoardCell[][] {
   const size = BOARD_SIZE;
@@ -74,9 +77,7 @@ export function createBoard(): BoardCell[][] {
     }))
   );
 
-  // Randomly roll 2 to 6 blocked monoliths across the 5x5 grid
-  const blockCounts = [2, 3, 3, 4, 4, 4, 5, 5, 6];
-  const blockCount = blockCounts[Math.floor(Math.random() * blockCounts.length)];
+  const blockCount = BLOCKED_TILE_COUNT;
 
   const coords: [number, number][] = [];
   for (let r = 0; r < size; r++) {
@@ -106,9 +107,15 @@ export function createBoard(): BoardCell[][] {
  */
 export function buildOpponentHand(fighterId: string): HandCard[] {
   const fighter = FIGHTER_MAP[fighterId] ?? ALL_FIGHTERS[0];
-  const eligible = CARDS.filter(
+  const baseEligible = CARDS.filter(
     (c) => c.number >= fighter.minCardNumber && c.number <= fighter.maxCardNumber
   );
+  // Also include expansion cards (#91+) whose rarity matches the fighter's tier rarities
+  const allowedRarities = new Set(baseEligible.map((c) => c.rarity));
+  const expansionEligible = CARDS.filter(
+    (c) => c.number > 90 && allowedRarities.has(c.rarity)
+  );
+  const eligible = [...baseEligible, ...expansionEligible];
 
   const chosenIds: string[] = [];
 
@@ -201,6 +208,7 @@ export function buildPlayerHand(
     cardId: inst.cardId,
     stats: { ...inst.stats },
     arrows: [...inst.arrows],
+    augmentId: inst.augmentId,
   }));
 }
 
@@ -306,6 +314,7 @@ export function resolvePlacement(
     stats: { ...handCard.stats },
     baseStats: { ...handCard.stats },
     arrows: [...handCard.arrows],
+    augmentId: handCard.augmentId,
     justPlaced: true,
   };
   cell.card = placed;
@@ -314,9 +323,10 @@ export function resolvePlacement(
   const clashes: ClashDetail[] = [];
   const augments: AugmentEvent[] = [];
 
-  // 0. Trigger On-Play Battlefield Augment (buffing already-placed allies or sundering adjacent rivals)
-  if (def?.augment) {
-    const aug = def.augment;
+  // 0. Trigger On-Play Battlefield Augment (crafted per-copy Rune or innate Mythic Legendary trait)
+  const activeAugment = resolveCardAugment(handCard.cardId, handCard.augmentId);
+  if (activeAugment) {
+    const aug = activeAugment;
     const isBuff =
       aug.powerDelta >= 0 && aug.pDefDelta >= 0 && aug.mDefDelta >= 0;
 

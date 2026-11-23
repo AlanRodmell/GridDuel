@@ -6,6 +6,7 @@ export interface CardPreviewData {
   stats: TetraStats;
   baseStats?: TetraStats;
   arrows: ArrowDir[];
+  augmentId?: string;
   owner?: Owner | 'neutral';
   lastAugmented?: {
     label: string;

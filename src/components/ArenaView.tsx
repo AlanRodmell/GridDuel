@@ -1,12 +1,14 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
+  ArrowLeft,
   Check,
   ChevronRight,
   Coins,
   Compass,
   Crown,
+  Dices,
   Flag,
-  HelpCircle,
+  Home,
   Lock,
   Play,
   RefreshCw,
@@ -22,6 +24,8 @@ import {
   CARDS,
   MAX_COPIES_PER_CARD,
   formatTetraCode,
+  getCardThumbUrl,
+  resolveCardAugment,
   rollCardArrows,
   rollCardStats,
   toHexDigit,
@@ -34,6 +38,7 @@ import {
   isTierUnlocked,
 } from '../data/ladder';
 import {
+  EIGHT_DIRS,
   HAND_SIZE,
   buildOpponentHand,
   buildPlayerHand,
@@ -43,7 +48,9 @@ import {
   isBoardFull,
   resolvePlacement,
 } from '../engine/triadEngine';
+import { AutoBuildStrategy } from '../store/useProfile';
 import {
+  ArrowDir,
   BoardCell,
   ClashDetail,
   DeckSlot,
@@ -52,14 +59,34 @@ import {
   MatchSummary,
   Owner,
   PlayerProfile,
+  Rarity,
 } from '../types/game';
 import { sound } from '../utils/sound';
+import { DeckBuilderWorkspace } from './DeckBuilderWorkspace';
 import { GameCard } from './GameCard';
+import { PlayLaunchIntent } from './HomeView';
+
+type SetupStep = 'mode' | 'details' | 'deck';
+type MatchMode = 'arena' | 'quick';
+
+const SPOIL_RARITY_TEXT: Record<Rarity, string> = {
+  common: 'text-slate-300',
+  rare: 'text-sky-300',
+  epic: 'text-violet-300',
+  mythic: 'text-amber-300',
+};
 
 interface ArenaViewProps {
   profile: PlayerProfile;
   activeDeck: DeckSlot;
+  initialIntent?: PlayLaunchIntent;
+  launchNonce?: number;
   onSelectDeckSlot: (index: number) => void;
+  onCreateDeck: (name?: string, duplicateFromIndex?: number) => { ok: boolean; message?: string };
+  onRenameDeck: (index: number, newName: string) => void;
+  onDeleteDeck: (index: number) => { ok: boolean; message?: string };
+  onToggleDeckCard: (uidOrCardId: string) => { ok: boolean; message?: string };
+  onAutoBuildDeck: (strategy: AutoBuildStrategy) => void;
   onRecordMatch: (params: {
     fighterId: string;
     winner: 'player' | 'rival' | 'draw';
@@ -70,6 +97,7 @@ interface ArenaViewProps {
   onClaimSpoil: (
     spoilCard: HandCard
   ) => { isNew: boolean; wasOverflow: boolean; bonusGold: number; copyCount: number };
+  onGoHome: () => void;
   onGoToGallery: () => void;
   onOpenRules: () => void;
   onMatchThemeChange?: (theme: 'tavern' | 'duel' | 'boss') => void;
@@ -78,13 +106,28 @@ interface ArenaViewProps {
 export const ArenaView: React.FC<ArenaViewProps> = ({
   profile,
   activeDeck,
+  initialIntent = 'choose',
+  launchNonce = 0,
   onSelectDeckSlot,
+  onCreateDeck,
+  onRenameDeck,
+  onDeleteDeck,
+  onToggleDeckCard,
+  onAutoBuildDeck,
   onRecordMatch,
   onClaimSpoil,
+  onGoHome,
   onGoToGallery,
   onOpenRules,
   onMatchThemeChange,
 }) => {
+  const [setupStep, setSetupStep] = useState<SetupStep>(
+    initialIntent === 'choose' ? 'mode' : 'details'
+  );
+  const [gameMode, setGameMode] = useState<MatchMode>(
+    initialIntent === 'quick' ? 'quick' : 'arena'
+  );
+  const [quickPool, setQuickPool] = useState<'unlocked' | 'all'>('unlocked');
   const [selectedTierNum, setSelectedTierNum] = useState<number>(1);
   const [selectedFighterId, setSelectedFighterId] = useState<string>('t1-f1');
   const [phase, setPhase] = useState<MatchPhase>('setup');
@@ -101,13 +144,49 @@ export const ArenaView: React.FC<ArenaViewProps> = ({
   const [callout, setCallout] = useState<{ id: number; text: string } | null>(null);
   const [activeClash, setActiveClash] = useState<ClashDetail | null>(null);
   const [lastBattleLog, setLastBattleLog] = useState<string>(
-    'Select a card from your 7-card hand, then tap any open stone socket on the 5×5 board.'
+    'Drag or tap a card from your 7-card hand onto any open socket on the 4×4 board.'
   );
   const [playerFlipsCount, setPlayerFlipsCount] = useState(0);
   const [playerCombosCount, setPlayerCombosCount] = useState(0);
   const [summary, setSummary] = useState<MatchSummary | null>(null);
 
+  // Tactile 60fps card drag-and-drop state
+  const [draggingCard, setDraggingCard] = useState<{
+    card: HandCard;
+    width: number;
+    originLeft: number;
+    originTop: number;
+    returning: boolean;
+  } | null>(null);
+  const [hoverCell, setHoverCell] = useState<{ row: number; col: number } | null>(null);
+
   const timersRef = useRef<number[]>([]);
+  const boardGridRef = useRef<HTMLDivElement | null>(null);
+  const dragGhostRef = useRef<HTMLDivElement | null>(null);
+  const dragRafRef = useRef<number | null>(null);
+  const hoverCellRef = useRef<{ row: number; col: number } | null>(null);
+  const suppressHandClickUntilRef = useRef<number>(0);
+  const cachedCellsRef = useRef<
+    { row: number; col: number; left: number; right: number; top: number; bottom: number }[]
+  >([]);
+  const dragPendingRef = useRef<{
+    card: HandCard;
+    pointerId: number;
+    pointerType: string;
+    startX: number;
+    startY: number;
+    originLeft: number;
+    originTop: number;
+    width: number;
+    offsetX: number;
+    offsetY: number;
+    active: boolean;
+    curX: number;
+    curY: number;
+    targetX: number;
+    targetY: number;
+    tilt: number;
+  } | null>(null);
 
   const clearTimers = useCallback(() => {
     for (const t of timersRef.current) {
@@ -199,7 +278,7 @@ export const ArenaView: React.FC<ArenaViewProps> = ({
       setSummary(null);
       setIsAnimating(false);
       setLastBattleLog(
-        `5×5 Duel vs ${fighter.name} (${blockedCount} blocked tiles). ${
+        `4×4 Duel vs ${fighter.name} (${blockedCount} sealed monoliths · 14 cards fill the board). ${
           starter === 'player' ? 'Your move!' : `${fighter.name} leads.`
         }`
       );
@@ -353,10 +432,11 @@ export const ArenaView: React.FC<ArenaViewProps> = ({
 
       const comboFlips = resolution.flips.filter((f) => f.reason === 'combo').length;
       const unopposedFlips = resolution.flips.filter((f) => f.reason === 'unopposed').length;
+      const activeAugment = resolveCardAugment(chosen.cardId, chosen.augmentId);
       const augCount = resolution.augments.length;
       const augSuffix =
-        augCount > 0 && chosenDef.augment
-          ? ` · ${chosenDef.augment.name} (${chosenDef.augment.shortTag} ×${augCount})`
+        augCount > 0 && activeAugment
+          ? ` · ${activeAugment.name} (${activeAugment.shortTag} ×${augCount})`
           : '';
 
       let updatedFlips = playerFlipsCount;
@@ -415,15 +495,15 @@ export const ArenaView: React.FC<ArenaViewProps> = ({
         }, 110);
         timersRef.current.push(soundTimer);
         showCallout(unopposedFlips > 1 ? `Multi-Capture ×${unopposedFlips}` : 'Unopposed Capture');
-      } else if (augCount > 0 && chosenDef.augment) {
+      } else if (augCount > 0 && activeAugment) {
         setActiveClash(null);
         setLastBattleLog(
-          `${chosenDef.name} activated ${chosenDef.augment.name}: ${chosenDef.augment.shortTag} on ${augCount} card${
+          `${chosenDef.name} activated ${activeAugment.name}: ${activeAugment.shortTag} on ${augCount} card${
             augCount > 1 ? 's' : ''
           }!`
         );
         sound.select();
-        showCallout(`${chosenDef.augment.name} (${chosenDef.augment.shortTag})`);
+        showCallout(`${activeAugment.name} (${activeAugment.shortTag})`);
       } else {
         setActiveClash(null);
         setLastBattleLog(
@@ -489,7 +569,244 @@ export const ArenaView: React.FC<ArenaViewProps> = ({
     if (!selectedHandUid) return;
     const cell = board[row]?.[col];
     if (!cell || cell.blocked || cell.card) return;
+    setHoverCell(null);
+    hoverCellRef.current = null;
     executeMove('player', selectedHandUid, row, col);
+  };
+
+  // Clear drag state if turn or match phase ends
+  useEffect(() => {
+    if (phase !== 'playing' || turn !== 'player' || isAnimating) {
+      if (dragRafRef.current !== null) {
+        window.cancelAnimationFrame(dragRafRef.current);
+        dragRafRef.current = null;
+      }
+      dragPendingRef.current = null;
+      setDraggingCard(null);
+      setHoverCell(null);
+      hoverCellRef.current = null;
+    }
+  }, [isAnimating, phase, turn]);
+
+  // Global pointer tracking for silky 60fps card drag & spring return
+  useEffect(() => {
+    const startPhysicsLoop = () => {
+      if (dragRafRef.current !== null) return;
+      const tick = () => {
+        const d = dragPendingRef.current;
+        const ghost = dragGhostRef.current;
+        if (!d || !d.active) {
+          dragRafRef.current = null;
+          return;
+        }
+        const dx = d.targetX - d.curX;
+        const dy = d.targetY - d.curY;
+        // Smooth follow + subtle velocity-driven tilt
+        d.curX += dx * 0.42;
+        d.curY += dy * 0.42;
+        const targetTilt = Math.max(-14, Math.min(14, dx * 0.55));
+        d.tilt += (targetTilt - d.tilt) * 0.28;
+
+        if (ghost) {
+          ghost.style.transform = `translate3d(${d.curX.toFixed(1)}px, ${d.curY.toFixed(
+            1
+          )}px, 0) rotate(${d.tilt.toFixed(2)}deg) scale(1.08)`;
+        }
+        dragRafRef.current = window.requestAnimationFrame(tick);
+      };
+      dragRafRef.current = window.requestAnimationFrame(tick);
+    };
+
+    const handlePointerMove = (e: PointerEvent) => {
+      const d = dragPendingRef.current;
+      if (!d || e.pointerId !== d.pointerId) return;
+
+      const moveDx = e.clientX - d.startX;
+      const moveDy = e.clientY - d.startY;
+      const dist = Math.hypot(moveDx, moveDy);
+
+      if (!d.active) {
+        const threshold = d.pointerType === 'touch' ? 11 : 6;
+        if (dist < threshold) return;
+
+        // On touch, allow horizontal scrolling in the mobile hand tray unless dragging upward/vertically
+        if (d.pointerType === 'touch' && Math.abs(moveDx) > Math.abs(moveDy) * 1.35) {
+          dragPendingRef.current = null;
+          return;
+        }
+
+        d.active = true;
+        suppressHandClickUntilRef.current = Date.now() + 450;
+
+        // Cache open board cell bounding rects once for zero-reflow hit testing
+        const cells: typeof cachedCellsRef.current = [];
+        if (boardGridRef.current) {
+          const nodes = boardGridRef.current.querySelectorAll<HTMLElement>('[data-drop-row]');
+          nodes.forEach((node) => {
+            const r = Number(node.dataset.dropRow);
+            const c = Number(node.dataset.dropCol);
+            const rect = node.getBoundingClientRect();
+            cells.push({
+              row: r,
+              col: c,
+              left: rect.left,
+              right: rect.right,
+              top: rect.top,
+              bottom: rect.bottom,
+            });
+          });
+        }
+        cachedCellsRef.current = cells;
+
+        const touchLiftY = d.pointerType === 'touch' ? 28 : 0;
+        d.curX = d.originLeft;
+        d.curY = d.originTop;
+        d.targetX = e.clientX - d.offsetX;
+        d.targetY = e.clientY - d.offsetY - touchLiftY;
+        d.tilt = 0;
+
+        setSelectedHandUid(d.card.uid);
+        setDraggingCard({
+          card: d.card,
+          width: d.width,
+          originLeft: d.originLeft,
+          originTop: d.originTop,
+          returning: false,
+        });
+        sound.select();
+        startPhysicsLoop();
+      }
+
+      if (d.pointerType === 'touch') {
+        e.preventDefault();
+      }
+
+      const touchLiftY = d.pointerType === 'touch' ? 28 : 0;
+      d.targetX = e.clientX - d.offsetX;
+      d.targetY = e.clientY - d.offsetY - touchLiftY;
+
+      // Hit-test pointer against cached open sockets
+      const hitY = e.clientY - (d.pointerType === 'touch' ? 18 : 0);
+      let matched: { row: number; col: number } | null = null;
+      for (const rect of cachedCellsRef.current) {
+        if (
+          e.clientX >= rect.left &&
+          e.clientX <= rect.right &&
+          hitY >= rect.top &&
+          hitY <= rect.bottom
+        ) {
+          matched = { row: rect.row, col: rect.col };
+          break;
+        }
+      }
+
+      const prev = hoverCellRef.current;
+      if (prev?.row !== matched?.row || prev?.col !== matched?.col) {
+        hoverCellRef.current = matched;
+        setHoverCell(matched);
+        if (matched) {
+          sound.hover();
+        }
+      }
+    };
+
+    const handlePointerUp = (e: PointerEvent) => {
+      const d = dragPendingRef.current;
+      if (!d || e.pointerId !== d.pointerId) return;
+
+      const wasActive = d.active;
+      const dropTarget = hoverCellRef.current;
+      const draggedCard = d.card;
+      const originLeft = d.originLeft;
+      const originTop = d.originTop;
+      const width = d.width;
+
+      dragPendingRef.current = null;
+      if (dragRafRef.current !== null) {
+        window.cancelAnimationFrame(dragRafRef.current);
+        dragRafRef.current = null;
+      }
+
+      if (!wasActive) return;
+
+      suppressHandClickUntilRef.current = Date.now() + 350;
+      hoverCellRef.current = null;
+      setHoverCell(null);
+
+      if (dropTarget) {
+        const cell = board[dropTarget.row]?.[dropTarget.col];
+        if (cell && !cell.blocked && !cell.card) {
+          setDraggingCard(null);
+          executeMove('player', draggedCard.uid, dropTarget.row, dropTarget.col);
+          return;
+        }
+      }
+
+      // Spring-return smoothly back to the card's original hand slot
+      setDraggingCard({
+        card: draggedCard,
+        width,
+        originLeft,
+        originTop,
+        returning: true,
+      });
+
+      window.requestAnimationFrame(() => {
+        if (dragGhostRef.current) {
+          dragGhostRef.current.style.transition =
+            'transform 220ms cubic-bezier(0.22, 1, 0.36, 1), opacity 220ms ease-out';
+          dragGhostRef.current.style.transform = `translate3d(${originLeft}px, ${originTop}px, 0) rotate(0deg) scale(1)`;
+          dragGhostRef.current.style.opacity = '0.88';
+        }
+      });
+
+      const clearTimer = window.setTimeout(() => {
+        setDraggingCard((cur) => (cur?.returning ? null : cur));
+      }, 225);
+      timersRef.current.push(clearTimer);
+    };
+
+    window.addEventListener('pointermove', handlePointerMove, { passive: false });
+    window.addEventListener('pointerup', handlePointerUp);
+    window.addEventListener('pointercancel', handlePointerUp);
+    return () => {
+      window.removeEventListener('pointermove', handlePointerMove);
+      window.removeEventListener('pointerup', handlePointerUp);
+      window.removeEventListener('pointercancel', handlePointerUp);
+      if (dragRafRef.current !== null) {
+        window.cancelAnimationFrame(dragRafRef.current);
+        dragRafRef.current = null;
+      }
+    };
+  }, [board, executeMove]);
+
+  const handleHandCardPointerDown = (e: React.PointerEvent<HTMLDivElement>, hCard: HandCard) => {
+    if (phase !== 'playing' || turn !== 'player' || isAnimating) return;
+    if (e.pointerType === 'mouse' && e.button !== 0) return;
+    const rect = e.currentTarget.getBoundingClientRect();
+    const ghostWidth = Math.min(Math.max(rect.width, 96), 124);
+    const scaleOffsetX = ((e.clientX - rect.left) / Math.max(rect.width, 1)) * ghostWidth;
+    const ghostHeight = (ghostWidth * 7) / 5;
+    const scaleOffsetY = ((e.clientY - rect.top) / Math.max(rect.height, 1)) * ghostHeight;
+
+    dragPendingRef.current = {
+      card: hCard,
+      pointerId: e.pointerId,
+      pointerType: e.pointerType,
+      startX: e.clientX,
+      startY: e.clientY,
+      originLeft: rect.left,
+      originTop: rect.top,
+      width: ghostWidth,
+      offsetX: scaleOffsetX,
+      offsetY: scaleOffsetY,
+      active: false,
+      curX: rect.left,
+      curY: rect.top,
+      targetX: rect.left,
+      targetY: rect.top,
+      tilt: 0,
+    };
   };
 
   const handleConcede = () => {
@@ -532,305 +849,471 @@ export const ArenaView: React.FC<ArenaViewProps> = ({
     return selectedHandCard ? CARD_MAP[selectedHandCard.cardId] ?? null : null;
   }, [selectedHandCard]);
 
+  // Live tactical Capture / Clash preview when dragging or hovering an open board socket
+  const hoverTacticalPreview = useMemo(() => {
+    const activeCard = draggingCard?.card ?? selectedHandCard;
+    if (
+      !hoverCell ||
+      !activeCard ||
+      phase !== 'playing' ||
+      turn !== 'player' ||
+      isAnimating
+    ) {
+      return {
+        targetMap: {} as Record<string, 'unopposed' | 'clash'>,
+        highlightArrows: [] as ArrowDir[],
+      };
+    }
+
+    const targetMap: Record<string, 'unopposed' | 'clash'> = {};
+    const highlightArrows: ArrowDir[] = [];
+    const size = board.length;
+
+    for (const dir of EIGHT_DIRS) {
+      if (!activeCard.arrows.includes(dir.myArrow)) continue;
+      const nr = hoverCell.row + dir.dr;
+      const nc = hoverCell.col + dir.dc;
+      if (nr < 0 || nr >= size || nc < 0 || nc >= size) continue;
+      const neighbor = board[nr]?.[nc]?.card;
+      if (!neighbor || neighbor.owner === 'player') continue;
+
+      const pointsBack = neighbor.arrows.includes(dir.oppArrow);
+      targetMap[`${nr}-${nc}`] = pointsBack ? 'clash' : 'unopposed';
+      highlightArrows.push(dir.myArrow);
+    }
+
+    return { targetMap, highlightArrows };
+  }, [board, draggingCard, hoverCell, isAnimating, phase, selectedHandCard, turn]);
+
   const previewDeckHand = useMemo(
     () => buildPlayerHand(activeDeck.cards, profile.inventory),
     [activeDeck.cards, profile.inventory]
   );
+
+  const rollRandomFighter = useCallback(
+    (pool: 'unlocked' | 'all', excludeId?: string) => {
+      const candidates =
+        pool === 'all'
+          ? ALL_FIGHTERS
+          : ALL_FIGHTERS.filter((f) => isTierUnlocked(f.tierNumber, profile.fighterWins ?? {}));
+      const basePool = candidates.length > 0 ? candidates : ALL_FIGHTERS;
+      const filtered =
+        basePool.length > 1 && excludeId
+          ? basePool.filter((f) => f.id !== excludeId)
+          : basePool;
+      const picked = filtered[Math.floor(Math.random() * filtered.length)] ?? ALL_FIGHTERS[0];
+      setSelectedTierNum(picked.tierNumber);
+      setSelectedFighterId(picked.id);
+      return picked;
+    },
+    [profile.fighterWins]
+  );
+
+  // Sync setup step when launched from Home CTA (Play a Match / Arena / Quick Random Duel)
+  useEffect(() => {
+    if (launchNonce === 0) return;
+    setPhase('setup');
+    if (initialIntent === 'quick') {
+      setGameMode('quick');
+      setSetupStep('details');
+      rollRandomFighter(quickPool);
+    } else if (initialIntent === 'arena') {
+      setGameMode('arena');
+      setSetupStep('details');
+    } else {
+      setSetupStep('mode');
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [launchNonce, initialIntent]);
+
   const playerAvatarCard =
     CARD_MAP[previewDeckHand[0]?.cardId ?? 'ember-imp'] ?? CARD_MAP['ember-imp'];
   const rivalAvatarCard = CARD_MAP[currentFighter.avatarCardId] ?? CARD_MAP['ember-imp'];
-  const currentTierUnlocked = isTierUnlocked(currentTier.tierNumber, profile.fighterWins ?? {});
+  const currentTierUnlocked =
+    gameMode === 'quick' || isTierUnlocked(currentTier.tierNumber, profile.fighterWins ?? {});
   const currentTierProg = getTierProgress(currentTier.tierNumber, profile.fighterWins ?? {});
 
-  // ==================== SETUP VIEW (10-TIER CHALLENGER LADDER) ====================
+  // ==================== GUIDED SETUP FLOW (MODE → DETAILS → DECK) ====================
   if (phase === 'setup') {
+    const stepOrder: { id: SetupStep; num: number; label: string }[] = [
+      { id: 'mode', num: 1, label: 'Mode' },
+      { id: 'details', num: 2, label: gameMode === 'quick' ? 'Random Rival' : 'Challenger' },
+      { id: 'deck', num: 3, label: 'Deck' },
+    ];
+    const currentStepIdx = stepOrder.findIndex((s) => s.id === setupStep);
+
+    const handleStepBack = () => {
+      sound.select();
+      if (setupStep === 'deck') {
+        setSetupStep('details');
+      } else if (setupStep === 'details') {
+        setSetupStep('mode');
+      } else {
+        onGoHome();
+      }
+    };
+
     return (
-      <div className="w-full max-w-6xl mx-auto px-4 sm:px-6 py-5 sm:py-7 space-y-6">
-        {/* Top Ladder Header & Overall Conquest Progress */}
-        <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
-          <div>
-            <h1 className="font-[var(--font-display)] text-2xl sm:text-3xl font-bold text-slate-100 tracking-wide [text-wrap:balance]">
-              10-Tier Challenger Ladder
-            </h1>
-            <p className="text-sm text-slate-400 mt-1">
-              Conquer challengers in each tier to claim their cards and unlock higher ranks.
-            </p>
-          </div>
+      <div
+        className={`w-full ${
+          setupStep === 'deck' ? 'max-w-[1440px]' : 'max-w-5xl'
+        } mx-auto px-4 sm:px-6 py-5 sm:py-8 space-y-5 sm:space-y-6`}
+      >
+        {/* Clean Minimal Breadcrumb & Back Bar */}
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <button
+            type="button"
+            onClick={handleStepBack}
+            className="inline-flex items-center gap-1.5 min-h-[38px] px-3 py-1.5 rounded-xl bg-[#10182a] hover:bg-slate-800 border border-slate-800 text-xs sm:text-sm font-medium text-slate-300 hover:text-white transition-colors cursor-pointer"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            <span>
+              {setupStep === 'mode'
+                ? 'Home'
+                : setupStep === 'details'
+                ? 'Choose Mode'
+                : 'Change Opponent'}
+            </span>
+          </button>
 
-          <div className="flex items-center gap-4 text-xs sm:text-sm">
-            <div className="rounded-xl bg-[#10182a] border border-slate-800 px-3.5 py-2 flex items-center gap-2">
-              <Crown className="w-4 h-4 text-amber-400" />
-              <span className="text-slate-400">Challengers Conquered:</span>
-              <span className="font-mono font-bold tabular-nums text-amber-300">
-                {totalConqueredFighters} / {ALL_FIGHTERS.length}
-              </span>
-            </div>
-          </div>
-        </div>
-
-        {/* 10-Tier Horizontal Ladder Navigation Strip */}
-        <div className="grid grid-cols-2 sm:grid-cols-5 lg:grid-cols-10 gap-2">
-          {LADDER_TIERS.map((tier) => {
-            const unlocked = isTierUnlocked(tier.tierNumber, profile.fighterWins ?? {});
-            const prog = getTierProgress(tier.tierNumber, profile.fighterWins ?? {});
-            const isSelected = tier.tierNumber === selectedTierNum;
-            const isCleared = prog.defeated === prog.total;
-
-            return (
-              <button
-                key={tier.tierNumber}
-                type="button"
-                onClick={() => handleSelectTier(tier.tierNumber)}
-                className={`group relative rounded-xl p-2.5 text-left border transition-all duration-150 cursor-pointer ${
-                  isSelected
-                    ? 'bg-gradient-to-b from-[#1e2c4e] to-[#121b31] border-amber-400 shadow-[0_6px_18px_rgba(245,158,11,0.25)] -translate-y-0.5'
-                    : unlocked
-                    ? 'bg-[#10182a] border-slate-800 hover:border-slate-700'
-                    : 'bg-[#0b101c] border-slate-900/90 opacity-65 hover:opacity-90'
-                }`}
-              >
-                <div className="flex items-center justify-between gap-1">
-                  <span
-                    className={`font-[var(--font-display)] text-xs font-bold ${
-                      isSelected
-                        ? 'text-amber-200'
-                        : unlocked
-                        ? 'text-slate-200'
-                        : 'text-slate-500'
+          <nav aria-label="Match setup steps" className="flex items-center gap-1.5 sm:gap-2">
+            {stepOrder.map((step, idx) => {
+              const isCurrent = step.id === setupStep;
+              const isCompleted = idx < currentStepIdx;
+              const canJump = idx < currentStepIdx;
+              return (
+                <React.Fragment key={step.id}>
+                  <button
+                    type="button"
+                    disabled={!canJump}
+                    onClick={() => {
+                      if (!canJump) return;
+                      sound.select();
+                      setSetupStep(step.id);
+                    }}
+                    className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium transition-colors ${
+                      isCurrent
+                        ? 'bg-amber-500/20 border border-amber-400/50 text-amber-200 font-semibold'
+                        : isCompleted
+                        ? 'bg-slate-900 border border-slate-700 text-slate-200 hover:text-amber-200 cursor-pointer'
+                        : 'text-slate-500 border border-transparent cursor-default'
                     }`}
                   >
-                    Tier {tier.tierNumber}
-                  </span>
-                  {!unlocked ? (
-                    <Lock className="w-3.5 h-3.5 text-slate-500 shrink-0" />
-                  ) : isCleared ? (
-                    <Crown className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-                  ) : (
-                    <span className="font-mono text-[11px] tabular-nums text-slate-400">
-                      {prog.defeated}/{prog.total}
-                    </span>
+                    <span className="font-mono text-[11px]">{step.num}.</span>
+                    <span>{step.label}</span>
+                  </button>
+                  {idx < stepOrder.length - 1 && (
+                    <ChevronRight className="w-3.5 h-3.5 text-slate-600 shrink-0" />
                   )}
-                </div>
-
-                <div className="mt-1.5 h-1.5 rounded-full bg-slate-800/90 overflow-hidden">
-                  <div
-                    className={`h-full transition-all duration-300 ${
-                      isCleared
-                        ? 'bg-amber-400'
-                        : unlocked
-                        ? 'bg-sky-400'
-                        : 'bg-slate-700'
-                    }`}
-                    style={{
-                      width: `${prog.total > 0 ? Math.round((prog.defeated / prog.total) * 100) : 0}%`,
-                    }}
-                  />
-                </div>
-              </button>
-            );
-          })}
+                </React.Fragment>
+              );
+            })}
+          </nav>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-7 items-start">
-          {/* Left Column: Selected Tier Roster (5 Fighters in Tiers 1-6, 4 in Tiers 7-8, 3 in Tier 9, 2 in Tier 10) */}
-          <div className="lg:col-span-7 space-y-4">
-            {/* Tier Banner & Unlock Condition */}
-            <div className="rounded-2xl bg-[#10182a] border border-slate-800/90 p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-              <div className="space-y-1">
-                <div className="flex items-center gap-2">
-                  <h2 className="font-[var(--font-display)] text-lg sm:text-xl font-bold text-slate-100">
-                    {currentTier.name}
-                  </h2>
-                  {!currentTierUnlocked && (
-                    <span className="inline-flex items-center gap-1 text-xs font-semibold text-rose-300">
-                      <Lock className="w-3.5 h-3.5" />
-                      <span>Locked</span>
-                    </span>
-                  )}
-                </div>
-                <p className="text-xs text-slate-400">{currentTier.regionSubtitle}</p>
-              </div>
+        {/* --------------------------------------------------------------- */}
+        {/* STEP 1: MODE SELECTION                                          */}
+        {/* --------------------------------------------------------------- */}
+        {setupStep === 'mode' && (
+          <div className="space-y-6">
+            <div className="text-center space-y-2 max-w-xl mx-auto">
+              <h1 className="font-[var(--font-display)] text-2xl sm:text-3xl font-bold text-slate-100 tracking-wide">
+                Choose Battle Mode
+              </h1>
+              <p className="text-sm text-slate-400">
+                Climb the ranked 10-Tier Arena ladder or jump straight into a one-off exhibition
+                against a random opponent.
+              </p>
+            </div>
 
-              <div className="text-left sm:text-right shrink-0 space-y-0.5">
-                <div className={`text-xs font-semibold ${currentTier.accentColor}`}>
-                  Pool: {currentTier.cardRangeLabel}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5 max-w-4xl mx-auto pt-2">
+              {/* Mode Card 1: Championship Arena */}
+              <button
+                type="button"
+                onClick={() => {
+                  sound.select();
+                  setGameMode('arena');
+                  setSetupStep('details');
+                }}
+                className="group rounded-3xl bg-gradient-to-b from-[#1a2542] via-[#11192e] to-[#0b1120] border border-amber-400/40 hover:border-amber-300 p-6 sm:p-7 text-left flex flex-col justify-between gap-6 shadow-[0_18px_42px_rgba(0,0,0,0.45)] transition-transform duration-200 hover:-translate-y-1 cursor-pointer"
+              >
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div className="w-12 h-12 rounded-2xl bg-amber-500/15 border border-amber-400/45 flex items-center justify-center text-amber-300">
+                      <Trophy className="w-6 h-6" />
+                    </div>
+                    <span className="px-2.5 py-1 rounded-full bg-amber-950/90 border border-amber-400/40 font-mono text-xs font-bold text-amber-200">
+                      {totalConqueredFighters}/{ALL_FIGHTERS.length} Conquered
+                    </span>
+                  </div>
+
+                  <div className="space-y-2">
+                    <h2 className="font-[var(--font-display)] text-xl sm:text-2xl font-bold text-amber-100 group-hover:text-amber-200 transition-colors">
+                      Championship Arena
+                    </h2>
+                    <p className="text-sm text-slate-300 leading-relaxed">
+                      Progress through 10 themed sanctuaries, defeat tier bosses, earn first-win
+                      Gold bonuses, and hunt exclusive Mythic Legendary drops.
+                    </p>
+                  </div>
                 </div>
-                <div className="text-[11px] text-slate-400">
-                  {currentTier.tierNumber < 10
-                    ? `Beat ${currentTier.requiredWinsToUnlockNext} of ${currentTier.fighters.length} to unlock Tier ${
-                        currentTier.tierNumber + 1
-                      } (${currentTierProg.defeated}/${currentTier.requiredWinsToUnlockNext})`
-                    : `Final Sanctum (${currentTierProg.defeated}/${currentTier.fighters.length} defeated)`}
+
+                <div className="flex items-center justify-between pt-4 border-t border-slate-800/80 text-sm font-semibold text-amber-300">
+                  <span>Select Tier &amp; Challenger</span>
+                  <ChevronRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
                 </div>
+              </button>
+
+              {/* Mode Card 2: One-Off Random Match */}
+              <button
+                type="button"
+                onClick={() => {
+                  sound.select();
+                  setGameMode('quick');
+                  rollRandomFighter(quickPool);
+                  setSetupStep('details');
+                }}
+                className="group rounded-3xl bg-gradient-to-b from-[#132541] via-[#0e1a31] to-[#0a1120] border border-sky-400/40 hover:border-sky-300 p-6 sm:p-7 text-left flex flex-col justify-between gap-6 shadow-[0_18px_42px_rgba(0,0,0,0.45)] transition-transform duration-200 hover:-translate-y-1 cursor-pointer"
+              >
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div className="w-12 h-12 rounded-2xl bg-sky-500/15 border border-sky-400/45 flex items-center justify-center text-sky-300">
+                      <Dices className="w-6 h-6" />
+                    </div>
+                    <span className="px-2.5 py-1 rounded-full bg-sky-950/90 border border-sky-400/40 font-mono text-xs font-bold text-sky-200">
+                      One-Off Match
+                    </span>
+                  </div>
+
+                  <div className="space-y-2">
+                    <h2 className="font-[var(--font-display)] text-xl sm:text-2xl font-bold text-sky-100 group-hover:text-sky-200 transition-colors">
+                      Quick Random Duel
+                    </h2>
+                    <p className="text-sm text-slate-300 leading-relaxed">
+                      Draw a surprise opponent for a standalone 4×4 match. Re-roll your rival at
+                      will, test new Runeforge builds, and still win Gold &amp; 1 Spoil card.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between pt-4 border-t border-slate-800/80 text-sm font-semibold text-sky-300">
+                  <span>Roll Random Opponent</span>
+                  <ChevronRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
+                </div>
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* --------------------------------------------------------------- */}
+        {/* STEP 2A: CHAMPIONSHIP ARENA DETAILS → CONFIRM                   */}
+        {/* --------------------------------------------------------------- */}
+        {setupStep === 'details' && gameMode === 'arena' && (
+          <div className="space-y-5">
+            <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3">
+              <div>
+                <h1 className="font-[var(--font-display)] text-2xl sm:text-3xl font-bold text-slate-100 tracking-wide">
+                  Championship Arena
+                </h1>
+                <p className="text-sm text-slate-400 mt-0.5">
+                  Pick a sanctuary tier and confirm your challenger.
+                </p>
+              </div>
+              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-[#10182a] border border-slate-800 text-xs">
+                <Crown className="w-4 h-4 text-amber-400" />
+                <span className="font-mono font-bold text-amber-300">
+                  {totalConqueredFighters}/{ALL_FIGHTERS.length} Conquered
+                </span>
               </div>
             </div>
 
-            {!currentTierUnlocked && (
-              <div className="rounded-xl bg-amber-950/30 border border-amber-500/40 px-4 py-3 flex items-center justify-between gap-3 text-xs text-amber-200">
-                <span>
-                  Defeat at least{' '}
-                  <strong>
-                    {
-                      LADDER_TIERS.find((t) => t.tierNumber === currentTier.tierNumber - 1)
-                        ?.requiredWinsToUnlockNext
-                    }{' '}
-                    challengers
-                  </strong>{' '}
-                  in Tier {currentTier.tierNumber - 1} to unlock this tier.
-                </span>
-                <button
-                  type="button"
-                  onClick={() => handleSelectTier(currentTier.tierNumber - 1)}
-                  className="px-3 py-1.5 rounded-lg bg-amber-500 text-slate-950 font-bold shrink-0 cursor-pointer"
-                >
-                  Go to Tier {currentTier.tierNumber - 1}
-                </button>
-              </div>
-            )}
-
-            {/* Fighter Cards Grid inside Current Tier */}
-            <div className="space-y-2.5">
-              {currentTier.fighters.map((fighter) => {
-                const active = fighter.id === currentFighter.id;
-                const winsCount = profile.fighterWins?.[fighter.id] ?? 0;
-                const isConquered = winsCount > 0;
-                const avatar = CARD_MAP[fighter.avatarCardId];
+            {/* Compact 10-Tier Strip */}
+            <div className="grid grid-cols-5 lg:grid-cols-10 gap-1.5">
+              {LADDER_TIERS.map((tier) => {
+                const unlocked = isTierUnlocked(tier.tierNumber, profile.fighterWins ?? {});
+                const prog = getTierProgress(tier.tierNumber, profile.fighterWins ?? {});
+                const isSelected = tier.tierNumber === selectedTierNum;
+                const isCleared = prog.defeated === prog.total;
 
                 return (
                   <button
-                    key={fighter.id}
+                    key={tier.tierNumber}
                     type="button"
-                    onClick={() => handleSelectFighter(fighter.id)}
-                    className={`group relative w-full overflow-hidden rounded-2xl p-3.5 sm:p-4 text-left border transition-all duration-150 cursor-pointer ${
-                      active
-                        ? 'bg-gradient-to-r from-[#1c2a4b] via-[#15203a] to-[#11192e] border-amber-400 shadow-[0_8px_24px_rgba(245,158,11,0.22)]'
-                        : 'bg-[#10182a] border-slate-800/90 hover:border-slate-700'
+                    onClick={() => handleSelectTier(tier.tierNumber)}
+                    className={`rounded-xl px-2 py-2 text-left border transition-colors cursor-pointer ${
+                      isSelected
+                        ? 'bg-[#1c2948] border-amber-400 text-amber-200'
+                        : unlocked
+                        ? 'bg-[#10182a] border-slate-800 text-slate-200 hover:border-slate-700'
+                        : 'bg-[#0b101c] border-slate-900 text-slate-500 opacity-65'
                     }`}
                   >
-                    <div className="flex items-center justify-between gap-3">
-                      <div className="flex items-center gap-3.5 min-w-0">
-                        {/* Rank Number & Illustrated Portrait */}
-                        <div className="relative shrink-0">
-                          <div
-                            className={`w-13 h-13 sm:w-14 sm:h-14 rounded-xl overflow-hidden border-2 ${
-                              isConquered
-                                ? 'border-emerald-400'
-                                : active
-                                ? 'border-amber-400'
-                                : 'border-slate-700'
-                            } shadow-md`}
-                          >
-                            {avatar && (
-                              <img
-                                src={avatar.image}
-                                alt={fighter.name}
-                                className={`w-full h-full object-cover ${avatar.artFilter ?? ''}`}
-                              />
-                            )}
-                          </div>
-                          <span
-                            className={`absolute -top-1.5 -left-1.5 w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-mono font-bold border shadow ${
-                              isConquered
-                                ? 'bg-emerald-500 text-slate-950 border-emerald-200'
-                                : 'bg-slate-900 text-slate-200 border-slate-600'
-                            }`}
-                          >
-                            {isConquered ? (
-                              <Check className="w-3 h-3 stroke-[3]" />
-                            ) : (
-                              fighter.orderInTier
-                            )}
-                          </span>
-                        </div>
-
-                        <div className="min-w-0 space-y-0.5">
-                          <div className="flex items-center gap-2">
-                            <span
-                              className={`font-[var(--font-display)] text-sm sm:text-base font-bold truncate ${
-                                active ? 'text-amber-200' : 'text-slate-100'
-                              }`}
-                            >
-                              {fighter.name}
-                            </span>
-                            <span className="text-xs text-slate-400 hidden sm:inline">
-                              · {fighter.title}
-                            </span>
-                          </div>
-
-                          <p className="text-xs text-slate-300 truncate">
-                            Deck Pool:{' '}
-                            <span className="text-amber-200/90 font-medium">
-                              {fighter.specialty}
-                            </span>
-                          </p>
-
-                          <div className="flex flex-wrap items-center gap-2 text-[11px] text-slate-400">
-                            <span>
-                              Cards #{String(fighter.minCardNumber).padStart(2, '0')}–#
-                              {String(fighter.maxCardNumber).padStart(2, '0')}
-                            </span>
-                            <span aria-hidden="true">·</span>
-                            <span>
-                              Signature:{' '}
-                              <strong className="text-slate-200">
-                                {fighter.signatureCardIds
-                                  .map((id) => CARD_MAP[id]?.name)
-                                  .filter(Boolean)
-                                  .join(', ')}
-                              </strong>
-                            </span>
-                            {fighter.isBoss && (
-                              <>
-                                <span aria-hidden="true">·</span>
-                                <span className="text-amber-300 font-semibold">Tier Boss</span>
-                              </>
-                            )}
-                            {(fighter.mythicDropChance ?? 0) > 0 && (
-                              <>
-                                <span aria-hidden="true">·</span>
-                                <span className="text-amber-200 font-semibold">
-                                  ★ {Math.round((fighter.mythicDropChance ?? 0) * 100)}% Mythic RNG
-                                </span>
-                              </>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Right Reward & Conquest Status */}
-                      <div className="text-right shrink-0 space-y-1">
-                        <div className="inline-flex items-center gap-1 font-mono text-xs sm:text-sm font-bold tabular-nums text-amber-300">
-                          <Coins className="w-3.5 h-3.5" />
-                          <span>+{fighter.winGold}g</span>
-                        </div>
-                        {!isConquered ? (
-                          <div className="text-[11px] font-semibold text-emerald-300">
-                            +{fighter.firstWinBonusGold}g First Win
-                          </div>
-                        ) : (
-                          <div className="text-[11px] font-mono text-emerald-400">
-                            Conquered ({winsCount}W)
-                          </div>
-                        )}
-                      </div>
+                    <div className="flex items-center justify-between gap-1">
+                      <span className="font-[var(--font-display)] text-[11px] font-bold">
+                        T{tier.tierNumber}
+                      </span>
+                      {!unlocked ? (
+                        <Lock className="w-3 h-3 text-slate-500" />
+                      ) : isCleared ? (
+                        <Crown className="w-3 h-3 text-amber-400" />
+                      ) : (
+                        <span className="font-mono text-[10px] text-slate-400">
+                          {prog.defeated}/{prog.total}
+                        </span>
+                      )}
                     </div>
                   </button>
                 );
               })}
             </div>
-          </div>
 
-          {/* Right Column: Selected Challenger Dossier & Active 5-Card Hand Pedestal */}
-          <div className="lg:col-span-5 space-y-5">
-            {/* Selected Challenger Dossier + Signature Cards Preview */}
-            <div className="rounded-2xl bg-gradient-to-b from-[#17233f] to-[#0f172a] border border-amber-500/35 p-4 sm:p-5 space-y-4 shadow-[0_18px_40px_rgba(0,0,0,0.5)]">
-              <div className="flex items-center justify-between gap-3 pb-3 border-b border-slate-800/90">
-                <div className="flex items-center gap-3 min-w-0">
-                  <div className="w-12 h-12 rounded-xl overflow-hidden border-2 border-amber-400 shrink-0 shadow">
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
+              {/* Left: Fighters in Selected Tier */}
+              <div className="lg:col-span-7 space-y-3">
+                <div className="flex items-center justify-between gap-2 px-1">
+                  <div>
+                    <h2 className="font-[var(--font-display)] text-lg font-bold text-slate-100">
+                      Tier {currentTier.tierNumber}: {currentTier.name}
+                    </h2>
+                    <p className="text-xs text-slate-400">{currentTier.regionSubtitle}</p>
+                  </div>
+                  <span className={`text-xs font-semibold ${currentTier.accentColor}`}>
+                    {currentTier.cardRangeLabel}
+                  </span>
+                </div>
+
+                {!currentTierUnlocked && (
+                  <div className="rounded-xl bg-amber-950/30 border border-amber-500/40 px-4 py-3 flex items-center justify-between gap-3 text-xs text-amber-200">
+                    <span>
+                      Beat{' '}
+                      <strong>
+                        {
+                          LADDER_TIERS.find((t) => t.tierNumber === currentTier.tierNumber - 1)
+                            ?.requiredWinsToUnlockNext
+                        }{' '}
+                        challengers
+                      </strong>{' '}
+                      in Tier {currentTier.tierNumber - 1} to unlock.
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => handleSelectTier(currentTier.tierNumber - 1)}
+                      className="px-3 py-1 rounded-lg bg-amber-500 text-slate-950 font-bold shrink-0 cursor-pointer"
+                    >
+                      Go to Tier {currentTier.tierNumber - 1}
+                    </button>
+                  </div>
+                )}
+
+                <div className="space-y-2">
+                  {currentTier.fighters.map((fighter) => {
+                    const active = fighter.id === currentFighter.id;
+                    const winsCount = profile.fighterWins?.[fighter.id] ?? 0;
+                    const isConquered = winsCount > 0;
+                    const avatar = CARD_MAP[fighter.avatarCardId];
+
+                    return (
+                      <button
+                        key={fighter.id}
+                        type="button"
+                        onClick={() => handleSelectFighter(fighter.id)}
+                        className={`w-full rounded-2xl p-3.5 text-left border flex items-center justify-between gap-3 transition-colors cursor-pointer ${
+                          active
+                            ? 'bg-[#1a2747] border-amber-400 shadow'
+                            : 'bg-[#10182a] border-slate-800 hover:border-slate-700'
+                        }`}
+                      >
+                        <div className="flex items-center gap-3 min-w-0">
+                          <div className="relative shrink-0">
+                            <div
+                              className={`w-12 h-12 rounded-xl overflow-hidden border-2 ${
+                                isConquered
+                                  ? 'border-emerald-400'
+                                  : active
+                                  ? 'border-amber-400'
+                                  : 'border-slate-700'
+                              }`}
+                            >
+                              {avatar && (
+                                <img
+                                  src={getCardThumbUrl(avatar.image)}
+                                  alt={fighter.name}
+                                  width={320}
+                                  height={320}
+                                  loading="lazy"
+                                  decoding="async"
+                                  className={`w-full h-full object-cover ${avatar.artFilter ?? ''}`}
+                                />
+                              )}
+                            </div>
+                            <span
+                              className={`absolute -top-1.5 -left-1.5 w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-mono font-bold border ${
+                                isConquered
+                                  ? 'bg-emerald-500 text-slate-950 border-emerald-200'
+                                  : 'bg-slate-900 text-slate-200 border-slate-600'
+                              }`}
+                            >
+                              {isConquered ? (
+                                <Check className="w-3 h-3 stroke-[3]" />
+                              ) : (
+                                fighter.orderInTier
+                              )}
+                            </span>
+                          </div>
+
+                          <div className="min-w-0">
+                            <div className="flex items-center gap-2">
+                              <span
+                                className={`font-[var(--font-display)] text-sm sm:text-base font-bold truncate ${
+                                  active ? 'text-amber-200' : 'text-slate-100'
+                                }`}
+                              >
+                                {fighter.name}
+                              </span>
+                              {fighter.isBoss && (
+                                <span className="px-1.5 py-0.5 rounded bg-amber-950 border border-amber-400/50 text-[10px] font-bold uppercase text-amber-200 shrink-0">
+                                  Boss
+                                </span>
+                              )}
+                            </div>
+                            <p className="text-xs text-slate-400 truncate">
+                              {fighter.title} · {fighter.specialty}
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="text-right shrink-0">
+                          <div className="font-mono text-xs sm:text-sm font-bold text-amber-300">
+                            +{fighter.winGold}g
+                          </div>
+                          {!isConquered ? (
+                            <div className="text-[11px] text-emerald-300">
+                              +{fighter.firstWinBonusGold}g 1st
+                            </div>
+                          ) : (
+                            <div className="text-[11px] font-mono text-emerald-400">
+                              {winsCount}W
+                            </div>
+                          )}
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Right: Focused Challenger Confirmation Card */}
+              <div className="lg:col-span-5 rounded-2xl bg-gradient-to-b from-[#17233f] to-[#0f172a] border border-amber-500/35 p-5 space-y-5 shadow-[0_18px_40px_rgba(0,0,0,0.45)]">
+                <div className="flex items-center gap-3.5">
+                  <div className="w-16 h-16 rounded-2xl overflow-hidden border-2 border-amber-400 shrink-0 shadow">
                     {rivalAvatarCard && (
                       <img
-                        src={rivalAvatarCard.image}
+                        src={getCardThumbUrl(rivalAvatarCard.image)}
                         alt={currentFighter.name}
+                        width={320}
+                        height={320}
+                        loading="lazy"
+                        decoding="async"
                         className={`w-full h-full object-cover ${rivalAvatarCard.artFilter ?? ''}`}
                       />
                     )}
@@ -839,136 +1322,264 @@ export const ArenaView: React.FC<ArenaViewProps> = ({
                     <div className="text-[11px] font-semibold uppercase tracking-wider text-amber-300">
                       Tier {currentFighter.tierNumber} · Challenger #{currentFighter.orderInTier}
                     </div>
-                    <h2 className="font-[var(--font-display)] text-lg font-bold text-slate-100 truncate">
+                    <h3 className="font-[var(--font-display)] text-xl font-bold text-slate-100 truncate">
                       {currentFighter.name}
-                    </h2>
-                    <p className="text-xs text-slate-400 truncate">
-                      Spoils Pool: Cards #{String(currentFighter.minCardNumber).padStart(2, '0')}–#
-                      {String(currentFighter.maxCardNumber).padStart(2, '0')}
-                    </p>
+                    </h3>
+                    <p className="text-xs text-slate-400">{currentFighter.title}</p>
                   </div>
                 </div>
 
-                <div className="text-right shrink-0">
-                  <div className="font-mono text-sm font-bold text-amber-300">
-                    +{currentFighter.winGold}g
+                <div className="rounded-xl bg-[#0b1120] border border-slate-800 p-3.5 space-y-2 text-xs">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-slate-400">Specialty</span>
+                    <span className="text-amber-200 font-medium">{currentFighter.specialty}</span>
                   </div>
-                  {(profile.fighterWins?.[currentFighter.id] ?? 0) === 0 && (
-                    <div className="text-[11px] text-emerald-300 font-medium">
-                      +{currentFighter.firstWinBonusGold}g Bonus
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-slate-400">Spoils Card Pool</span>
+                    <span className="font-mono text-slate-200">
+                      #{String(currentFighter.minCardNumber).padStart(2, '0')}–#
+                      {String(currentFighter.maxCardNumber).padStart(2, '0')}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-slate-400">Signature Cards</span>
+                    <span className="text-slate-200 font-medium text-right">
+                      {currentFighter.signatureCardIds
+                        .map((id) => CARD_MAP[id]?.name)
+                        .filter(Boolean)
+                        .join(', ')}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-slate-400">Victory Payout</span>
+                    <span className="font-mono font-bold text-amber-300">
+                      +{currentFighter.winGold}g
+                      {(profile.fighterWins?.[currentFighter.id] ?? 0) === 0 && (
+                        <span className="text-emerald-300">
+                          {' '}
+                          (+{currentFighter.firstWinBonusGold}g 1st)
+                        </span>
+                      )}
+                    </span>
+                  </div>
+                  {(currentFighter.mythicDropChance ?? 0) > 0 && (
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-slate-400">Mythic Bonus Drop</span>
+                      <span className="font-mono font-bold text-amber-200">
+                        ★ {Math.round((currentFighter.mythicDropChance ?? 0) * 100)}% Chance
+                      </span>
                     </div>
                   )}
                 </div>
-              </div>
 
-              {/* Player's Switchable 5-Card Hand */}
-              <div className="space-y-3">
-                <div className="flex items-center justify-between gap-2">
-                  <div>
-                    <h3 className="text-xs font-semibold text-slate-200">
-                      Your Battle Hand: {activeDeck.name}
-                    </h3>
-                    <p className="text-[11px] text-slate-400">
-                      Switch preset hands or edit in the 90-Card Compendium
-                    </p>
-                  </div>
+                <div className="text-[11px] text-slate-400 text-center">
+                  {currentTier.tierNumber < 10
+                    ? `Tier Progress: ${currentTierProg.defeated}/${currentTier.requiredWinsToUnlockNext} wins to unlock Tier ${
+                        currentTier.tierNumber + 1
+                      }`
+                    : `Final Sanctum: ${currentTierProg.defeated}/${currentTier.fighters.length} defeated`}
+                </div>
+
+                <button
+                  type="button"
+                  disabled={!currentTierUnlocked}
+                  onClick={() => {
+                    sound.select();
+                    setSetupStep('deck');
+                  }}
+                  className={`w-full min-h-[50px] rounded-xl font-[var(--font-display)] font-bold text-sm sm:text-base tracking-wide flex items-center justify-center gap-2 transition-transform ${
+                    currentTierUnlocked
+                      ? 'bg-gradient-to-b from-amber-300 via-amber-400 to-amber-500 hover:from-amber-200 hover:to-amber-400 active:scale-[0.98] text-slate-950 shadow-[0_8px_22px_rgba(245,158,11,0.35)] cursor-pointer'
+                      : 'bg-slate-800 text-slate-500 cursor-not-allowed'
+                  }`}
+                >
+                  {currentTierUnlocked ? (
+                    <>
+                      <span>Confirm Challenger · Build Deck</span>
+                      <ChevronRight className="w-4 h-4" />
+                    </>
+                  ) : (
+                    <>
+                      <Lock className="w-4 h-4" />
+                      <span>Unlock Tier {currentTier.tierNumber} First</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* --------------------------------------------------------------- */}
+        {/* STEP 2B: QUICK RANDOM DUEL DETAILS → CONFIRM                    */}
+        {/* --------------------------------------------------------------- */}
+        {setupStep === 'details' && gameMode === 'quick' && (
+          <div className="max-w-2xl mx-auto space-y-5">
+            <div className="text-center space-y-1.5">
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-sky-950/90 border border-sky-400/40 text-sky-200 text-xs font-semibold">
+                <Dices className="w-3.5 h-3.5" />
+                <span>Quick Random Duel</span>
+              </div>
+              <h1 className="font-[var(--font-display)] text-2xl sm:text-3xl font-bold text-slate-100">
+                Your Random Challenger
+              </h1>
+            </div>
+
+            <div className="rounded-3xl bg-gradient-to-b from-[#162442] via-[#10182d] to-[#0b1120] border border-sky-400/40 p-6 sm:p-7 space-y-6 shadow-[0_22px_50px_rgba(0,0,0,0.5)]">
+              {/* Pool Toggle + Re-roll */}
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div className="inline-flex items-center gap-1 p-1 rounded-xl bg-[#0a101d] border border-slate-800 text-xs">
                   <button
                     type="button"
-                    onClick={onGoToGallery}
-                    className="min-h-[36px] px-3 py-1 rounded-lg text-xs font-semibold text-amber-300 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-400/30 transition-colors whitespace-nowrap shrink-0 cursor-pointer"
+                    onClick={() => {
+                      sound.select();
+                      setQuickPool('unlocked');
+                      rollRandomFighter('unlocked', currentFighter.id);
+                    }}
+                    className={`px-3 py-1.5 rounded-lg font-medium transition-colors cursor-pointer ${
+                      quickPool === 'unlocked'
+                        ? 'bg-sky-500 text-slate-950 font-semibold'
+                        : 'text-slate-400 hover:text-white'
+                    }`}
                   >
-                    Edit Hand
+                    Unlocked Tiers
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      sound.select();
+                      setQuickPool('all');
+                      rollRandomFighter('all', currentFighter.id);
+                    }}
+                    className={`px-3 py-1.5 rounded-lg font-medium transition-colors cursor-pointer ${
+                      quickPool === 'all'
+                        ? 'bg-amber-500 text-slate-950 font-semibold'
+                        : 'text-slate-400 hover:text-white'
+                    }`}
+                  >
+                    Any Challenger (Wild)
                   </button>
                 </div>
 
-                {/* 3 Saved Hand Slot Switcher */}
-                <div className="grid grid-cols-3 gap-1.5 p-1 rounded-xl bg-[#0a101e] border border-slate-800">
-                  {profile.decks.map((slot, idx) => {
-                    const isCurrent = idx === profile.activeDeckIndex;
-                    return (
-                      <button
-                        key={slot.id}
-                        type="button"
-                        onClick={() => {
-                          sound.select();
-                          onSelectDeckSlot(idx);
-                        }}
-                        className={`min-h-[36px] px-2 py-1 rounded-lg text-xs font-medium transition-colors truncate cursor-pointer ${
-                          isCurrent
-                            ? 'bg-gradient-to-b from-amber-400 to-amber-500 text-slate-950 font-bold shadow'
-                            : 'text-slate-400 hover:text-slate-100'
-                        }`}
-                      >
-                        {slot.name}
-                      </button>
-                    );
-                  })}
+                <button
+                  type="button"
+                  onClick={() => {
+                    sound.select();
+                    rollRandomFighter(quickPool, currentFighter.id);
+                  }}
+                  className="inline-flex items-center gap-1.5 min-h-[36px] px-3.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xs font-semibold text-sky-200 transition-colors cursor-pointer"
+                >
+                  <Dices className="w-3.5 h-3.5" />
+                  <span>Re-roll Opponent</span>
+                </button>
+              </div>
+
+              {/* Rolled Opponent Spotlight */}
+              <div className="flex flex-col sm:flex-row items-center sm:items-start gap-5 text-center sm:text-left">
+                <div className="w-24 h-24 rounded-2xl overflow-hidden border-2 border-sky-400 shadow-lg shrink-0">
+                  {rivalAvatarCard && (
+                    <img
+                      src={getCardThumbUrl(rivalAvatarCard.image)}
+                      alt={currentFighter.name}
+                      width={320}
+                      height={320}
+                      loading="lazy"
+                      decoding="async"
+                      className={`w-full h-full object-cover ${rivalAvatarCard.artFilter ?? ''}`}
+                    />
+                  )}
                 </div>
 
-                {/* 7-Card Hand Preview */}
-                <div className="flex gap-2 overflow-x-auto pb-1.5 snap-x sm:grid sm:grid-cols-4 lg:grid-cols-4 sm:overflow-visible sm:pb-0">
-                  {previewDeckHand.map((hCard) => (
-                    <div
-                      key={hCard.uid}
-                      className="w-[92px] sm:w-auto shrink-0 snap-start"
-                    >
-                      <GameCard
-                        cardId={hCard.cardId}
-                        stats={hCard.stats}
-                        arrows={hCard.arrows}
-                        owner="player"
-                        size="sm"
-                        showName
-                      />
-                    </div>
-                  ))}
+                <div className="space-y-2 flex-1 min-w-0">
+                  <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2 text-xs">
+                    <span className="px-2 py-0.5 rounded bg-sky-950 border border-sky-400/40 font-mono font-bold text-sky-200">
+                      Tier {currentFighter.tierNumber} · {currentTier.name}
+                    </span>
+                    {currentFighter.isBoss && (
+                      <span className="px-2 py-0.5 rounded bg-amber-950 border border-amber-400/50 font-bold text-amber-200">
+                        Tier Boss
+                      </span>
+                    )}
+                  </div>
+                  <h2 className="font-[var(--font-display)] text-2xl font-bold text-white">
+                    {currentFighter.name}
+                  </h2>
+                  <p className="text-sm text-slate-300">
+                    {currentFighter.title} — <span className="text-amber-200">{currentFighter.specialty}</span>
+                  </p>
+                </div>
+              </div>
+
+              {/* Match Specs */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 text-center text-xs">
+                <div className="rounded-xl bg-[#0b1120] border border-slate-800 p-3">
+                  <div className="text-slate-400">Board</div>
+                  <div className="font-mono font-bold text-slate-100 mt-0.5">4×4 (2 Sealed)</div>
+                </div>
+                <div className="rounded-xl bg-[#0b1120] border border-slate-800 p-3">
+                  <div className="text-slate-400">Hands</div>
+                  <div className="font-mono font-bold text-slate-100 mt-0.5">
+                    {HAND_SIZE} Cards Each
+                  </div>
+                </div>
+                <div className="rounded-xl bg-[#0b1120] border border-slate-800 p-3">
+                  <div className="text-slate-400">Victory Purse</div>
+                  <div className="font-mono font-bold text-amber-300 mt-0.5">
+                    +{currentFighter.winGold}g
+                  </div>
+                </div>
+                <div className="rounded-xl bg-[#0b1120] border border-slate-800 p-3">
+                  <div className="text-slate-400">Spoils Pool</div>
+                  <div className="font-mono font-bold text-sky-300 mt-0.5">
+                    #{String(currentFighter.minCardNumber).padStart(2, '0')}–#
+                    {String(currentFighter.maxCardNumber).padStart(2, '0')}
+                  </div>
                 </div>
               </div>
 
               <button
                 type="button"
-                disabled={!currentTierUnlocked}
-                onClick={startMatch}
-                className={`w-full min-h-[50px] rounded-xl font-[var(--font-display)] font-bold text-base tracking-wide flex items-center justify-center gap-2 transition-all ${
-                  currentTierUnlocked
-                    ? 'bg-gradient-to-b from-amber-300 via-amber-400 to-amber-500 hover:from-amber-200 hover:to-amber-400 active:scale-[0.98] text-slate-950 shadow-[0_8px_25px_rgba(245,158,11,0.35)] border border-amber-200/60 cursor-pointer'
-                    : 'bg-slate-800 text-slate-500 cursor-not-allowed'
-                }`}
+                onClick={() => {
+                  sound.select();
+                  setSetupStep('deck');
+                }}
+                className="w-full min-h-[52px] rounded-xl bg-gradient-to-b from-amber-300 via-amber-400 to-amber-500 hover:from-amber-200 hover:to-amber-400 active:scale-[0.98] text-slate-950 font-[var(--font-display)] font-bold text-base tracking-wide shadow-[0_10px_26px_rgba(245,158,11,0.35)] border border-amber-200/70 flex items-center justify-center gap-2 transition-transform cursor-pointer"
               >
-                {currentTierUnlocked ? (
-                  <>
-                    <Play className="w-4 h-4 fill-current" />
-                    <span>Challenge {currentFighter.name} (5×5 Arena)</span>
-                  </>
-                ) : (
-                  <>
-                    <Lock className="w-4 h-4" />
-                    <span>Unlock Tier {currentTier.tierNumber} First</span>
-                  </>
-                )}
-              </button>
-            </div>
-
-            <div className="flex items-center justify-between px-1 text-xs text-slate-400">
-              <span>5×5 Board · {HAND_SIZE} Cards Each · Win to claim 1 Spoil</span>
-              <button
-                type="button"
-                onClick={onOpenRules}
-                className="inline-flex items-center gap-1 text-slate-300 hover:text-amber-200 underline underline-offset-4 cursor-pointer"
-              >
-                <HelpCircle className="w-3.5 h-3.5" />
-                <span>Tetra Rules &amp; Augments</span>
+                <span>Confirm Match · Build Deck</span>
+                <ChevronRight className="w-4 h-4" />
               </button>
             </div>
           </div>
-        </div>
+        )}
+
+        {/* --------------------------------------------------------------- */}
+        {/* STEP 3: 2-PANEL DECK FORGE → START MATCH                        */}
+        {/* --------------------------------------------------------------- */}
+        {setupStep === 'deck' && (
+          <DeckBuilderWorkspace
+            profile={profile}
+            activeDeck={activeDeck}
+            previewDeckHand={previewDeckHand}
+            currentFighter={currentFighter}
+            gameMode={gameMode}
+            onSelectDeckSlot={onSelectDeckSlot}
+            onCreateDeck={onCreateDeck}
+            onRenameDeck={onRenameDeck}
+            onDeleteDeck={onDeleteDeck}
+            onToggleDeckCard={onToggleDeckCard}
+            onAutoBuildDeck={onAutoBuildDeck}
+            onStartMatch={startMatch}
+            onGoToGallery={onGoToGallery}
+            onOpenRules={onOpenRules}
+          />
+        )}
       </div>
     );
   }
 
-  // ==================== ACTIVE MATCH VIEW (TACTILE HEARTHSTONE-STYLE 5x5 TABLETOP) ====================
+  // ==================== ACTIVE MATCH VIEW (4x4 TABLETOP) ====================
   return (
-    <div className="w-full max-w-6xl mx-auto px-2.5 sm:px-6 py-2.5 sm:py-4">
+    <div className="w-full max-w-7xl mx-auto px-2.5 sm:px-6 py-2.5 sm:py-4">
       {/* Top Hero Portrait Medallions & Glowing Score Orbs */}
       <div className="rounded-2xl bg-gradient-to-r from-[#101c35] via-[#131c31] to-[#261326] border border-slate-800/90 px-3 sm:px-4 py-2 flex items-center justify-between gap-2 shadow-lg">
         {/* Player Hero Medallion + Score Crystal */}
@@ -977,8 +1588,12 @@ export const ArenaView: React.FC<ArenaViewProps> = ({
             <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-full overflow-hidden border-2 border-blue-400 shadow-[0_0_12px_rgba(59,130,246,0.5)]">
               {playerAvatarCard && (
                 <img
-                  src={playerAvatarCard.image}
+                  src={getCardThumbUrl(playerAvatarCard.image)}
                   alt="You"
+                  width={320}
+                  height={320}
+                  loading="lazy"
+                  decoding="async"
                   className={`w-full h-full object-cover ${playerAvatarCard.artFilter ?? ''}`}
                 />
               )}
@@ -1003,7 +1618,7 @@ export const ArenaView: React.FC<ArenaViewProps> = ({
             <Swords className="w-3.5 h-3.5 shrink-0" />
             <span>
               {turn === 'player'
-                ? 'YOUR TURN (5×5 ARENA)'
+                ? 'YOUR TURN (4×4 ARENA)'
                 : `${currentFighter.name.toUpperCase()}’S TURN`}
             </span>
           </div>
@@ -1024,8 +1639,12 @@ export const ArenaView: React.FC<ArenaViewProps> = ({
             <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-full overflow-hidden border-2 border-rose-500 shadow-[0_0_12px_rgba(244,63,94,0.5)]">
               {rivalAvatarCard && (
                 <img
-                  src={rivalAvatarCard.image}
+                  src={getCardThumbUrl(rivalAvatarCard.image)}
                   alt={currentFighter.name}
+                  width={320}
+                  height={320}
+                  loading="lazy"
+                  decoding="async"
                   className={`w-full h-full object-cover ${rivalAvatarCard.artFilter ?? ''}`}
                 />
               )}
@@ -1106,9 +1725,9 @@ export const ArenaView: React.FC<ArenaViewProps> = ({
             </div>
           )}
 
-          {/* Sculpted 5x5 Sanctuary Board Frame */}
-          <div className="w-full max-w-[495px] sm:max-w-[545px] rounded-2xl hearth-table-surface border-2 border-amber-500/35 p-1.5 sm:p-3 shadow-[0_24px_60px_rgba(0,0,0,0.7),inset_0_1px_0_rgba(255,255,255,0.12)]">
-            <div className="grid grid-cols-5 gap-1.5 sm:gap-2">
+          {/* Sculpted 4x4 Sanctuary Board Frame */}
+          <div className="w-full max-w-[490px] sm:max-w-[580px] rounded-2xl hearth-table-surface border-2 border-amber-500/35 p-2 sm:p-3 shadow-[0_24px_60px_rgba(0,0,0,0.7),inset_0_1px_0_rgba(255,255,255,0.12)]">
+            <div ref={boardGridRef} className="grid grid-cols-4 gap-2 sm:gap-2.5">
               {board.map((row, rIdx) =>
                 row.map((cell, cIdx) => {
                   const key = `${rIdx}-${cIdx}`;
@@ -1124,79 +1743,121 @@ export const ArenaView: React.FC<ArenaViewProps> = ({
                     return (
                       <div
                         key={key}
-                        aria-label="Blocked stone monolith"
-                        className="aspect-square rounded-xl bg-gradient-to-b from-[#3b2128] via-[#221218] to-[#11080c] border-2 border-rose-500/80 shadow-[0_6px_16px_rgba(0,0,0,0.85),inset_0_2px_8px_rgba(244,63,94,0.3)] flex flex-col items-center justify-center relative overflow-hidden select-none"
+                        aria-label="Sealed obsidian tile"
+                        className="aspect-[5/7] rounded-xl bg-gradient-to-b from-[#0c101c] via-[#131827] to-[#080b13] border border-amber-500/20 shadow-[inset_0_3px_12px_rgba(0,0,0,0.85),inset_0_0_0_1px_rgba(255,255,255,0.03)] flex items-center justify-center relative overflow-hidden select-none"
                       >
-                        <div
-                          className="absolute inset-0 opacity-35"
-                          style={{
-                            backgroundImage:
-                              'repeating-linear-gradient(135deg, rgba(244, 63, 94, 0.32) 0px, rgba(244, 63, 94, 0.32) 7px, rgba(15, 23, 42, 0.85) 7px, rgba(15, 23, 42, 0.85) 14px)',
-                          }}
-                        />
-                        <span className="absolute top-1 left-1 w-1.5 h-1.5 rounded-full bg-rose-300/80 shadow" />
-                        <span className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full bg-rose-300/80 shadow" />
-                        <span className="absolute bottom-1 left-1 w-1.5 h-1.5 rounded-full bg-rose-300/80 shadow" />
-                        <span className="absolute bottom-1 right-1 w-1.5 h-1.5 rounded-full bg-rose-300/80 shadow" />
-
-                        <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-                          <div className="w-[130%] h-1 bg-rose-500/50 rotate-45 shadow" />
-                          <div className="w-[130%] h-1 bg-rose-500/50 -rotate-45 shadow absolute" />
+                        {/* Subtle Carved Sanctum Frame */}
+                        <div className="pointer-events-none absolute inset-[5px] sm:inset-[6px] rounded-[5px] border border-amber-400/15 flex items-center justify-center p-1.5">
+                          <div className="w-full h-full rounded-t-[999px] rounded-b-[3px] border border-amber-400/12 bg-black/30 flex items-center justify-center">
+                            <svg
+                              aria-hidden="true"
+                              viewBox="0 0 40 56"
+                              className="w-6 h-8 sm:w-8 sm:h-11 text-amber-300/28"
+                              fill="none"
+                            >
+                              <path
+                                d="M20 6L32 28L20 50L8 28L20 6Z"
+                                stroke="currentColor"
+                                strokeWidth="1.2"
+                              />
+                              <path
+                                d="M20 14L27 28L20 42L13 28L20 14Z"
+                                stroke="currentColor"
+                                strokeWidth="0.9"
+                                opacity="0.7"
+                              />
+                              <circle cx="20" cy="28" r="2.2" fill="currentColor" opacity="0.85" />
+                              <line
+                                x1="6"
+                                y1="28"
+                                x2="34"
+                                y2="28"
+                                stroke="currentColor"
+                                strokeWidth="0.8"
+                                opacity="0.45"
+                              />
+                            </svg>
+                          </div>
                         </div>
-
-                        <div className="relative z-10 w-7 h-7 sm:w-9 sm:h-9 rounded-lg bg-gradient-to-b from-rose-900 to-slate-950 border-2 border-rose-400 shadow-[0_0_14px_rgba(244,63,94,0.65)] flex flex-col items-center justify-center">
-                          <Lock className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-rose-200 stroke-[2.5]" />
-                        </div>
-                        <span className="relative z-10 mt-0.5 px-1 py-0.2 rounded bg-slate-950/90 border border-rose-500/50 font-[var(--font-display)] text-[8px] sm:text-[9px] font-bold uppercase tracking-wider text-rose-200 shadow">
-                          Blocked
-                        </span>
                       </div>
                     );
                   }
 
                   if (cell.card) {
+                    const targetStatus = hoverTacticalPreview.targetMap[key] ?? null;
                     return (
-                      <div key={key} className="aspect-square">
+                      <div key={key} className="aspect-[5/7]">
                         <GameCard
                           cardId={cell.card.cardId}
                           stats={cell.card.stats}
                           baseStats={cell.card.baseStats}
                           arrows={cell.card.arrows}
+                          augmentId={cell.card.augmentId}
                           owner={cell.card.owner}
                           justPlaced={cell.card.justPlaced}
                           flipKey={cell.card.lastFlippedAt}
                           lastAugmented={cell.card.lastAugmented}
+                          targetStatus={targetStatus}
                           size="sm"
                         />
                       </div>
                     );
                   }
 
+                  const isDropTarget =
+                    hoverCell?.row === rIdx && hoverCell?.col === cIdx && canPlaceHere;
+                  const isDragActive = Boolean(draggingCard && !draggingCard.returning);
+
                   return (
                     <button
                       key={key}
                       type="button"
+                      data-drop-row={canPlaceHere ? rIdx : undefined}
+                      data-drop-col={canPlaceHere ? cIdx : undefined}
                       disabled={!canPlaceHere}
                       onMouseEnter={() => {
-                        if (canPlaceHere) {
+                        if (canPlaceHere && !isDragActive) {
                           sound.hover();
+                          setHoverCell({ row: rIdx, col: cIdx });
+                        }
+                      }}
+                      onMouseLeave={() => {
+                        if (!isDragActive) {
+                          setHoverCell((cur) =>
+                            cur?.row === rIdx && cur?.col === cIdx ? null : cur
+                          );
                         }
                       }}
                       onClick={() => handleCellClick(rIdx, cIdx)}
                       aria-label={`Place card at row ${rIdx + 1}, column ${cIdx + 1}`}
-                      className={`group relative aspect-square rounded-xl hearth-tile-socket border transition-all duration-150 flex flex-col items-center justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 ${
-                        canPlaceHere
+                      className={`group relative aspect-[5/7] rounded-xl hearth-tile-socket border transition-all duration-150 flex flex-col items-center justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 ${
+                        isDropTarget
+                          ? 'border-amber-300 bg-amber-500/18 ring-2 ring-amber-300/75 shadow-[0_0_24px_rgba(251,191,36,0.42),inset_0_0_16px_rgba(251,191,36,0.22)] scale-[1.03] cursor-pointer'
+                          : isDragActive && canPlaceHere
+                          ? 'border-amber-400/45 bg-amber-950/15'
+                          : canPlaceHere
                           ? 'border-slate-700/80 hover:border-amber-300/75 hover:bg-slate-800/45 cursor-pointer active:scale-[0.96]'
                           : 'border-slate-800/80 cursor-default'
                       }`}
                     >
-                      <span
-                        className={`w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full transition-transform ${
-                          canPlaceHere
-                            ? 'bg-slate-600/60 group-hover:scale-150 group-hover:bg-amber-300'
-                            : 'bg-slate-800'
-                        }`}
-                      />
+                      {isDropTarget ? (
+                        <div className="pointer-events-none flex flex-col items-center gap-1">
+                          <span className="w-3 h-3 rotate-45 rounded-[2px] border border-amber-200 bg-amber-300/80 shadow-[0_0_10px_rgba(251,191,36,0.9)] animate-pulse" />
+                          <span className="font-[var(--font-display)] text-[8px] sm:text-[9px] font-bold uppercase tracking-widest text-amber-200">
+                            Drop
+                          </span>
+                        </div>
+                      ) : (
+                        <span
+                          className={`w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full transition-transform ${
+                            isDragActive && canPlaceHere
+                              ? 'bg-amber-300/75 scale-125'
+                              : canPlaceHere
+                              ? 'bg-slate-600/60 group-hover:scale-150 group-hover:bg-amber-300'
+                              : 'bg-slate-800'
+                          }`}
+                        />
+                      )}
                     </button>
                   );
                 })
@@ -1217,8 +1878,8 @@ export const ArenaView: React.FC<ArenaViewProps> = ({
               </span>
             </div>
             {selectedCardDef && selectedHandCard && (
-              <div className="flex items-center gap-1.5 text-xs text-slate-200 truncate">
-                <span className="font-semibold truncate">{selectedCardDef.name}</span>
+              <div className="flex flex-wrap items-center justify-end gap-1.5 text-xs text-slate-200">
+                <span className="font-semibold">{selectedCardDef.name}</span>
                 <span className="font-mono font-bold tabular-nums text-amber-300 shrink-0">
                   {formatTetraCode(selectedHandCard.stats)}
                 </span>
@@ -1230,33 +1891,47 @@ export const ArenaView: React.FC<ArenaViewProps> = ({
           </div>
 
           {/* Selected Card Augment Banner (Visible on both mobile & desktop when an Augment card is selected) */}
-          {selectedCardDef?.augment && (
-            <div className="mb-2 rounded-xl bg-violet-950/60 border border-violet-400/50 px-2.5 py-1.5 text-[11px] text-violet-100 flex items-start gap-1.5 shadow">
-              <Wand2 className="w-3.5 h-3.5 text-violet-300 shrink-0 mt-0.5" />
-              <div>
-                <strong className="text-violet-200">{selectedCardDef.augment.name}:</strong>{' '}
-                <span>{selectedCardDef.augment.description}</span>
+          {(() => {
+            const selectedAug =
+              selectedHandCard &&
+              resolveCardAugment(selectedHandCard.cardId, selectedHandCard.augmentId);
+            if (!selectedAug) return null;
+            return (
+              <div className="mb-2 rounded-xl bg-violet-950/60 border border-violet-400/50 px-2.5 py-1.5 text-[11px] text-violet-100 flex items-start gap-1.5 shadow">
+                <Wand2 className="w-3.5 h-3.5 text-violet-300 shrink-0 mt-0.5" />
+                <div>
+                  <strong className="text-violet-200">{selectedAug.name}:</strong>{' '}
+                  <span>{selectedAug.description}</span>
+                </div>
               </div>
-            </div>
-          )}
+            );
+          })()}
 
           <div className="flex gap-2 overflow-x-auto pt-2.5 pb-2 px-1 snap-x lg:grid lg:grid-cols-2 lg:overflow-visible lg:pt-1 lg:px-0">
             {playerHand.map((hCard) => {
               const isSelected = hCard.uid === selectedHandUid;
+              const isBeingDragged = draggingCard?.card.uid === hCard.uid;
               return (
                 <div
                   key={hCard.uid}
-                  className="w-[96px] sm:w-[106px] lg:w-auto shrink-0 snap-start"
+                  onPointerDown={(e) => handleHandCardPointerDown(e, hCard)}
+                  className={`w-[92px] sm:w-[100px] lg:w-auto shrink-0 snap-start transition-opacity duration-150 ${
+                    phase === 'playing' && turn === 'player' && !isAnimating
+                      ? 'cursor-grab active:cursor-grabbing'
+                      : ''
+                  } ${isBeingDragged ? 'opacity-25 scale-95' : ''}`}
                 >
                   <GameCard
                     cardId={hCard.cardId}
                     stats={hCard.stats}
                     arrows={hCard.arrows}
+                    augmentId={hCard.augmentId}
                     owner="player"
                     size="sm"
                     showName
-                    selected={isSelected && turn === 'player'}
+                    selected={isSelected && turn === 'player' && !isBeingDragged}
                     onClick={() => {
+                      if (Date.now() < suppressHandClickUntilRef.current) return;
                       sound.select();
                       setSelectedHandUid(hCard.uid);
                     }}
@@ -1290,114 +1965,147 @@ export const ArenaView: React.FC<ArenaViewProps> = ({
         </div>
       </div>
 
-      {/* ==================== MATCH FINISHED / SPOILS MODAL ==================== */}
+      {/* Floating 60fps Dragged Card Ghost with Velocity Tilt & Live Attack Arrow Glow */}
+      {draggingCard && (
+        <div
+          ref={(el) => {
+            dragGhostRef.current = el;
+            if (el && !el.style.transform) {
+              const d = dragPendingRef.current;
+              const initX = d ? d.curX : draggingCard.originLeft;
+              const initY = d ? d.curY : draggingCard.originTop;
+              el.style.transform = `translate3d(${initX.toFixed(1)}px, ${initY.toFixed(
+                1
+              )}px, 0) scale(1.08)`;
+            }
+          }}
+          style={{
+            position: 'fixed',
+            left: 0,
+            top: 0,
+            width: draggingCard.width,
+          }}
+          className="drag-card-ghost pointer-events-none fixed z-[90]"
+        >
+          <GameCard
+            cardId={draggingCard.card.cardId}
+            stats={draggingCard.card.stats}
+            arrows={draggingCard.card.arrows}
+            augmentId={draggingCard.card.augmentId}
+            owner="player"
+            size="sm"
+            showName
+            highlightArrows={hoverTacticalPreview.highlightArrows}
+            disableLongPress
+          />
+        </div>
+      )}
+
+      {/* ==================== MATCH FINISHED / SPACIOUS SPOILS MODAL ==================== */}
       {phase === 'finished' && summary && (
         <div
-          className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/80 backdrop-blur-sm p-0 sm:p-4"
+          className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-[#04070f]/90 p-0 sm:p-5"
           role="dialog"
           aria-modal="true"
           aria-labelledby="match-result-title"
         >
-          <div className="w-full sm:max-w-xl max-h-[90dvh] flex flex-col rounded-t-3xl sm:rounded-2xl bg-gradient-to-b from-[#16223c] to-[#0f1628] border border-amber-400/40 shadow-2xl overflow-hidden">
+          <div className="w-full max-w-5xl lg:max-w-6xl max-h-[94dvh] flex flex-col rounded-t-3xl sm:rounded-3xl bg-gradient-to-b from-[#16223c] via-[#11192d] to-[#0b1120] border border-amber-400/45 shadow-[0_30px_80px_rgba(0,0,0,0.85)] overflow-hidden">
             <div className="sm:hidden w-10 h-1 rounded-full bg-slate-600 mx-auto mt-2.5" />
 
-            <div className="px-5 py-4 border-b border-slate-800 flex items-center justify-between">
-              <div className="flex items-center gap-2.5">
-                <Trophy
-                  className={`w-5 h-5 ${
+            {/* Spacious Result Header */}
+            <div className="px-6 py-5 border-b border-slate-800/90 flex flex-wrap items-center justify-between gap-4">
+              <div className="flex items-center gap-3.5">
+                <div
+                  className={`w-12 h-12 rounded-2xl border flex items-center justify-center shrink-0 ${
                     summary.winner === 'player'
-                      ? 'text-amber-400'
+                      ? 'bg-amber-500/15 border-amber-400/50 text-amber-300'
                       : summary.winner === 'draw'
-                      ? 'text-slate-300'
-                      : 'text-rose-400'
+                      ? 'bg-slate-800 border-slate-600 text-slate-300'
+                      : 'bg-rose-950/80 border-rose-500/50 text-rose-300'
                   }`}
-                />
+                >
+                  <Trophy className="w-6 h-6" />
+                </div>
                 <div>
                   <h2
                     id="match-result-title"
-                    className="font-[var(--font-display)] text-xl font-bold text-slate-100"
+                    className="font-[var(--font-display)] text-2xl sm:text-3xl font-bold text-slate-100"
                   >
                     {summary.isPerfect
-                      ? `Perfect! (${summary.playerScore}–0)`
+                      ? `Perfect Victory! (${summary.playerScore}–0)`
                       : summary.winner === 'player'
                       ? `Victory over ${currentFighter.name}`
                       : summary.winner === 'draw'
-                      ? 'Draw'
-                      : 'Defeat'}
+                      ? 'Hard-Fought Draw'
+                      : `Defeated by ${currentFighter.name}`}
                   </h2>
-                  {summary.isFirstVictory && (
-                    <p className="text-xs font-semibold text-emerald-300 flex items-center gap-1">
-                      <Sparkles className="w-3.5 h-3.5" />
-                      <span>First-Time Challenger Conquest!</span>
-                    </p>
-                  )}
+                  <div className="flex flex-wrap items-center gap-2 mt-0.5 text-xs">
+                    <span className="text-slate-400">
+                      {gameMode === 'quick' ? 'Quick Random Duel' : `Tier ${currentFighter.tierNumber} Championship`}
+                    </span>
+                    {summary.isFirstVictory && (
+                      <span className="inline-flex items-center gap-1 font-semibold text-emerald-300">
+                        <Sparkles className="w-3.5 h-3.5" />
+                        <span>First-Time Conquest!</span>
+                      </span>
+                    )}
+                  </div>
                 </div>
               </div>
-              <div className="font-mono text-lg font-bold tabular-nums">
-                <span className="text-blue-400">{summary.playerScore}</span>
-                <span className="text-slate-600 mx-1.5">–</span>
-                <span className="text-rose-400">{summary.rivalScore}</span>
+
+              <div className="flex items-center gap-4">
+                <div className="px-4 py-2 rounded-2xl bg-[#0a101e] border border-slate-800 font-mono text-2xl font-bold tabular-nums">
+                  <span className="text-blue-400">{summary.playerScore}</span>
+                  <span className="text-slate-600 mx-2">–</span>
+                  <span className="text-rose-400">{summary.rivalScore}</span>
+                </div>
+                <div className="px-4 py-2 rounded-2xl bg-amber-950/40 border border-amber-400/40 font-mono text-lg font-bold tabular-nums text-amber-300 flex items-center gap-1.5">
+                  <Coins className="w-5 h-5" />
+                  <span>+{summary.totalGold + summary.spoilBonusGold}g</span>
+                </div>
               </div>
             </div>
 
-            <div className="overflow-y-auto px-5 py-4 space-y-5">
-              <div className="rounded-xl bg-[#0b111e] border border-slate-800 p-3.5 space-y-1.5 text-xs">
-                <div className="flex items-center justify-between text-slate-300">
-                  <span>
-                    Match Purse (Tier {currentFighter.tierNumber} · {currentFighter.name})
-                  </span>
-                  <span className="font-mono tabular-nums text-amber-300">
-                    +{summary.baseGold}g
-                  </span>
-                </div>
+            {/* Scrollable Body */}
+            <div className="overflow-y-auto px-6 py-5 space-y-6">
+              {/* Compact Gold Breakdown Pills */}
+              <div className="flex flex-wrap items-center gap-2 text-xs">
+                <span className="px-3 py-1.5 rounded-xl bg-[#0b111e] border border-slate-800 text-slate-300">
+                  Match Purse:{' '}
+                  <strong className="font-mono text-amber-300">+{summary.baseGold}g</strong>
+                </span>
                 {summary.firstWinBonus > 0 && (
-                  <div className="flex items-center justify-between text-emerald-300 font-medium">
-                    <span>First-Time Challenger Conquest Bonus</span>
-                    <span className="font-mono tabular-nums">+{summary.firstWinBonus}g</span>
-                  </div>
+                  <span className="px-3 py-1.5 rounded-xl bg-emerald-950/50 border border-emerald-500/40 text-emerald-200">
+                    First Win:{' '}
+                    <strong className="font-mono">+{summary.firstWinBonus}g</strong>
+                  </span>
                 )}
                 {summary.dominanceBonus > 0 && (
-                  <div className="flex items-center justify-between text-slate-300">
-                    <span>
-                      {summary.isPerfect
-                        ? `Perfect ${summary.playerScore}–0 Bonus`
-                        : 'Dominance Bonus'}
-                    </span>
-                    <span className="font-mono tabular-nums text-amber-300">
-                      +{summary.dominanceBonus}g
-                    </span>
-                  </div>
+                  <span className="px-3 py-1.5 rounded-xl bg-[#0b111e] border border-slate-800 text-slate-300">
+                    {summary.isPerfect ? 'Perfect Bonus' : 'Dominance'}:{' '}
+                    <strong className="font-mono text-amber-300">+{summary.dominanceBonus}g</strong>
+                  </span>
                 )}
                 {summary.comboBonus > 0 && (
-                  <div className="flex items-center justify-between text-slate-300">
-                    <span>Combo Chain Bonus</span>
-                    <span className="font-mono tabular-nums text-amber-300">
-                      +{summary.comboBonus}g
-                    </span>
-                  </div>
+                  <span className="px-3 py-1.5 rounded-xl bg-[#0b111e] border border-slate-800 text-slate-300">
+                    Combos:{' '}
+                    <strong className="font-mono text-amber-300">+{summary.comboBonus}g</strong>
+                  </span>
                 )}
                 {summary.spoilBonusGold > 0 && (
-                  <div className="flex items-center justify-between text-slate-300">
-                    <span>Max Copies (5/5) Auto-Sell Bonus</span>
-                    <span className="font-mono tabular-nums text-amber-300">
-                      +{summary.spoilBonusGold}g
-                    </span>
-                  </div>
-                )}
-                <div className="pt-2 mt-1 border-t border-slate-800 flex items-center justify-between font-semibold text-sm text-slate-100">
-                  <span>Total Gold Earned</span>
-                  <span className="font-mono tabular-nums text-amber-300 flex items-center gap-1">
-                    <Coins className="w-4 h-4" />+{summary.totalGold + summary.spoilBonusGold}g
+                  <span className="px-3 py-1.5 rounded-xl bg-[#0b111e] border border-slate-800 text-slate-300">
+                    5/5 Auto-Sell:{' '}
+                    <strong className="font-mono text-amber-300">+{summary.spoilBonusGold}g</strong>
                   </span>
-                </div>
+                )}
               </div>
 
-              {/* Claim 1 Rolled Spoil Card on Victory */}
+              {/* Spacious Spoils Grid on Victory */}
               {summary.winner === 'player' && (
-                <div className="space-y-2.5">
+                <div className="space-y-4">
                   {summary.bonusMythicDrop && (
-                    <div className="rounded-xl bg-gradient-to-r from-amber-950/70 via-amber-900/40 to-amber-950/70 border border-amber-400/75 px-3.5 py-2.5 flex items-center gap-2 text-xs text-amber-200 shadow-lg">
-                      <Crown className="w-4 h-4 text-amber-300 shrink-0" />
+                    <div className="rounded-xl bg-gradient-to-r from-amber-950/70 via-amber-900/40 to-amber-950/70 border border-amber-400/75 px-4 py-3 flex items-center gap-2.5 text-xs sm:text-sm text-amber-200 shadow-lg">
+                      <Crown className="w-5 h-5 text-amber-300 shrink-0" />
                       <span>
                         <strong>Mythic RNG Drop Triggered!</strong>{' '}
                         {CARD_MAP[summary.bonusMythicDrop.cardId]?.name} (
@@ -1407,21 +2115,22 @@ export const ArenaView: React.FC<ArenaViewProps> = ({
                     </div>
                   )}
 
-                  <div className="flex items-baseline justify-between">
-                    <h3 className="text-sm font-semibold text-amber-200">
+                  <div className="flex flex-wrap items-baseline justify-between gap-2">
+                    <h3 className="font-[var(--font-display)] text-base sm:text-lg font-bold text-amber-200">
                       {summary.spoilClaimedUid
                         ? 'Rolled Spoil Claimed'
-                        : `Claim 1 Rolled Card from ${currentFighter.name}’s Pool`}
+                        : `Claim 1 Rolled Card from ${currentFighter.name}’s Hand`}
                     </h3>
                     {!summary.spoilClaimedUid && (
                       <span className="text-xs text-slate-400">
-                        Unique rolled stats &amp; arrows (max 5 copies per type)
+                        Click any card below to claim its rolled stats &amp; arrows
                       </span>
                     )}
                   </div>
 
-                  <div className="flex gap-2.5 overflow-x-auto pb-2 snap-x">
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
                     {summary.rivalHandCards.map((sCard) => {
+                      const cardDef = CARD_MAP[sCard.cardId];
                       const isClaimed = summary.spoilClaimedUid === sCard.uid;
                       const ownedCopies = profile.owned[sCard.cardId] ?? 0;
                       const isBonusMythic = summary.bonusMythicDrop?.uid === sCard.uid;
@@ -1429,15 +2138,22 @@ export const ArenaView: React.FC<ArenaViewProps> = ({
                       return (
                         <div
                           key={sCard.uid}
-                          className="w-[106px] shrink-0 snap-start flex flex-col items-center gap-1.5"
+                          className={`rounded-2xl p-3 border flex flex-col gap-2.5 transition-colors ${
+                            isClaimed
+                              ? 'bg-emerald-950/35 border-emerald-400/75'
+                              : isBonusMythic && !summary.spoilClaimedUid
+                              ? 'bg-amber-950/30 border-amber-400/70'
+                              : 'bg-[#0b1120] border-slate-800/90'
+                          } ${lockedOut ? 'opacity-45' : ''}`}
                         >
                           <GameCard
                             cardId={sCard.cardId}
                             stats={sCard.stats}
                             arrows={sCard.arrows}
+                            augmentId={sCard.augmentId}
                             owner={isClaimed ? 'player' : 'neutral'}
-                            size="sm"
-                            showName
+                            size="lg"
+                            showName={false}
                             selected={isClaimed || (isBonusMythic && !summary.spoilClaimedUid)}
                             disabled={lockedOut}
                             onClick={
@@ -1446,68 +2162,130 @@ export const ArenaView: React.FC<ArenaViewProps> = ({
                                 : () => handleClaimSpoilCard(sCard)
                             }
                           />
-                          <span
-                            className={`text-[11px] font-medium text-center truncate w-full ${
-                              isBonusMythic ? 'text-amber-300 font-bold' : 'text-slate-300'
-                            }`}
-                          >
-                            {isClaimed
-                              ? summary.spoilWasOverflow
-                                ? `Sold +${summary.spoilBonusGold}g`
-                                : `Claimed (${ownedCopies}/${MAX_COPIES_PER_CARD})`
-                              : isBonusMythic
-                              ? `★ ${formatTetraCode(sCard.stats)} · ${sCard.arrows.length}▲`
-                              : ownedCopies === 0
-                              ? `New · ${formatTetraCode(sCard.stats)} · ${sCard.arrows.length}▲`
-                              : `${ownedCopies}/${MAX_COPIES_PER_CARD} · ${formatTetraCode(
-                                  sCard.stats
-                                )} · ${sCard.arrows.length}▲`}
-                          </span>
+
+                          {/* Full, Un-Squashed Card Name & Stats Readout */}
+                          <div className="space-y-1 text-center px-0.5">
+                            <div className="font-[var(--font-display)] text-sm font-bold text-slate-100 leading-snug">
+                              {cardDef?.name ?? 'Card'}
+                            </div>
+                            <div className="flex items-center justify-center gap-1.5 text-xs">
+                              {cardDef && (
+                                <span
+                                  className={`capitalize font-semibold ${SPOIL_RARITY_TEXT[cardDef.rarity]}`}
+                                >
+                                  {cardDef.rarity}
+                                </span>
+                              )}
+                              <span className="text-slate-600">·</span>
+                              <span className="font-mono font-bold text-amber-200">
+                                {formatTetraCode(sCard.stats)}
+                              </span>
+                              <span className="text-slate-600">·</span>
+                              <span className="font-mono text-sky-300">{sCard.arrows.length}▲</span>
+                            </div>
+                            <div
+                              className={`text-xs font-semibold pt-0.5 ${
+                                isClaimed
+                                  ? 'text-emerald-300'
+                                  : isBonusMythic
+                                  ? 'text-amber-300'
+                                  : ownedCopies === 0
+                                  ? 'text-emerald-300'
+                                  : 'text-slate-400'
+                              }`}
+                            >
+                              {isClaimed
+                                ? summary.spoilWasOverflow
+                                  ? `Auto-Sold (+${summary.spoilBonusGold}g)`
+                                  : `Claimed (${ownedCopies}/${MAX_COPIES_PER_CARD})`
+                                : isBonusMythic
+                                ? '★ Mythic Bonus Drop'
+                                : ownedCopies === 0
+                                ? '★ New Card'
+                                : `Owned: ${ownedCopies}/${MAX_COPIES_PER_CARD}`}
+                            </div>
+                          </div>
                         </div>
                       );
                     })}
                   </div>
 
                   {summary.spoilClaimedCardId && (
-                    <p className="text-xs text-emerald-300">
+                    <div className="rounded-xl bg-emerald-950/50 border border-emerald-500/40 px-4 py-2.5 text-xs sm:text-sm text-emerald-200 font-medium">
                       {CARD_MAP[summary.spoilClaimedCardId]?.name}{' '}
                       {summary.spoilWasOverflow
                         ? `was already at ${MAX_COPIES_PER_CARD}/${MAX_COPIES_PER_CARD} copies and auto-sold for +${summary.spoilBonusGold}g!`
                         : `added to your collection (${
                             profile.owned[summary.spoilClaimedCardId] ?? 1
                           }/${MAX_COPIES_PER_CARD} copies owned)!`}
-                    </p>
+                    </div>
                   )}
                 </div>
               )}
             </div>
 
-            <div className="px-5 py-4 border-t border-slate-800 bg-[#0d1424] flex flex-wrap items-center gap-2.5">
-              <button
-                type="button"
-                onClick={() => setPhase('setup')}
-                className="flex-1 min-h-[44px] px-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-medium text-xs sm:text-sm transition-colors cursor-pointer"
-              >
-                Ladder View
-              </button>
-              <button
-                type="button"
-                onClick={startMatch}
-                className="flex-1 min-h-[44px] px-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-amber-300 font-semibold text-xs sm:text-sm flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
-              >
-                <RefreshCw className="w-3.5 h-3.5" />
-                <span>Rematch</span>
-              </button>
-              {nextChallengeFighter && (
+            {/* Clean Footer Actions */}
+            <div className="px-6 py-4 border-t border-slate-800 bg-[#0c1322] flex flex-wrap items-center justify-between gap-2.5">
+              <div className="flex items-center gap-2">
                 <button
                   type="button"
-                  onClick={() => startMatchWithFighter(nextChallengeFighter.id)}
-                  className="w-full sm:w-auto sm:flex-[1.4] min-h-[44px] px-4 rounded-xl bg-gradient-to-b from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-slate-950 font-bold text-xs sm:text-sm flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+                  onClick={() => {
+                    sound.select();
+                    onGoHome();
+                  }}
+                  className="min-h-[44px] px-4 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-700 text-slate-200 font-medium text-xs sm:text-sm flex items-center gap-1.5 transition-colors cursor-pointer"
                 >
-                  <span>Next: {nextChallengeFighter.name}</span>
-                  <ChevronRight className="w-4 h-4" />
+                  <Home className="w-4 h-4" />
+                  <span>Home</span>
                 </button>
-              )}
+                <button
+                  type="button"
+                  onClick={() => {
+                    sound.select();
+                    setPhase('setup');
+                    setSetupStep('details');
+                  }}
+                  className="min-h-[44px] px-4 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-medium text-xs sm:text-sm transition-colors cursor-pointer"
+                >
+                  {gameMode === 'quick' ? 'Opponent Setup' : 'Arena Ladder'}
+                </button>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-2.5">
+                <button
+                  type="button"
+                  onClick={startMatch}
+                  className="min-h-[44px] px-5 rounded-xl bg-slate-800 hover:bg-slate-700 text-amber-300 font-semibold text-xs sm:text-sm flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+                >
+                  <RefreshCw className="w-4 h-4" />
+                  <span>Rematch</span>
+                </button>
+                {gameMode === 'quick' ? (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      sound.select();
+                      const next = rollRandomFighter(quickPool, currentFighter.id);
+                      startMatchWithFighter(next.id);
+                    }}
+                    className="min-h-[44px] px-5 rounded-xl bg-gradient-to-b from-amber-300 via-amber-400 to-amber-500 hover:from-amber-200 hover:to-amber-400 text-slate-950 font-bold text-xs sm:text-sm flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+                  >
+                    <Dices className="w-4 h-4" />
+                    <span>New Random Match</span>
+                  </button>
+                ) : (
+                  nextChallengeFighter && (
+                    <button
+                      type="button"
+                      onClick={() => startMatchWithFighter(nextChallengeFighter.id)}
+                      className="min-h-[44px] px-5 rounded-xl bg-gradient-to-b from-amber-300 via-amber-400 to-amber-500 hover:from-amber-200 hover:to-amber-400 text-slate-950 font-bold text-xs sm:text-sm flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+                    >
+                      <span>Next: {nextChallengeFighter.name}</span>
+                      <ChevronRight className="w-4 h-4" />
+                    </button>
+                  )
+                )}
+              </div>
             </div>
           </div>
         </div>

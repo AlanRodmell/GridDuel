@@ -2,6 +2,7 @@
 
 @theme {
   --font-display: "Cinzel", Georgia, serif;
+  --font-serif: "Cormorant Garamond", Georgia, serif;
   --font-sans: "Plus Jakarta Sans", system-ui, -apple-system, sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
 }
@@ -19,9 +20,8 @@
     overflow-x: hidden;
     background-color: #090e1a;
     background-image:
-      radial-gradient(ellipse 85% 55% at 50% -5%, rgba(45, 78, 145, 0.32), transparent 70%),
-      radial-gradient(ellipse 65% 45% at 50% 105%, rgba(217, 149, 43, 0.16), transparent 70%);
-    background-attachment: fixed;
+      radial-gradient(ellipse 85% 55% at 50% 0%, rgba(45, 78, 145, 0.28), transparent 65%),
+      radial-gradient(ellipse 65% 45% at 50% 100%, rgba(217, 149, 43, 0.14), transparent 65%);
   }
 }
 
@@ -43,10 +43,10 @@
 
 @keyframes cardSlamIn {
   0% {
-    transform: perspective(800px) translateY(-22px) scale(1.22);
-    opacity: 0.65;
+    transform: perspective(800px) translateY(-16px) scale(1.16);
+    opacity: 0.78;
   }
-  65% {
+  60% {
     transform: perspective(800px) translateY(2px) scale(0.96);
     opacity: 1;
   }
@@ -159,6 +159,20 @@
 
 .pb-safe {
   padding-bottom: max(0.35rem, env(safe-area-inset-bottom));
+}
+
+.card-contain {
+  contain: layout style paint;
+}
+
+.card-grid-item {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 295px;
+}
+
+.drag-card-ghost {
+  will-change: transform;
+  filter: drop-shadow(0 22px 26px rgba(0, 0, 0, 0.75));
 }
 
 @media (prefers-reduced-motion: reduce) {

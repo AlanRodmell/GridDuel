@@ -3,10 +3,12 @@ import {
   BOOSTER_PACKS,
   CARD_MAP,
   CARDS,
+  CRAFTABLE_AUGMENT_MAP,
   MAX_COPIES_PER_CARD,
   STARTER_CARD_IDS,
   getCardSellValue,
   getStatsPowerScore,
+  resolveCardAugment,
   rollCardArrows,
   rollCardInstance,
 } from '../data/cards';
@@ -22,6 +24,7 @@ import { sound } from '../utils/sound';
 
 const STORAGE_KEY = 'aether_triad_profile_v1';
 export const DECK_CAPACITY = 7;
+export const MAX_DECK_SLOTS = 9;
 
 function createStarterInventory(): Record<string, RolledCardInstance[]> {
   const inv: Record<string, RolledCardInstance[]> = {};
@@ -190,11 +193,16 @@ function loadProfile(): PlayerProfile {
               }
             }
             seenArrowSigs.add([...arrows].sort().join(','));
+            const validAugmentId =
+              typeof item.augmentId === 'string' && CRAFTABLE_AUGMENT_MAP[item.augmentId]
+                ? item.augmentId
+                : undefined;
             return {
               uid: item.uid,
               cardId,
               stats: item.stats,
               arrows,
+              ...(validAugmentId ? { augmentId: validAugmentId } : {}),
             };
           });
         if (validCopies.length > 0) {
@@ -221,10 +229,10 @@ function loadProfile(): PlayerProfile {
     const owned = syncOwnedCounts(inventory);
 
     let decks: DeckSlot[];
-    if (Array.isArray(parsed.decks) && parsed.decks.length === 3) {
-      decks = parsed.decks.map((d, idx) => ({
+    if (Array.isArray(parsed.decks) && parsed.decks.length >= 1) {
+      decks = parsed.decks.slice(0, MAX_DECK_SLOTS).map((d, idx) => ({
         id: d.id || `deck-${idx + 1}`,
-        name: d.name || `Hand ${idx + 1}`,
+        name: (d.name && d.name.trim()) || `Deck ${idx + 1}`,
         cards: sanitizeDeckInstanceUids(Array.isArray(d.cards) ? d.cards : [], inventory),
       }));
     } else {
@@ -343,6 +351,102 @@ export function useProfile() {
   }, []);
 
   /**
+   * Creates a new Hearthstone-style saved deck slot (up to MAX_DECK_SLOTS = 9).
+   * If duplicateFromIndex is given, copies that deck's card list; otherwise seeds with strongest owned copies.
+   */
+  const createDeck = useCallback(
+    (customName?: string, duplicateFromIndex?: number): { ok: boolean; message?: string } => {
+      let result: { ok: boolean; message?: string } = { ok: true };
+      setProfile((prev) => {
+        if (prev.decks.length >= MAX_DECK_SLOTS) {
+          result = {
+            ok: false,
+            message: `Maximum of ${MAX_DECK_SLOTS} saved decks reached. Delete one to create a new deck.`,
+          };
+          return prev;
+        }
+
+        const sourceDeck =
+          typeof duplicateFromIndex === 'number' ? prev.decks[duplicateFromIndex] : null;
+        let cards: string[];
+        if (sourceDeck) {
+          cards = sanitizeDeckInstanceUids([...sourceDeck.cards], prev.inventory);
+        } else {
+          const allInstances = Object.values(prev.inventory).flat();
+          cards = [...allInstances]
+            .sort(
+              (a, b) =>
+                getStatsPowerScore(b.stats, b.arrows.length) -
+                getStatsPowerScore(a.stats, a.arrows.length)
+            )
+            .slice(0, DECK_CAPACITY)
+            .map((c) => c.uid);
+        }
+
+        const nextNum = prev.decks.length + 1;
+        const baseName =
+          customName?.trim() ||
+          (sourceDeck ? `${sourceDeck.name} Copy` : `Custom Deck ${nextNum}`);
+        const newDeck: DeckSlot = {
+          id: `deck-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`,
+          name: baseName.slice(0, 28),
+          cards,
+        };
+
+        const nextDecks = [...prev.decks, newDeck];
+        return {
+          ...prev,
+          decks: nextDecks,
+          activeDeckIndex: nextDecks.length - 1,
+        };
+      });
+      if (result.ok) sound.select();
+      return result;
+    },
+    []
+  );
+
+  const renameDeck = useCallback((index: number, rawName: string) => {
+    const trimmed = rawName.trim().slice(0, 28);
+    if (!trimmed) return;
+    setProfile((prev) => {
+      if (index < 0 || index >= prev.decks.length) return prev;
+      const nextDecks = prev.decks.map((d, i) =>
+        i === index ? { ...d, name: trimmed } : d
+      );
+      return { ...prev, decks: nextDecks };
+    });
+  }, []);
+
+  const deleteDeck = useCallback((index: number): { ok: boolean; message?: string } => {
+    let result: { ok: boolean; message?: string } = { ok: true };
+    setProfile((prev) => {
+      if (prev.decks.length <= 1) {
+        result = { ok: false, message: 'Keep at least 1 saved deck.' };
+        return prev;
+      }
+      if (index < 0 || index >= prev.decks.length) {
+        result = { ok: false, message: 'Deck not found.' };
+        return prev;
+      }
+      const nextDecks = prev.decks.filter((_, i) => i !== index);
+      let nextActive = prev.activeDeckIndex;
+      if (nextActive >= nextDecks.length) {
+        nextActive = nextDecks.length - 1;
+      } else if (index < nextActive) {
+        nextActive = Math.max(0, nextActive - 1);
+      }
+      return {
+        ...prev,
+        decks: nextDecks,
+        activeDeckIndex: nextActive,
+      };
+    });
+    if (result.ok) sound.select();
+    return result;
+  }, []);
+
+  /**
    * Equips or unequips a specific rolled card instance (by uid) or cardId in the active 5-card hand.
    * Multiple copies of the same card type ARE supported in a 5-card hand if you own multiple copies!
    */
@@ -422,8 +526,8 @@ export function useProfile() {
         );
       } else if (strategy === 'augments') {
         ordered = [...allInstances].sort((a, b) => {
-          const aAug = CARD_MAP[a.cardId]?.augment ? 16 : 0;
-          const bAug = CARD_MAP[b.cardId]?.augment ? 16 : 0;
+          const aAug = resolveCardAugment(a.cardId, a.augmentId) ? 16 : 0;
+          const bAug = resolveCardAugment(b.cardId, b.augmentId) ? 16 : 0;
           return (
             bAug +
             getStatsPowerScore(b.stats, b.arrows.length) -
@@ -514,7 +618,7 @@ export function useProfile() {
         return {
           ok: false,
           goldEarned: 0,
-          message: `You must keep at least ${DECK_CAPACITY} cards in your collection for 5×5 battle.`,
+          message: `You must keep at least ${DECK_CAPACITY} cards in your collection for 4×4 battle.`,
         };
       }
 
@@ -749,6 +853,7 @@ export function useProfile() {
         cardId: card.id,
         stats: { ...spoilCard.stats },
         arrows: [...spoilCard.arrows],
+        ...(spoilCard.augmentId ? { augmentId: spoilCard.augmentId } : {}),
       };
 
       setProfile((prev) => {
@@ -781,6 +886,88 @@ export function useProfile() {
     [profile.inventory]
   );
 
+  /**
+   * Crafts and imbues a chosen Augment Rune onto a specific owned card copy using Gold.
+   * Replaces any previously crafted augment on that copy; innate Mythic traits are preserved.
+   */
+  const craftAugmentOnCopy = useCallback(
+    (
+      instanceUid: string,
+      augmentId: string
+    ): {
+      ok: boolean;
+      message?: string;
+      cardName?: string;
+      runeName?: string;
+      cost?: number;
+      replaced?: boolean;
+    } => {
+      const rune = CRAFTABLE_AUGMENT_MAP[augmentId];
+      if (!rune) {
+        return { ok: false, message: 'Unknown augment rune.' };
+      }
+
+      const targetInst = instanceMap[instanceUid];
+      if (!targetInst) {
+        return { ok: false, message: 'Card copy not found in your collection.' };
+      }
+
+      const cardDef = CARD_MAP[targetInst.cardId];
+      if (!cardDef) {
+        return { ok: false, message: 'Card definition not found.' };
+      }
+
+      if (cardDef.augment) {
+        return {
+          ok: false,
+          message: `${cardDef.name} already carries an innate Mythic Legendary trait (${cardDef.augment.name}).`,
+        };
+      }
+
+      if (targetInst.augmentId === rune.id) {
+        return {
+          ok: false,
+          message: `This copy already has ${rune.name} imbued.`,
+        };
+      }
+
+      if (profile.gold < rune.craftCost) {
+        return {
+          ok: false,
+          message: `Need ${rune.craftCost.toLocaleString()}g to forge ${rune.name}.`,
+        };
+      }
+
+      const replaced = Boolean(targetInst.augmentId);
+
+      setProfile((prev) => {
+        if (prev.gold < rune.craftCost) return prev;
+        const list = prev.inventory[targetInst.cardId] ?? [];
+        const updatedList = list.map((inst) =>
+          inst.uid === instanceUid ? { ...inst, augmentId: rune.id } : inst
+        );
+        return {
+          ...prev,
+          gold: prev.gold - rune.craftCost,
+          inventory: {
+            ...prev.inventory,
+            [targetInst.cardId]: updatedList,
+          },
+        };
+      });
+
+      sound.packReveal(rune.tier === 'sovereign' || rune.tier === 'major');
+      return {
+        ok: true,
+        cardName: cardDef.name,
+        runeName: rune.name,
+        cost: rune.craftCost,
+        replaced,
+      };
+    },
+    [instanceMap, profile.gold]
+  );
+
   const ownedUniqueCount = CARDS.filter((c) => (profile.owned[c.id] ?? 0) > 0).length;
   const totalCopiesCount = Object.values(profile.inventory).reduce(
     (sum, list) => sum + list.length,
@@ -797,12 +984,16 @@ export function useProfile() {
     totalCards: CARDS.length,
     toggleSound,
     selectDeckSlot,
+    createDeck,
+    renameDeck,
+    deleteDeck,
     toggleDeckCard,
     autoBuildActiveDeck,
     buyCard,
     sellCardInstance,
     sellExtraCopies,
     openBoosterPack,
+    craftAugmentOnCopy,
     recordMatchOutcome,
     claimSpoilCard,
   };
