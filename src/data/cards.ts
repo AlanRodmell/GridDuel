@@ -11,41 +11,41 @@ import {
 } from '../types/game';
 
 const IMG = {
-  imp: '/src/assets/images/card_ember_imp_1795362407315.jpg',
-  squire: '/src/assets/images/card_iron_squire_1795362408611.jpg',
-  wolf: '/src/assets/images/card_frost_wolf_1795362408372.jpg',
-  golem: '/src/assets/images/card_moss_golem_1795362407439.jpg',
-  hawk: '/src/assets/images/card_gale_hawk_1795362407788.jpg',
-  wisp: '/src/assets/images/card_lantern_wisp_1795362407904.jpg',
-  goblin: '/src/assets/images/card_goblin_sapper_1795363117714.jpg',
-  slime: '/src/assets/images/card_crystal_slime_1795363118177.jpg',
-  sprite: '/src/assets/images/card_briar_sprite_1795363117548.jpg',
-  owl: '/src/assets/images/card_clockwork_owl_1795363117439.jpg',
-  knight: '/src/assets/images/card_runic_knight_1795362407787.jpg',
-  mage: '/src/assets/images/card_glacial_mage_1795362407435.jpg',
-  drake: '/src/assets/images/card_cinder_drake_1795362406493.jpg',
-  griffin: '/src/assets/images/card_storm_griffin_1795362407908.jpg',
-  rogue: '/src/assets/images/card_shadow_rogue_1795363117580.jpg',
-  serpent: '/src/assets/images/card_tide_serpent_1795363117507.jpg',
-  boar: '/src/assets/images/card_ironclad_boar_1795363117227.jpg',
-  cleric: '/src/assets/images/card_sun_cleric_1795363117977.jpg',
-  behemoth: '/src/assets/images/card_stone_behemoth_1795362407794.jpg',
-  valkyrie: '/src/assets/images/card_valkyrie_lancer_1795362407499.jpg',
-  gargoyle: '/src/assets/images/card_obsidian_gargoyle_1795363117030.jpg',
-  djinn: '/src/assets/images/card_tempest_djinn_1795363117056.jpg',
-  samurai: '/src/assets/images/card_crimson_samurai_1795363117809.jpg',
-  wyvern: '/src/assets/images/card_frost_wyvern_1795363118049.jpg',
-  lich: '/src/assets/images/card_abyssal_lich_1795363117841.jpg',
-  phoenix: '/src/assets/images/card_crimson_phoenix_1795362407139.jpg',
-  leviathan: '/src/assets/images/card_aether_leviathan_1795362407681.jpg',
-  titan: '/src/assets/images/card_emerald_titan_1795363118217.jpg',
-  empress: '/src/assets/images/card_glacial_empress_1795363118839.jpg',
-  sovereign: '/src/assets/images/card_solar_sovereign_1795362408316.jpg',
-  necromancer: '/src/assets/images/card_necromancer_acolyte_1795419232453.jpg',
-  ranger: '/src/assets/images/card_elven_ranger_1795419232865.jpg',
-  dwarf: '/src/assets/images/card_dwarven_thunderer_1795419232969.jpg',
-  archon: '/src/assets/images/card_celestial_archon_1795419232449.jpg',
-  voidDragon: '/src/assets/images/card_void_behemoth_1795419233239.jpg',
+  imp: './src/assets/images/card_ember_imp_1795362407315.jpg',
+  squire: './src/assets/images/card_iron_squire_1795362408611.jpg',
+  wolf: './src/assets/images/card_frost_wolf_1795362408372.jpg',
+  golem: './src/assets/images/card_moss_golem_1795362407439.jpg',
+  hawk: './src/assets/images/card_gale_hawk_1795362407788.jpg',
+  wisp: './src/assets/images/card_lantern_wisp_1795362407904.jpg',
+  goblin: './src/assets/images/card_goblin_sapper_1795363117714.jpg',
+  slime: './src/assets/images/card_crystal_slime_1795363118177.jpg',
+  sprite: './src/assets/images/card_briar_sprite_1795363117548.jpg',
+  owl: './src/assets/images/card_clockwork_owl_1795363117439.jpg',
+  knight: './src/assets/images/card_runic_knight_1795362407787.jpg',
+  mage: './src/assets/images/card_glacial_mage_1795362407435.jpg',
+  drake: './src/assets/images/card_cinder_drake_1795362406493.jpg',
+  griffin: './src/assets/images/card_storm_griffin_1795362407908.jpg',
+  rogue: './src/assets/images/card_shadow_rogue_1795363117580.jpg',
+  serpent: './src/assets/images/card_tide_serpent_1795363117507.jpg',
+  boar: './src/assets/images/card_ironclad_boar_1795363117227.jpg',
+  cleric: './src/assets/images/card_sun_cleric_1795363117977.jpg',
+  behemoth: './src/assets/images/card_stone_behemoth_1795362407794.jpg',
+  valkyrie: './src/assets/images/card_valkyrie_lancer_1795362407499.jpg',
+  gargoyle: './src/assets/images/card_obsidian_gargoyle_1795363117030.jpg',
+  djinn: './src/assets/images/card_tempest_djinn_1795363117056.jpg',
+  samurai: './src/assets/images/card_crimson_samurai_1795363117809.jpg',
+  wyvern: './src/assets/images/card_frost_wyvern_1795363118049.jpg',
+  lich: './src/assets/images/card_abyssal_lich_1795363117841.jpg',
+  phoenix: './src/assets/images/card_crimson_phoenix_1795362407139.jpg',
+  leviathan: './src/assets/images/card_aether_leviathan_1795362407681.jpg',
+  titan: './src/assets/images/card_emerald_titan_1795363118217.jpg',
+  empress: './src/assets/images/card_glacial_empress_1795363118839.jpg',
+  sovereign: './src/assets/images/card_solar_sovereign_1795362408316.jpg',
+  necromancer: './src/assets/images/card_necromancer_acolyte_1795419232453.jpg',
+  ranger: './src/assets/images/card_elven_ranger_1795419232865.jpg',
+  dwarf: './src/assets/images/card_dwarven_thunderer_1795419232969.jpg',
+  archon: './src/assets/images/card_celestial_archon_1795419232449.jpg',
+  voidDragon: './src/assets/images/card_void_behemoth_1795419233239.jpg',
 };
 
 const ROLE_FROM_TYPE: Record<AttackType, CardRole> = {
@@ -1713,8 +1713,13 @@ export const CARD_MAP: Record<string, CardDef> = Object.fromEntries(
 );
 
 export function getCardThumbUrl(imagePath: string): string {
-  if (imagePath.startsWith('/src/assets/images/') && !imagePath.includes('/thumbs/')) {
-    return imagePath.replace('/src/assets/images/', '/src/assets/images/thumbs/');
+  if (!imagePath.includes('/thumbs/')) {
+    if (imagePath.startsWith('./src/assets/images/')) {
+      return imagePath.replace('./src/assets/images/', './src/assets/images/thumbs/');
+    }
+    if (imagePath.startsWith('/src/assets/images/')) {
+      return imagePath.replace('/src/assets/images/', '/src/assets/images/thumbs/');
+    }
   }
   return imagePath;
 }

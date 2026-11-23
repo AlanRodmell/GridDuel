@@ -282,7 +282,7 @@ async function generatePortrait(ai, styleRefs, card) {
 }
 
 function formatImgLine(card, filename) {
-  return `  ${card.imgKey}: '/src/assets/images/${filename}',`;
+  return `  ${card.imgKey}: './src/assets/images/${filename}',`;
 }
 
 function formatRawEntry(card) {
