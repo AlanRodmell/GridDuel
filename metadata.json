@@ -1,0 +1,6 @@
+{
+  "name": "Aether Triad",
+  "description": "A mobile-first fantasy tactical card game blending Triple Triad cardinal ranks with Tetra Master diagonal flanks, randomized match rules, an unlockable card gallery, and a gold card shop.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

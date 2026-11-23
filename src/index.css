@@ -1,0 +1,173 @@
+@import "tailwindcss";
+
+@theme {
+  --font-display: "Cinzel", Georgia, serif;
+  --font-sans: "Plus Jakarta Sans", system-ui, -apple-system, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+}
+
+@layer base {
+  html {
+    font-family: var(--font-sans);
+    background-color: #090e1a;
+    color: #f1f5f9;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  body {
+    min-height: 100dvh;
+    overflow-x: hidden;
+    background-color: #090e1a;
+    background-image:
+      radial-gradient(ellipse 85% 55% at 50% -5%, rgba(45, 78, 145, 0.32), transparent 70%),
+      radial-gradient(ellipse 65% 45% at 50% 105%, rgba(217, 149, 43, 0.16), transparent 70%);
+    background-attachment: fixed;
+  }
+}
+
+/* Hearthstone-style tactile 3D card slam, flip, & foil shimmer animations */
+@keyframes cardFlipPulse {
+  0% {
+    transform: perspective(800px) rotateY(0deg) scale(1);
+  }
+  42% {
+    transform: perspective(800px) rotateY(92deg) scale(1.12);
+  }
+  75% {
+    transform: perspective(800px) rotateY(-8deg) scale(1.04);
+  }
+  100% {
+    transform: perspective(800px) rotateY(0deg) scale(1);
+  }
+}
+
+@keyframes cardSlamIn {
+  0% {
+    transform: perspective(800px) translateY(-22px) scale(1.22);
+    opacity: 0.65;
+  }
+  65% {
+    transform: perspective(800px) translateY(2px) scale(0.96);
+    opacity: 1;
+  }
+  100% {
+    transform: perspective(800px) translateY(0) scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes calloutPop {
+  0% {
+    transform: translateY(10px) scale(0.88);
+    opacity: 0;
+  }
+  16% {
+    transform: translateY(0) scale(1.03);
+    opacity: 1;
+  }
+  28% {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+  }
+  82% {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(-8px) scale(0.95);
+    opacity: 0;
+  }
+}
+
+@keyframes foilShimmer {
+  0% {
+    transform: translateX(-140%) skewX(-22deg);
+  }
+  100% {
+    transform: translateX(240%) skewX(-22deg);
+  }
+}
+
+@keyframes arrowPulse {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 0.9;
+  }
+  50% {
+    transform: scale(1.18);
+    opacity: 1;
+  }
+}
+
+.animate-card-flip {
+  animation: cardFlipPulse 420ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.animate-card-drop {
+  animation: cardSlamIn 240ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.animate-callout {
+  animation: calloutPop 1150ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-foil-shimmer {
+  animation: foilShimmer 3.8s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
+.animate-arrow-pulse {
+  animation: arrowPulse 1.4s ease-in-out infinite;
+}
+
+/* Tactile Carved Tabletop Surface */
+.hearth-table-surface {
+  background:
+    radial-gradient(circle at 50% 45%, rgba(30, 46, 78, 0.92) 0%, rgba(13, 21, 38, 0.98) 78%),
+    linear-gradient(135deg, #1b2845 0%, #0d1527 100%);
+  box-shadow:
+    inset 0 2px 18px rgba(0, 0, 0, 0.75),
+    inset 0 0 0 2px rgba(245, 158, 11, 0.22),
+    0 24px 60px rgba(0, 0, 0, 0.65);
+}
+
+.hearth-tile-socket {
+  box-shadow:
+    inset 0 3px 8px rgba(0, 0, 0, 0.75),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.06);
+}
+
+@keyframes previewPop {
+  0% {
+    transform: scale(0.86) translateY(10px);
+    opacity: 0;
+  }
+  100% {
+    transform: scale(1) translateY(0);
+    opacity: 1;
+  }
+}
+
+.animate-preview-pop {
+  animation: previewPop 200ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.no-touch-callout {
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+.pb-safe {
+  padding-bottom: max(0.35rem, env(safe-area-inset-bottom));
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-card-flip,
+  .animate-card-drop,
+  .animate-callout,
+  .animate-foil-shimmer,
+  .animate-arrow-pulse,
+  .animate-preview-pop {
+    animation: none !important;
+  }
+}
