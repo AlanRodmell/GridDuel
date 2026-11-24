@@ -7,7 +7,6 @@ import {
   Dices,
   Hammer,
   LayoutGrid,
-  Map as MapIcon,
   ShoppingBag,
   Swords,
   Trophy,
@@ -17,7 +16,7 @@ import { PlayerProfile } from '../types/game';
 import { sound } from '../utils/sound';
 import { GameCard } from './GameCard';
 
-export type PlayLaunchIntent = 'choose' | 'arena' | 'quick' | 'battlefield';
+export type PlayLaunchIntent = 'choose' | 'arena' | 'quick';
 
 interface HomeViewProps {
   profile: PlayerProfile;
@@ -83,24 +82,12 @@ export const HomeView: React.FC<HomeViewProps> = ({
               type="button"
               onClick={() => {
                 sound.select();
-                onStartFlow('battlefield');
-              }}
-              className="min-h-[52px] px-5 py-3 rounded-xl bg-gradient-to-b from-emerald-900/75 to-emerald-950/90 hover:from-emerald-800/80 hover:to-emerald-900/90 border border-emerald-400/50 text-emerald-200 font-semibold text-sm flex items-center justify-center gap-2 transition-colors cursor-pointer"
-            >
-              <MapIcon className="w-4 h-4 text-emerald-300" />
-              <span>Battlefield 7×5</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => {
-                sound.select();
                 onStartFlow('quick');
               }}
               className="min-h-[52px] px-5 py-3 rounded-xl bg-[#11192d] hover:bg-[#182442] border border-sky-400/40 text-sky-200 font-semibold text-sm flex items-center justify-center gap-2 transition-colors cursor-pointer"
             >
               <Dices className="w-4 h-4 text-sky-300" />
-              <span>Quick Duel</span>
+              <span>Quick Random Duel</span>
             </button>
           </div>
 

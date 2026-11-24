@@ -11,7 +11,6 @@ import {
   VolumeX,
 } from 'lucide-react';
 import { ArenaView } from './components/ArenaView';
-import { BattlefieldView } from './components/BattlefieldView';
 import { CardPreviewProvider } from './components/CardPreviewContext';
 import { GalleryView } from './components/GalleryView';
 import { HomeView, PlayLaunchIntent } from './components/HomeView';
@@ -22,7 +21,7 @@ import { useProfile } from './store/useProfile';
 import { MusicThemeId, music } from './utils/music';
 import { sound } from './utils/sound';
 
-type TabId = 'home' | 'arena' | 'battlefield' | 'gallery' | 'shop';
+type TabId = 'home' | 'arena' | 'gallery' | 'shop';
 
 export default function App() {
   const {
@@ -57,8 +56,7 @@ export default function App() {
   const [activeMusicTheme, setActiveMusicTheme] = useState<MusicThemeId>('tavern');
   const [adaptiveMusic, setAdaptiveMusic] = useState(true);
 
-  const hideChromeForMobileMatch =
-    (activeTab === 'arena' || activeTab === 'battlefield') && isMatchActive;
+  const hideChromeForMobileMatch = activeTab === 'arena' && isMatchActive;
 
   const handleToggleMusic = useCallback((enabled: boolean) => {
     setMusicEnabled(enabled);
@@ -87,20 +85,16 @@ export default function App() {
   const switchTab = (tab: TabId) => {
     sound.select();
     setActiveTab(tab);
-    if (tab !== 'arena' && tab !== 'battlefield') {
+    if (tab !== 'arena') {
       setIsMatchActive(false);
     }
-    if (adaptiveMusic && tab !== 'arena' && tab !== 'battlefield') {
+    if (adaptiveMusic && tab !== 'arena') {
       setActiveMusicTheme('tavern');
       music.setTheme('tavern');
     }
   };
 
   const launchPlayFlow = (intent: PlayLaunchIntent) => {
-    if (intent === 'battlefield') {
-      setActiveTab('battlefield');
-      return;
-    }
     setPlayIntent(intent);
     setPlayLaunchNonce((n) => n + 1);
     setActiveTab('arena');
@@ -152,17 +146,6 @@ export default function App() {
               }`}
             >
               Play
-            </button>
-            <button
-              type="button"
-              onClick={() => switchTab('battlefield')}
-              className={`py-1 transition-colors whitespace-nowrap shrink-0 cursor-pointer ${
-                activeTab === 'battlefield'
-                  ? 'text-emerald-300 border-b-2 border-emerald-400'
-                  : 'text-slate-400 hover:text-slate-100'
-              }`}
-            >
-              Battlefield 7×5
             </button>
             <button
               type="button"
@@ -286,20 +269,7 @@ export default function App() {
             onGoHome={() => switchTab('home')}
             onGoToGallery={() => switchTab('gallery')}
             onOpenRules={() => setRulesOpen(true)}
-            onLaunchBattlefield={() => switchTab('battlefield')}
             onToggleSound={toggleSound}
-            onMatchActiveChange={setIsMatchActive}
-            onMatchThemeChange={handleMatchThemeChange}
-          />
-        )}
-        {activeTab === 'battlefield' && (
-          <BattlefieldView
-            profile={profile}
-            activeDeck={activeDeck}
-            onSelectDeckSlot={selectDeckSlot}
-            onRecordMatch={recordMatchOutcome}
-            onClaimSpoil={claimSpoilCard}
-            onExitToArena={() => launchPlayFlow('choose')}
             onMatchActiveChange={setIsMatchActive}
             onMatchThemeChange={handleMatchThemeChange}
           />

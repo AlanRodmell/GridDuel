@@ -12,7 +12,6 @@ import {
   Flag,
   Home,
   Lock,
-  Map as MapIcon,
   Play,
   RefreshCw,
   Shield,
@@ -216,7 +215,6 @@ interface ArenaViewProps {
   onGoHome: () => void;
   onGoToGallery: () => void;
   onOpenRules: () => void;
-  onLaunchBattlefield?: () => void;
   onToggleSound?: () => void;
   onMatchActiveChange?: (active: boolean) => void;
   onMatchThemeChange?: (theme: 'tavern' | 'duel' | 'boss') => void;
@@ -238,7 +236,6 @@ export const ArenaView: React.FC<ArenaViewProps> = ({
   onGoHome,
   onGoToGallery,
   onOpenRules,
-  onLaunchBattlefield,
   onToggleSound,
   onMatchActiveChange,
   onMatchThemeChange,
@@ -1354,7 +1351,7 @@ export const ArenaView: React.FC<ArenaViewProps> = ({
               </p>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-5 max-w-5xl mx-auto pt-2">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5 max-w-4xl mx-auto pt-2">
               {/* Mode Card 1: Championship Arena */}
               <button
                 type="button"
@@ -1392,45 +1389,7 @@ export const ArenaView: React.FC<ArenaViewProps> = ({
                 </div>
               </button>
 
-              {/* Mode Card 2: Tactical Battlefield (7x5 Chess-Like Wargame) */}
-              {onLaunchBattlefield && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    sound.select();
-                    onLaunchBattlefield();
-                  }}
-                  className="group rounded-3xl bg-gradient-to-b from-[#102c2c] via-[#0d1f24] to-[#0a111a] border border-emerald-400/45 hover:border-emerald-300 p-6 text-left flex flex-col justify-between gap-6 shadow-[0_18px_42px_rgba(0,0,0,0.45)] transition-transform duration-200 hover:-translate-y-1 cursor-pointer"
-                >
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between">
-                      <div className="w-12 h-12 rounded-2xl bg-emerald-500/15 border border-emerald-400/45 flex items-center justify-center text-emerald-300">
-                        <MapIcon className="w-6 h-6" />
-                      </div>
-                      <span className="px-2.5 py-1 rounded-full bg-emerald-950/90 border border-emerald-400/45 font-mono text-xs font-bold text-emerald-200">
-                        New · 7×5 Grid
-                      </span>
-                    </div>
-
-                    <div className="space-y-2">
-                      <h2 className="font-[var(--font-display)] text-xl font-bold text-emerald-100 group-hover:text-emerald-200 transition-colors">
-                        Tactical Battlefield
-                      </h2>
-                      <p className="text-sm text-slate-300 leading-relaxed">
-                        Deploy a 10-card army and march troops along their arrows like chess across
-                        rivers, marshes &amp; shrines to claim 8 VP or breach the Keep.
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center justify-between pt-4 border-t border-slate-800/80 text-sm font-semibold text-emerald-300">
-                    <span>Enter Battlefield Skirmish</span>
-                    <ChevronRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
-                  </div>
-                </button>
-              )}
-
-              {/* Mode Card 3: One-Off Random Match */}
+              {/* Mode Card 2: One-Off Random Match */}
               <button
                 type="button"
                 onClick={() => {
