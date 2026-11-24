@@ -10,12 +10,14 @@ import {
   CardPreviewContext,
   CardPreviewData,
 } from '../context/cardPreviewContext';
+import { BIOME_META } from '../data/biomes';
 import {
   CARD_MAP,
   formatArrowsCompact,
   formatTetraCode,
 } from '../data/cards';
 import { CARD_RARITY_THEMES } from '../styles/cardThemes';
+import { BiomeIcon, CardTraitPills } from './BiomeBadge';
 import { GameCard } from './GameCard';
 
 export const CardPreviewProvider: React.FC<{ children: React.ReactNode }> = ({
@@ -60,6 +62,8 @@ export const CardPreviewProvider: React.FC<{ children: React.ReactNode }> = ({
   const pDefDelta = stats && baseStats ? stats.pDef - baseStats.pDef : 0;
   const mDefDelta = stats && baseStats ? stats.mDef - baseStats.mDef : 0;
   const hasBoardMod = pwrDelta !== 0 || pDefDelta !== 0 || mDefDelta !== 0;
+  const netModDelta = pwrDelta + pDefDelta + mDefDelta;
+  const terrainMeta = preview?.terrain ? BIOME_META[preview.terrain] : null;
 
   const theme = card ? CARD_RARITY_THEMES[card.rarity] : null;
   const contextValue = useMemo(
@@ -92,6 +96,7 @@ export const CardPreviewProvider: React.FC<{ children: React.ReactNode }> = ({
                 >
                   {theme.tierLabel}
                 </span>
+                <CardTraitPills element={card.element} tribe={card.tribe} compact />
                 {preview.owner === 'player' && (
                   <span className="px-2 py-0.5 rounded-md bg-blue-950/90 border border-blue-400/60 text-[10px] font-bold uppercase tracking-wider text-blue-200">
                     Your Card
@@ -131,16 +136,49 @@ export const CardPreviewProvider: React.FC<{ children: React.ReactNode }> = ({
               />
             </div>
 
-            {/* Active Board Augment Modification Banner */}
+            {/* Active Biome Tile Banner (when inspecting a card on a biome tile) */}
+            {terrainMeta && (
+              <div
+                className={`w-full max-w-[388px] rounded-xl border px-3 py-2 flex items-center justify-between gap-2 text-xs ${terrainMeta.badgeClass}`}
+              >
+                <span className="inline-flex items-center gap-1.5 font-semibold">
+                  <BiomeIcon biome={terrainMeta.id} className="w-3.5 h-3.5 shrink-0" />
+                  <span>{terrainMeta.name}</span>
+                </span>
+                <span className="font-mono font-bold">
+                  {preview.terrainMod ? preview.terrainMod.label : 'Neutral effect'}
+                </span>
+              </div>
+            )}
+
+            {/* Active Board Modification Banner (Terrain + Augments) */}
             {hasBoardMod && baseStats && (
-              <div className="w-full max-w-[388px] rounded-xl bg-emerald-950/70 border border-emerald-400/50 px-3 py-2 flex items-center justify-between gap-2 text-xs">
-                <span className="inline-flex items-center gap-1.5 font-semibold text-emerald-200">
+              <div
+                className={`w-full max-w-[388px] rounded-xl border px-3 py-2 flex items-center justify-between gap-2 text-xs ${
+                  netModDelta < 0
+                    ? 'bg-rose-950/70 border-rose-400/50'
+                    : 'bg-emerald-950/70 border-emerald-400/50'
+                }`}
+              >
+                <span
+                  className={`inline-flex items-center gap-1.5 font-semibold ${
+                    netModDelta < 0 ? 'text-rose-200' : 'text-emerald-200'
+                  }`}
+                >
                   <Sparkles className="w-3.5 h-3.5 shrink-0" />
-                  <span>Board Augmented</span>
+                  <span>
+                    {preview.terrainMod && preview.lastAugmented
+                      ? 'Terrain & Augment'
+                      : preview.terrainMod
+                      ? 'Terrain Modified'
+                      : 'Board Augmented'}
+                  </span>
                 </span>
                 <span className="font-mono font-bold tabular-nums text-slate-200">
                   {formatTetraCode(baseStats)} →{' '}
-                  <span className="text-emerald-300">{formatTetraCode(stats)}</span>
+                  <span className={netModDelta < 0 ? 'text-rose-300' : 'text-emerald-300'}>
+                    {formatTetraCode(stats)}
+                  </span>
                 </span>
               </div>
             )}
@@ -151,7 +189,7 @@ export const CardPreviewProvider: React.FC<{ children: React.ReactNode }> = ({
               className="w-full max-w-[388px] rounded-xl bg-[#0b101d]/90 border px-3.5 py-2.5 flex items-center justify-between gap-2 text-xs"
             >
               <span className="font-mono tabular-nums text-slate-300">
-                PWR {stats.power} · P.DEF {stats.pDef} · M.DEF {stats.mDef}
+                ATK {stats.power} · {stats.type} · P.DEF {stats.pDef} · M.DEF {stats.mDef}
               </span>
               <span
                 style={{ color: theme.titleColor }}
@@ -159,7 +197,7 @@ export const CardPreviewProvider: React.FC<{ children: React.ReactNode }> = ({
               >
                 <Compass className="w-3 h-3" />
                 <span>
-                  {arrows.length}▲ ({formatArrowsCompact(arrows)})
+                  {arrows.length} ({formatArrowsCompact(arrows)})
                 </span>
               </span>
             </div>

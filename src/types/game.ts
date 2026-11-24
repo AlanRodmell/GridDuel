@@ -8,6 +8,25 @@ export type ArrowDir = 'n' | 'ne' | 'e' | 'se' | 's' | 'sw' | 'w' | 'nw';
 
 export type Owner = 'player' | 'rival';
 
+export type CardElement =
+  | 'fire'
+  | 'water'
+  | 'nature'
+  | 'storm'
+  | 'light'
+  | 'shadow'
+  | 'neutral';
+
+export type CardTribe = 'mortal' | 'fey' | 'undead' | 'construct' | 'beast';
+
+export type BiomeType =
+  | 'water'
+  | 'marsh'
+  | 'volcanic'
+  | 'hallowed'
+  | 'shadow'
+  | 'highland';
+
 export interface TetraStats {
   power: number;   // 0 - 15 (0-9, A-F in hex)
   type: AttackType; // P (Physical), M (Magical), X (Flexible), A (Assault)
@@ -49,11 +68,13 @@ export interface CardDef {
   name: string;
   rarity: Rarity;
   role: CardRole;
+  element: CardElement;
+  tribe: CardTribe;
   stats: TetraStats;
   arrows: ArrowDir[]; // Base archetype arrows (each rolled copy rolls its own arrow layout)
   augment?: CardAugment; // Optional battlefield augment triggered when placed on the board
   image: string;
-  artFilter?: string; // Optional CSS filter/transform for unique visual mood across the 90-card catalog
+  artFilter?: string; // Optional CSS filter/transform for unique visual mood across the card catalog
   price: number;
   accentGradient: string;
 }
@@ -85,6 +106,7 @@ export interface LadderTier {
   cardRangeLabel: string;
   requiredWinsToUnlockNext: number;
   accentColor: string;
+  biomes: BiomeType[];
   fighters: LadderFighter[];
 }
 
@@ -115,11 +137,19 @@ export interface PlacedCard {
   cardId: string;
   owner: Owner;
   stats: TetraStats;
-  baseStats: TetraStats; // Original rolled stats before board augments
+  baseStats: TetraStats; // Original rolled stats before terrain & board augments
   arrows: ArrowDir[];
   augmentId?: string;
   justPlaced?: boolean;
   lastFlippedAt?: number;
+  terrainMod?: {
+    biome: BiomeType;
+    powerDelta: number;
+    pDefDelta: number;
+    mDefDelta: number;
+    label: string;
+    isPositive: boolean;
+  };
   lastAugmented?: {
     label: string;
     isBuff: boolean;
@@ -131,6 +161,7 @@ export interface BoardCell {
   row: number;
   col: number;
   blocked: boolean;
+  terrain: BiomeType | null;
   card: PlacedCard | null;
 }
 

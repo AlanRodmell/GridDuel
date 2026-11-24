@@ -1,3 +1,4 @@
+import { ALL_BIOMES, evaluateTerrainEffect } from '../data/biomes';
 import {
   CARD_MAP,
   CARDS,
@@ -10,6 +11,7 @@ import { ALL_FIGHTERS, FIGHTER_MAP } from '../data/ladder';
 import {
   ArrowDir,
   AugmentEvent,
+  BiomeType,
   BoardCell,
   CardDef,
   ClashDetail,
@@ -24,7 +26,8 @@ import {
 
 export const BOARD_SIZE = 4;
 export const HAND_SIZE = 7;
-export const BLOCKED_TILE_COUNT = BOARD_SIZE * BOARD_SIZE - HAND_SIZE * 2; // 2 sealed tiles + 14 cards = full 16-tile 4x4 board
+export const BLOCKED_TILE_COUNT = 0; // Fully open 4x4 board (16 playable tiles, 14 cards played)
+export const BIOME_TILE_COUNT = 4; // 4 tactical biome tiles per match
 
 export const EIGHT_DIRS: {
   dr: number;
@@ -52,6 +55,9 @@ export function cloneBoard(board: BoardCell[][]): BoardCell[][] {
             stats: { ...cell.card.stats },
             baseStats: { ...cell.card.baseStats },
             arrows: [...cell.card.arrows],
+            terrainMod: cell.card.terrainMod
+              ? { ...cell.card.terrainMod }
+              : undefined,
             lastAugmented: cell.card.lastAugmented
               ? { ...cell.card.lastAugmented }
               : undefined,
@@ -62,38 +68,67 @@ export function cloneBoard(board: BoardCell[][]): BoardCell[][] {
 }
 
 /**
- * Creates a tactical 4x4 Sanctuary Board (16 tiles)
- * with 2 randomly placed sealed obsidian monoliths so 7 player cards + 7 rival cards (14 total)
- * fill every open socket on the board by the final turn.
+ * Creates a fully open 4x4 tactical battlefield (16 playable tiles, 0 blocked)
+ * with 4 biome tiles distributed across the 4 quadrants so players can avoid
+ * hazards or capitalize on favorable terrain with their 7-card hands.
  */
-export function createBoard(): BoardCell[][] {
+export function createBoard(allowedBiomes?: BiomeType[]): BoardCell[][] {
   const size = BOARD_SIZE;
   const board: BoardCell[][] = Array.from({ length: size }, (_, row) =>
     Array.from({ length: size }, (_, col) => ({
       row,
       col,
       blocked: false,
+      terrain: null,
       card: null,
     }))
   );
 
-  const blockCount = BLOCKED_TILE_COUNT;
-
-  const coords: [number, number][] = [];
-  for (let r = 0; r < size; r++) {
-    for (let c = 0; c < size; c++) {
-      coords.push([r, c]);
-    }
-  }
-
-  for (let i = coords.length - 1; i > 0; i--) {
+  const biomePool =
+    allowedBiomes && allowedBiomes.length > 0 ? [...allowedBiomes] : [...ALL_BIOMES];
+  for (let i = biomePool.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
-    [coords[i], coords[j]] = [coords[j], coords[i]];
+    [biomePool[i], biomePool[j]] = [biomePool[j], biomePool[i]];
   }
 
-  for (let i = 0; i < blockCount; i++) {
-    const [r, c] = coords[i];
-    board[r][c].blocked = true;
+  // Pick 1 tile per 2x2 quadrant so the 4 biome tiles span the board cleanly
+  const quadrants: [number, number][][] = [
+    [
+      [0, 0],
+      [0, 1],
+      [1, 0],
+      [1, 1],
+    ],
+    [
+      [0, 2],
+      [0, 3],
+      [1, 2],
+      [1, 3],
+    ],
+    [
+      [2, 0],
+      [2, 1],
+      [3, 0],
+      [3, 1],
+    ],
+    [
+      [2, 2],
+      [2, 3],
+      [3, 2],
+      [3, 3],
+    ],
+  ];
+
+  // Shuffle quadrant order so biome assignment isn't predictable
+  for (let i = quadrants.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [quadrants[i], quadrants[j]] = [quadrants[j], quadrants[i]];
+  }
+
+  for (let i = 0; i < BIOME_TILE_COUNT; i++) {
+    const quad = quadrants[i % quadrants.length];
+    const [r, c] = quad[Math.floor(Math.random() * quad.length)];
+    board[r][c].terrain = biomePool[i % biomePool.length];
   }
 
   return board;
@@ -213,7 +248,7 @@ export function buildPlayerHand(
 }
 
 /**
- * Computes the attacker's effective stat vs defender's targeted stat per FF9 rules:
+ * Computes the attacker's effective stat vs defender's targeted stat:
  * - P (Physical): Attacker Power vs Defender Physical Defense (3rd stat)
  * - M (Magical): Attacker Power vs Defender Magical Defense (4th stat)
  * - X (Flexible): Attacker Power vs lowest of Defender's P.Def or M.Def
@@ -242,7 +277,7 @@ export function getCombatValues(
 }
 
 /**
- * Resolves an FF9 Arrow Clash between Attacker and Defender using their current (rolled + augmented) stats.
+ * Resolves an Arrow Clash between Attacker and Defender using their current (rolled + terrain + augmented) stats.
  */
 function resolveArrowClash(
   attackerDef: CardDef,
@@ -307,15 +342,38 @@ export function resolvePlacement(
     }
   }
 
+  const terrainEval = evaluateTerrainEffect(cell.terrain, def);
+  const initialStats: TetraStats =
+    terrainEval && terrainEval.hasEffect
+      ? {
+          ...handCard.stats,
+          power: clampHexStat(handCard.stats.power + terrainEval.powerDelta),
+          pDef: clampHexStat(handCard.stats.pDef + terrainEval.pDefDelta),
+          mDef: clampHexStat(handCard.stats.mDef + terrainEval.mDefDelta),
+        }
+      : { ...handCard.stats };
+
   const placed: PlacedCard = {
     uid: handCard.uid,
     cardId: handCard.cardId,
     owner,
-    stats: { ...handCard.stats },
+    stats: initialStats,
     baseStats: { ...handCard.stats },
     arrows: [...handCard.arrows],
     augmentId: handCard.augmentId,
     justPlaced: true,
+    ...(terrainEval && terrainEval.hasEffect
+      ? {
+          terrainMod: {
+            biome: terrainEval.biome,
+            powerDelta: terrainEval.powerDelta,
+            pDefDelta: terrainEval.pDefDelta,
+            mDefDelta: terrainEval.mDefDelta,
+            label: terrainEval.shortTag,
+            isPositive: terrainEval.isPositive,
+          },
+        }
+      : {}),
   };
   cell.card = placed;
 
@@ -540,6 +598,13 @@ export function chooseAiMove(
       // Value triggering Battlefield Augments on already-placed cards
       if (sim.augments.length > 0) {
         score += sim.augments.length * 4.5 * fighter.aiSkill;
+      }
+
+      // Skill-scaled terrain awareness: higher-tier rivals seek buff tiles & avoid hazard tiles
+      const hDef = CARD_MAP[hCard.cardId];
+      const tEval = evaluateTerrainEffect(board[r][c].terrain, hDef);
+      if (tEval && tEval.hasEffect) {
+        score += tEval.netScore * 1.8 * fighter.aiSkill;
       }
 
       for (const dir of EIGHT_DIRS) {

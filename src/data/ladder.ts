@@ -1,16 +1,17 @@
-import { LadderFighter, LadderTier } from '../types/game';
+import { BiomeType, LadderFighter, LadderTier } from '../types/game';
 
 export const LADDER_TIERS: LadderTier[] = [
   // =========================================================================
-  // TIER 1 — TRENO SLUMS (5 Novice Fighters · Common #01–#10)
+  // TIER 1 — LANTERN ALLEY (5 Novice Fighters · Common #01–#10)
   // =========================================================================
   {
     tierNumber: 1,
-    name: 'Tier 1 · Treno Backstreets',
+    name: 'Tier 1 · Lantern Alley',
     regionSubtitle: 'Street urchins & tavern novices playing basic 3-arrow Common cards',
     cardRangeLabel: 'Commons #01–#10',
     requiredWinsToUnlockNext: 3,
     accentColor: 'text-slate-300',
+    biomes: ['marsh', 'hallowed'],
     fighters: [
       {
         id: 't1-f1',
@@ -102,15 +103,16 @@ export const LADDER_TIERS: LadderTier[] = [
   },
 
   // =========================================================================
-  // TIER 2 — DALI WINDMILL VILLAGE (5 Fighters · Common #08–#20)
+  // TIER 2 — BRIARWIND MILL (5 Fighters · Common #08–#20)
   // =========================================================================
   {
     tierNumber: 2,
-    name: 'Tier 2 · Dali Windmill Square',
+    name: 'Tier 2 · Briarwind Mill',
     regionSubtitle: 'Village scouts & mill guards wielding sturdy mid-rank Common cards',
     cardRangeLabel: 'Commons #08–#20',
     requiredWinsToUnlockNext: 3,
     accentColor: 'text-emerald-300',
+    biomes: ['highland', 'marsh'],
     fighters: [
       {
         id: 't2-f1',
@@ -202,15 +204,16 @@ export const LADDER_TIERS: LadderTier[] = [
   },
 
   // =========================================================================
-  // TIER 3 — ALEXANDRIA WATCHTOWER (5 Fighters · Common #18–#30)
+  // TIER 3 — HIGHCREST WATCHTOWER (5 Fighters · Common #18–#30)
   // =========================================================================
   {
     tierNumber: 3,
-    name: 'Tier 3 · Alexandria Watchtower',
+    name: 'Tier 3 · Highcrest Watchtower',
     regionSubtitle: 'Garrison veterans & sly cutpurses mastering the top Common cards',
     cardRangeLabel: 'Commons #18–#30',
     requiredWinsToUnlockNext: 3,
     accentColor: 'text-amber-300',
+    biomes: ['hallowed', 'highland'],
     fighters: [
       {
         id: 't3-f1',
@@ -302,15 +305,16 @@ export const LADDER_TIERS: LadderTier[] = [
   },
 
   // =========================================================================
-  // TIER 4 — LINDBLUM ARTISAN DISTRICT (5 Fighters · #26–#38 Early Rare)
+  // TIER 4 — IRONWRIGHT FORGE (5 Fighters · #26–#38 Early Rare)
   // =========================================================================
   {
     tierNumber: 4,
-    name: 'Tier 4 · Lindblum Artisan District',
-    regionSubtitle: 'Airship engineers & guild knights introducing the first Rare cards',
+    name: 'Tier 4 · Ironwright Forge',
+    regionSubtitle: 'Foundry engineers & guild knights introducing the first Rare cards',
     cardRangeLabel: 'Commons #26–#30 & Rares #31–#38',
     requiredWinsToUnlockNext: 3,
     accentColor: 'text-sky-300',
+    biomes: ['volcanic', 'water'],
     fighters: [
       {
         id: 't4-f1',
@@ -402,15 +406,16 @@ export const LADDER_TIERS: LadderTier[] = [
   },
 
   // =========================================================================
-  // TIER 5 — BURMECIA RAINSOAKED PLAZA (5 Fighters · Rare #35–#50)
+  // TIER 5 — WEEPING FEN (5 Fighters · Rare #35–#50)
   // =========================================================================
   {
     tierNumber: 5,
-    name: 'Tier 5 · Burmecia Rain Plaza',
-    regionSubtitle: 'Seasoned lancers, warlocks & artillerists with full Rare hands',
+    name: 'Tier 5 · Weeping Fen',
+    regionSubtitle: 'Rain-soaked lancers, warlocks & marsh scouts with full Rare hands',
     cardRangeLabel: 'Rares #35–#50',
     requiredWinsToUnlockNext: 3,
     accentColor: 'text-cyan-300',
+    biomes: ['water', 'marsh'],
     fighters: [
       {
         id: 't5-f1',
@@ -502,15 +507,16 @@ export const LADDER_TIERS: LadderTier[] = [
   },
 
   // =========================================================================
-  // TIER 6 — CLEYRA SANDSTORM SANCTUARY (5 Fighters · Rare #48–#60)
+  // TIER 6 — GALESPIRE RIDGE (5 Fighters · Rare #48–#60)
   // =========================================================================
   {
     tierNumber: 6,
-    name: 'Tier 6 · Cleyra Sandstorm Sanctuary',
-    regionSubtitle: 'High-ranking Rare masters guarding the summit of the Great Tree',
+    name: 'Tier 6 · Galespire Ridge',
+    regionSubtitle: 'High-ranking Rare masters guarding the windswept canyon spires',
     cardRangeLabel: 'Upper Rares #48–#60',
     requiredWinsToUnlockNext: 3,
     accentColor: 'text-teal-300',
+    biomes: ['highland', 'water'],
     fighters: [
       {
         id: 't6-f1',
@@ -585,7 +591,7 @@ export const LADDER_TIERS: LadderTier[] = [
         tierNumber: 6,
         orderInTier: 5,
         name: 'Chronomancer Lyris',
-        title: 'Oracle of Cleyra (Boss)',
+        title: 'Oracle of Galespire (Boss)',
         specialty: '7-Arrow Chronos Owls (#54–#60)',
         avatarCardId: 'chronos-owl',
         signatureCardIds: ['chronos-owl', 'moonlit-marksman'],
@@ -603,15 +609,16 @@ export const LADDER_TIERS: LadderTier[] = [
   },
 
   // =========================================================================
-  // TIER 7 — FOSSIL ROO EXCAVATION (4 Fighters · #56–#68 Early Epic + Mythic RNG)
+  // TIER 7 — SUNKEN CRYPTS (4 Fighters · #56–#68 Early Epic + Mythic RNG)
   // =========================================================================
   {
     tierNumber: 7,
-    name: 'Tier 7 · Fossil Roo Causeway',
+    name: 'Tier 7 · Sunken Crypts',
     regionSubtitle: 'Subterranean champions wielding foil Epics with a chance to drop Mythic relics',
     cardRangeLabel: 'Rares #56–#60 & Epics #61–#68 (+Mythic RNG)',
     requiredWinsToUnlockNext: 3,
     accentColor: 'text-violet-300',
+    biomes: ['shadow', 'marsh'],
     fighters: [
       {
         id: 't7-f1',
@@ -635,7 +642,7 @@ export const LADDER_TIERS: LadderTier[] = [
         id: 't7-f2',
         tierNumber: 7,
         orderInTier: 2,
-        name: 'Valkyrie Freya',
+        name: 'Valkyrie Astrid',
         title: 'Sky-Spear Captain',
         specialty: 'AX88 Valkyrie Lancers (#58–#65)',
         avatarCardId: 'valkyrie-lancer',
@@ -672,7 +679,7 @@ export const LADDER_TIERS: LadderTier[] = [
         tierNumber: 7,
         orderInTier: 4,
         name: 'Arch-Lich Malthazar',
-        title: 'Lord of Fossil Roo (Boss)',
+        title: 'Lord of the Sunken Crypts (Boss)',
         specialty: '8-Arrow Assault Liches (#61–#68)',
         avatarCardId: 'abyssal-lich',
         signatureCardIds: ['abyssal-lich', 'void-necromancer'],
@@ -690,15 +697,16 @@ export const LADDER_TIERS: LadderTier[] = [
   },
 
   // =========================================================================
-  // TIER 8 — ESTO GAZA VOLCANO ALTAR (4 Fighters · Epic #66–#80 + Mythic RNG)
+  // TIER 8 — CINDERFALL CALDERA (4 Fighters · Epic #66–#80 + Mythic RNG)
   // =========================================================================
   {
     tierNumber: 8,
-    name: 'Tier 8 · Esto Gaza Volcano Altar',
+    name: 'Tier 8 · Cinderfall Caldera',
     regionSubtitle: 'High summoners & crusaders commanding full Epic hands with elevated Mythic RNG',
     cardRangeLabel: 'Epics #66–#80 (+15–28% Mythic RNG)',
     requiredWinsToUnlockNext: 3,
     accentColor: 'text-fuchsia-300',
+    biomes: ['volcanic', 'shadow'],
     fighters: [
       {
         id: 't8-f1',
@@ -759,7 +767,7 @@ export const LADDER_TIERS: LadderTier[] = [
         tierNumber: 8,
         orderInTier: 4,
         name: 'Archmage Vaelen',
-        title: 'Keeper of Esto Gaza (Boss)',
+        title: 'Keeper of Cinderfall (Boss)',
         specialty: '8-Arrow Eclipse Assassins (#73–#80)',
         avatarCardId: 'eclipse-assassin',
         signatureCardIds: ['eclipse-assassin', 'astral-archmage', 'soulfire-monarch'],
@@ -777,15 +785,16 @@ export const LADDER_TIERS: LadderTier[] = [
   },
 
   // =========================================================================
-  // TIER 9 — BRAN BAL ASTRAL HALL (3 Bosses · #76–#86 Mythic Vanguard)
+  // TIER 9 — SUNWARD SANCTUM (3 Bosses · #76–#86 Mythic Vanguard)
   // =========================================================================
   {
     tierNumber: 9,
-    name: 'Tier 9 · Bran Bal Astral Hall',
-    regionSubtitle: 'Immortal Bosses wielding Mythic Eidolon cards in their hands + high Mythic RNG',
+    name: 'Tier 9 · Sunward Sanctum',
+    regionSubtitle: 'Immortal Bosses wielding Mythic Legendary cards in their hands + high Mythic RNG',
     cardRangeLabel: 'Top Epics #76–#80 & Mythics #81–#86',
     requiredWinsToUnlockNext: 2,
     accentColor: 'text-amber-300',
+    biomes: ['hallowed', 'volcanic'],
     fighters: [
       {
         id: 't9-f1',
@@ -829,8 +838,8 @@ export const LADDER_TIERS: LadderTier[] = [
         id: 't9-f3',
         tierNumber: 9,
         orderInTier: 3,
-        name: 'Archon Garland',
-        title: 'Overseer of Terra (Boss)',
+        name: 'Archon Valdris',
+        title: 'Overseer of the Spire (Boss)',
         specialty: '8-Arrow Solar Sovereign & Archon (#79–#86)',
         avatarCardId: 'celestial-archon',
         signatureCardIds: ['solar-sovereign', 'celestial-archon'],
@@ -848,15 +857,16 @@ export const LADDER_TIERS: LadderTier[] = [
   },
 
   // =========================================================================
-  // TIER 10 — MEMORIA CRYSTAL THRONE (2 Grandmaster Bosses · Mythic #81–#90)
+  // TIER 10 — SHATTERED CROWN (2 Grandmaster Bosses · Mythic #81–#90)
   // =========================================================================
   {
     tierNumber: 10,
-    name: 'Tier 10 · Memoria Crystal Throne',
-    regionSubtitle: 'Supreme Grandmaster Bosses carrying full Mythic hands (#81–#90)',
+    name: 'Tier 10 · Shattered Crown',
+    regionSubtitle: 'Supreme Grandmaster Bosses carrying full Mythic hands across shifting realms',
     cardRangeLabel: 'Mythic Legends #81–#90',
     requiredWinsToUnlockNext: 2,
     accentColor: 'text-amber-200',
+    biomes: ['water', 'marsh', 'volcanic', 'hallowed', 'shadow', 'highland'],
     fighters: [
       {
         id: 't10-f1',
@@ -864,7 +874,7 @@ export const LADDER_TIERS: LadderTier[] = [
         orderInTier: 1,
         name: 'Phantom Dragonlord',
         title: 'Master of the Void (Boss)',
-        specialty: 'Mythic Void Bahamut & Kraken (#81–#89)',
+        specialty: 'Mythic Void Wyrmlord & Kraken (#81–#89)',
         avatarCardId: 'void-bahamut',
         signatureCardIds: ['void-bahamut', 'astral-phoenix', 'abyssal-kraken'],
         minCardNumber: 81,
@@ -881,7 +891,7 @@ export const LADDER_TIERS: LadderTier[] = [
         id: 't10-f2',
         tierNumber: 10,
         orderInTier: 2,
-        name: 'Ozma, Eidolon King',
+        name: 'Aurelius, Astral Sovereign',
         title: 'Supreme Grandmaster (Final Boss)',
         specialty: 'EAEE Eternal Overlord & Full Mythics (#83–#90)',
         avatarCardId: 'eternal-overlord',
@@ -905,6 +915,16 @@ export const ALL_FIGHTERS: LadderFighter[] = LADDER_TIERS.flatMap((t) => t.fight
 export const FIGHTER_MAP: Record<string, LadderFighter> = Object.fromEntries(
   ALL_FIGHTERS.map((f) => [f.id, f])
 );
+
+export function getTierForFighter(fighterId: string): LadderTier | undefined {
+  const fighter = FIGHTER_MAP[fighterId];
+  if (!fighter) return LADDER_TIERS[0];
+  return LADDER_TIERS.find((t) => t.tierNumber === fighter.tierNumber);
+}
+
+export function getFighterBiomes(fighterId: string): BiomeType[] {
+  return getTierForFighter(fighterId)?.biomes ?? ['water', 'marsh'];
+}
 
 export function isTierUnlocked(
   tierNumber: number,

@@ -311,10 +311,10 @@ export const MusicModal: React.FC<MusicModalProps> = ({
               How Adaptive Soundtrack & Custom MP3s Work:
             </p>
             <p>
-              • <strong className="text-amber-200">Built-In Fantasy Score:</strong> Includes three multi-voice acoustic arrangements (Tavern Lute &amp; Recorder, Lindblum Harpsichord &amp; Strings, and Boss Symphonic Brass &amp; Timpani) mixed through stereo concert-hall reverb.
+              • <strong className="text-amber-200">Built-In Fantasy Score:</strong> Includes three multi-voice acoustic arrangements (Tavern Lute &amp; Recorder, Keep Harpsichord &amp; Strings, and Boss Symphonic Brass &amp; Timpani) mixed through stereo concert-hall reverb.
             </p>
             <p>
-              • <strong className="text-amber-200">Bring Your Own OST:</strong> Use <span className="text-slate-200 font-medium">Load MP3</span> on any theme above to import actual <em>Final Fantasy VIII / IX</em> or custom soundtrack <code className="text-amber-300">.mp3</code>, <code className="text-amber-300">.ogg</code>, or <code className="text-amber-300">.wav</code> files directly from your device.
+              • <strong className="text-amber-200">Bring Your Own OST:</strong> Use <span className="text-slate-200 font-medium">Load MP3</span> on any theme above to import your own custom soundtrack <code className="text-amber-300">.mp3</code>, <code className="text-amber-300">.ogg</code>, or <code className="text-amber-300">.wav</code> files directly from your device.
             </p>
           </div>
         </div>

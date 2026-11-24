@@ -12,16 +12,27 @@ import {
   X,
 } from 'lucide-react';
 import {
+  ALL_ELEMENTS,
+  ALL_TRIBES,
+  BIOME_META,
+  ELEMENT_META,
+  TRIBE_META,
+  evaluateTerrainEffect,
+} from '../data/biomes';
+import {
   CARD_MAP,
   formatTetraCode,
   getCardThumbUrl,
   getStatsPowerScore,
   resolveCardAugment,
 } from '../data/cards';
+import { getFighterBiomes } from '../data/ladder';
 import { HAND_SIZE } from '../engine/triadEngine';
 import { AutoBuildStrategy, MAX_DECK_SLOTS } from '../store/useProfile';
 import {
   AttackType,
+  CardElement,
+  CardTribe,
   DeckSlot,
   HandCard,
   LadderFighter,
@@ -30,6 +41,7 @@ import {
   RolledCardInstance,
 } from '../types/game';
 import { sound } from '../utils/sound';
+import { BiomePill, CardTraitPills } from './BiomeBadge';
 import { DeckShelf } from './DeckShelf';
 import { GameCard } from './GameCard';
 
@@ -78,8 +90,11 @@ export const DeckBuilderWorkspace: React.FC<DeckBuilderWorkspaceProps> = ({
   const [searchQuery, setSearchQuery] = useState('');
   const [rarityFilter, setRarityFilter] = useState<'all' | Rarity>('all');
   const [typeFilter, setTypeFilter] = useState<'all' | AttackType>('all');
+  const [elementFilter, setElementFilter] = useState<'all' | CardElement>('all');
+  const [tribeFilter, setTribeFilter] = useState<'all' | CardTribe>('all');
   const [onlyAugments, setOnlyAugments] = useState(false);
 
+  const arenaBiomes = useMemo(() => getFighterBiomes(currentFighter.id), [currentFighter.id]);
   const rivalAvatarCard = CARD_MAP[currentFighter.avatarCardId] ?? CARD_MAP['ember-imp'];
   const activeDeckUidSet = useMemo(() => new Set(activeDeck.cards), [activeDeck.cards]);
 
@@ -93,11 +108,15 @@ export const DeckBuilderWorkspace: React.FC<DeckBuilderWorkspaceProps> = ({
         if (!def) return false;
         if (rarityFilter !== 'all' && def.rarity !== rarityFilter) return false;
         if (typeFilter !== 'all' && inst.stats.type !== typeFilter) return false;
+        if (elementFilter !== 'all' && def.element !== elementFilter) return false;
+        if (tribeFilter !== 'all' && def.tribe !== tribeFilter) return false;
         const aug = resolveCardAugment(inst.cardId, inst.augmentId);
         if (onlyAugments && !aug) return false;
         if (
           q &&
           !def.name.toLowerCase().includes(q) &&
+          !ELEMENT_META[def.element].label.toLowerCase().includes(q) &&
+          !TRIBE_META[def.tribe].label.toLowerCase().includes(q) &&
           !(aug && aug.name.toLowerCase().includes(q))
         ) {
           return false;
@@ -113,7 +132,16 @@ export const DeckBuilderWorkspace: React.FC<DeckBuilderWorkspaceProps> = ({
           getStatsPowerScore(a.stats, a.arrows.length)
         );
       });
-  }, [activeDeckUidSet, onlyAugments, profile.inventory, rarityFilter, searchQuery, typeFilter]);
+  }, [
+    activeDeckUidSet,
+    elementFilter,
+    onlyAugments,
+    profile.inventory,
+    rarityFilter,
+    searchQuery,
+    tribeFilter,
+    typeFilter,
+  ]);
 
   const totalArrows = useMemo(
     () => previewDeckHand.reduce((sum, c) => sum + c.arrows.length, 0),
@@ -148,6 +176,14 @@ export const DeckBuilderWorkspace: React.FC<DeckBuilderWorkspaceProps> = ({
               <span className="text-xs font-sans font-normal text-slate-400">
                 ({currentFighter.specialty})
               </span>
+            </div>
+            <div className="flex flex-wrap items-center gap-1.5 mt-1">
+              <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">
+                Arena Biomes:
+              </span>
+              {arenaBiomes.map((b) => (
+                <BiomePill key={b} biome={b} compact />
+              ))}
             </div>
           </div>
         </div>
@@ -446,6 +482,40 @@ export const DeckBuilderWorkspace: React.FC<DeckBuilderWorkspaceProps> = ({
               ))}
             </div>
 
+            <select
+              aria-label="Filter by element"
+              value={elementFilter}
+              onChange={(e) => {
+                sound.select();
+                setElementFilter(e.target.value as 'all' | CardElement);
+              }}
+              className="min-h-[34px] px-2.5 py-1 rounded-xl bg-[#090f1d] border border-slate-800 hover:border-amber-400/50 text-xs font-medium text-slate-200 focus:outline-none focus:border-amber-400 cursor-pointer"
+            >
+              <option value="all">All Elements</option>
+              {ALL_ELEMENTS.map((el) => (
+                <option key={el} value={el}>
+                  {ELEMENT_META[el].label}
+                </option>
+              ))}
+            </select>
+
+            <select
+              aria-label="Filter by tribe"
+              value={tribeFilter}
+              onChange={(e) => {
+                sound.select();
+                setTribeFilter(e.target.value as 'all' | CardTribe);
+              }}
+              className="min-h-[34px] px-2.5 py-1 rounded-xl bg-[#090f1d] border border-slate-800 hover:border-amber-400/50 text-xs font-medium text-slate-200 focus:outline-none focus:border-amber-400 cursor-pointer"
+            >
+              <option value="all">All Tribes</option>
+              {ALL_TRIBES.map((tr) => (
+                <option key={tr} value={tr}>
+                  {TRIBE_META[tr].label}
+                </option>
+              ))}
+            </select>
+
             <button
               type="button"
               onClick={() => {
@@ -475,6 +545,8 @@ export const DeckBuilderWorkspace: React.FC<DeckBuilderWorkspaceProps> = ({
                   setSearchQuery('');
                   setRarityFilter('all');
                   setTypeFilter('all');
+                  setElementFilter('all');
+                  setTribeFilter('all');
                   setOnlyAugments(false);
                 }}
                 className="px-3.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-medium text-slate-200 cursor-pointer"
@@ -489,6 +561,9 @@ export const DeckBuilderWorkspace: React.FC<DeckBuilderWorkspaceProps> = ({
                 if (!def) return null;
                 const inDeck = activeDeckUidSet.has(inst.uid);
                 const aug = resolveCardAugment(inst.cardId, inst.augmentId);
+                const biomeHints = arenaBiomes
+                  .map((b) => evaluateTerrainEffect(b, def))
+                  .filter((ev): ev is NonNullable<typeof ev> => Boolean(ev && ev.hasEffect));
 
                 return (
                   <div
@@ -521,7 +596,7 @@ export const DeckBuilderWorkspace: React.FC<DeckBuilderWorkspaceProps> = ({
                       )}
                     </div>
 
-                    <div className="text-center space-y-0.5 px-0.5">
+                    <div className="text-center space-y-1 px-0.5">
                       <div className="font-[var(--font-display)] text-xs sm:text-sm font-bold text-slate-100 leading-snug [text-wrap:balance]">
                         {def.name}
                       </div>
@@ -533,9 +608,27 @@ export const DeckBuilderWorkspace: React.FC<DeckBuilderWorkspaceProps> = ({
                         <span className="font-mono font-bold text-amber-300">
                           {formatTetraCode(inst.stats)}
                         </span>
-                        <span className="text-slate-600">·</span>
-                        <span className="font-mono text-sky-300">{inst.arrows.length}▲</span>
                       </div>
+                      <div className="flex justify-center">
+                        <CardTraitPills element={def.element} tribe={def.tribe} compact />
+                      </div>
+                      {biomeHints.length > 0 && (
+                        <div className="flex flex-wrap justify-center gap-1 pt-0.5">
+                          {biomeHints.slice(0, 2).map((hint) => (
+                            <span
+                              key={hint.biome}
+                              title={`${BIOME_META[hint.biome].name}: ${hint.shortTag}`}
+                              className={`inline-flex items-center rounded px-1.5 py-[1px] border font-mono text-[10px] font-semibold cursor-help ${
+                                hint.isPositive
+                                  ? 'bg-emerald-950/85 border-emerald-400/50 text-emerald-300'
+                                  : 'bg-rose-950/80 border-rose-400/45 text-rose-300'
+                              }`}
+                            >
+                              {hint.isPositive ? '▲' : '▼'} {BIOME_META[hint.biome].shortName}
+                            </span>
+                          ))}
+                        </div>
+                      )}
                       {aug && (
                         <div className="pt-0.5 flex justify-center">
                           <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-violet-950/90 border border-violet-500/40 text-[10px] font-mono text-violet-200">

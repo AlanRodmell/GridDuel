@@ -11,6 +11,7 @@ import {
   Wand2,
   X,
 } from 'lucide-react';
+import { ALL_ELEMENTS, ALL_TRIBES, ELEMENT_META, TRIBE_META } from '../data/biomes';
 import {
   CARD_MAP,
   CARDS,
@@ -28,12 +29,15 @@ import { AutoBuildStrategy, DECK_CAPACITY } from '../store/useProfile';
 import {
   AttackType,
   CardDef,
+  CardElement,
+  CardTribe,
   DeckSlot,
   PlayerProfile,
   Rarity,
   RolledCardInstance,
 } from '../types/game';
 import { sound } from '../utils/sound';
+import { CardTraitPills } from './BiomeBadge';
 import { DeckShelf } from './DeckShelf';
 import { GameCard } from './GameCard';
 
@@ -107,6 +111,8 @@ export const GalleryView: React.FC<GalleryViewProps> = ({
   const [ownershipFilter, setOwnershipFilter] = useState<OwnershipFilter>('all');
   const [rarityFilter, setRarityFilter] = useState<RarityFilter>('all');
   const [typeFilter, setTypeFilter] = useState<TypeFilter>('all');
+  const [elementFilter, setElementFilter] = useState<'all' | CardElement>('all');
+  const [tribeFilter, setTribeFilter] = useState<'all' | CardTribe>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [inspectedId, setInspectedId] = useState<string | null>(null);
   const [selectedCopyUid, setSelectedCopyUid] = useState<string | null>(null);
@@ -208,6 +214,8 @@ export const GalleryView: React.FC<GalleryViewProps> = ({
       }
       if (ownershipFilter === 'locked' && owned) return false;
       if (rarityFilter !== 'all' && card.rarity !== rarityFilter) return false;
+      if (elementFilter !== 'all' && card.element !== elementFilter) return false;
+      if (tribeFilter !== 'all' && card.tribe !== tribeFilter) return false;
       if (
         typeFilter !== 'all' &&
         card.stats.type !== typeFilter &&
@@ -218,6 +226,8 @@ export const GalleryView: React.FC<GalleryViewProps> = ({
       if (
         q &&
         !card.name.toLowerCase().includes(q) &&
+        !ELEMENT_META[card.element].label.toLowerCase().includes(q) &&
+        !TRIBE_META[card.tribe].label.toLowerCase().includes(q) &&
         !String(card.number).padStart(2, '0').includes(q) &&
         !copies.some((c) => {
           const aug = resolveCardAugment(card.id, c.augmentId);
@@ -229,7 +239,15 @@ export const GalleryView: React.FC<GalleryViewProps> = ({
       }
       return true;
     });
-  }, [ownershipFilter, profile.inventory, rarityFilter, searchQuery, typeFilter]);
+  }, [
+    elementFilter,
+    ownershipFilter,
+    profile.inventory,
+    rarityFilter,
+    searchQuery,
+    tribeFilter,
+    typeFilter,
+  ]);
 
   const inspectedCard: CardDef | null = inspectedId ? CARD_MAP[inspectedId] ?? null : null;
   const inspectedCopies: RolledCardInstance[] = useMemo(() => {
@@ -529,6 +547,40 @@ export const GalleryView: React.FC<GalleryViewProps> = ({
               </button>
             ))}
           </div>
+
+          <select
+            aria-label="Filter gallery by element"
+            value={elementFilter}
+            onChange={(e) => {
+              sound.select();
+              setElementFilter(e.target.value as 'all' | CardElement);
+            }}
+            className="min-h-[38px] px-2.5 py-1 rounded-xl bg-[#10182a] border border-slate-800 hover:border-amber-400/50 text-xs font-medium text-slate-200 focus:outline-none focus:border-amber-400 cursor-pointer"
+          >
+            <option value="all">All Elements</option>
+            {ALL_ELEMENTS.map((el) => (
+              <option key={el} value={el}>
+                {ELEMENT_META[el].label}
+              </option>
+            ))}
+          </select>
+
+          <select
+            aria-label="Filter gallery by tribe"
+            value={tribeFilter}
+            onChange={(e) => {
+              sound.select();
+              setTribeFilter(e.target.value as 'all' | CardTribe);
+            }}
+            className="min-h-[38px] px-2.5 py-1 rounded-xl bg-[#10182a] border border-slate-800 hover:border-amber-400/50 text-xs font-medium text-slate-200 focus:outline-none focus:border-amber-400 cursor-pointer"
+          >
+            <option value="all">All Tribes</option>
+            {ALL_TRIBES.map((tr) => (
+              <option key={tr} value={tr}>
+                {TRIBE_META[tr].label}
+              </option>
+            ))}
+          </select>
         </div>
 
         {/* Search by Name, Number, or Augment */}
@@ -720,8 +772,15 @@ export const GalleryView: React.FC<GalleryViewProps> = ({
                     </div>
                   </div>
 
-                  {/* Right: Augment Info, Stat Breakdown & Rolled Copy Vault */}
+                  {/* Right: Element/Tribe Traits, Augment Info, Stat Breakdown & Rolled Copy Vault */}
                   <div className="md:col-span-7 space-y-4">
+                    <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl bg-[#0c1322] border border-slate-800 px-3.5 py-2.5 text-xs">
+                      <span className="text-slate-400 font-medium">Element &amp; Tribe</span>
+                      <CardTraitPills
+                        element={inspectedCard.element}
+                        tribe={inspectedCard.tribe}
+                      />
+                    </div>
                     {(() => {
                       const activeAug = resolveCardAugment(
                         inspectedCard.id,

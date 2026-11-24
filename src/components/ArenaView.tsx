@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import {
   ArrowLeft,
   Check,
@@ -19,6 +20,13 @@ import {
   Wand2,
   Zap,
 } from 'lucide-react';
+import { useCardPreview } from '../context/cardPreviewContext';
+import {
+  BIOME_META,
+  NEUTRAL_TERRAIN_IMAGE,
+  TerrainEvaluation,
+  evaluateTerrainEffect,
+} from '../data/biomes';
 import {
   CARD_MAP,
   CARDS,
@@ -34,11 +42,12 @@ import {
   ALL_FIGHTERS,
   FIGHTER_MAP,
   LADDER_TIERS,
+  getFighterBiomes,
   getTierProgress,
   isTierUnlocked,
 } from '../data/ladder';
 import {
-  EIGHT_DIRS,
+  BIOME_TILE_COUNT,
   HAND_SIZE,
   buildOpponentHand,
   buildPlayerHand,
@@ -50,7 +59,7 @@ import {
 } from '../engine/triadEngine';
 import { AutoBuildStrategy } from '../store/useProfile';
 import {
-  ArrowDir,
+  BiomeType,
   BoardCell,
   ClashDetail,
   DeckSlot,
@@ -60,8 +69,10 @@ import {
   Owner,
   PlayerProfile,
   Rarity,
+  RolledCardInstance,
 } from '../types/game';
 import { sound } from '../utils/sound';
+import { BiomeIcon, BiomePill, CardTraitPills } from './BiomeBadge';
 import { DeckBuilderWorkspace } from './DeckBuilderWorkspace';
 import { GameCard } from './GameCard';
 import { PlayLaunchIntent } from './HomeView';
@@ -75,6 +86,106 @@ const SPOIL_RARITY_TEXT: Record<Rarity, string> = {
   epic: 'text-violet-300',
   mythic: 'text-amber-300',
 };
+
+interface SpoilComparison {
+  verdict: 'upgrade' | 'tradeoff' | 'equal' | 'weaker';
+  badgeText: string;
+  badgeClass: string;
+  tooltip: string;
+}
+
+function getInstancePowerScore(card: {
+  stats: { power: number; pDef: number; mDef: number };
+  arrows: unknown[];
+}): number {
+  const statTotal = card.stats.power + card.stats.pDef + card.stats.mDef;
+  return statTotal * 2 + card.arrows.length * 1.5 + card.stats.power * 0.25;
+}
+
+function formatSignedDelta(n: number): string {
+  return n > 0 ? `+${n}` : `${n}`;
+}
+
+function compareSpoilToLibrary(
+  spoil: HandCard,
+  ownedInstances: RolledCardInstance[]
+): SpoilComparison | null {
+  if (ownedInstances.length === 0) return null;
+
+  let best = ownedInstances[0];
+  let bestScore = getInstancePowerScore(best);
+  for (let i = 1; i < ownedInstances.length; i++) {
+    const score = getInstancePowerScore(ownedInstances[i]);
+    if (score > bestScore) {
+      best = ownedInstances[i];
+      bestScore = score;
+    }
+  }
+
+  const spoilStatTotal = spoil.stats.power + spoil.stats.pDef + spoil.stats.mDef;
+  const bestStatTotal = best.stats.power + best.stats.pDef + best.stats.mDef;
+  const statDelta = spoilStatTotal - bestStatTotal;
+  const arrowDelta = spoil.arrows.length - best.arrows.length;
+  const pwrDelta = spoil.stats.power - best.stats.power;
+  const pDefDelta = spoil.stats.pDef - best.stats.pDef;
+  const mDefDelta = spoil.stats.mDef - best.stats.mDef;
+  const scoreDelta = getInstancePowerScore(spoil) - bestScore;
+
+  const deltaParts: string[] = [];
+  if (statDelta !== 0) {
+    deltaParts.push(
+      `${formatSignedDelta(statDelta)} ${Math.abs(statDelta) === 1 ? 'stat' : 'stats'}`
+    );
+  }
+  if (arrowDelta !== 0) {
+    deltaParts.push(
+      `${formatSignedDelta(arrowDelta)} ${Math.abs(arrowDelta) === 1 ? 'arrow' : 'arrows'}`
+    );
+  }
+  const deltaSummary = deltaParts.join(' · ');
+
+  const tooltip = `vs your best copy (${formatTetraCode(best.stats)}, ${best.arrows.length} arrows): ATK ${formatSignedDelta(pwrDelta)}, P.DEF ${formatSignedDelta(pDefDelta)}, M.DEF ${formatSignedDelta(mDefDelta)}, Arrows ${formatSignedDelta(arrowDelta)}`;
+
+  if (statDelta >= 0 && arrowDelta >= 0 && (statDelta > 0 || arrowDelta > 0)) {
+    return {
+      verdict: 'upgrade',
+      badgeText: `▲ ${deltaSummary}`,
+      badgeClass: 'bg-emerald-950/85 text-emerald-300 border-emerald-400/50',
+      tooltip,
+    };
+  }
+
+  if ((statDelta > 0 && arrowDelta < 0) || (statDelta < 0 && arrowDelta > 0)) {
+    return {
+      verdict: scoreDelta > 0 ? 'upgrade' : 'tradeoff',
+      badgeText: `${scoreDelta > 0 ? '▲' : '⇄'} ${deltaSummary}`,
+      badgeClass:
+        scoreDelta > 0
+          ? 'bg-emerald-950/75 text-emerald-200 border-emerald-400/45'
+          : 'bg-sky-950/85 text-sky-300 border-sky-400/45',
+      tooltip,
+    };
+  }
+
+  if (statDelta === 0 && arrowDelta === 0) {
+    const identicalSplit = pwrDelta === 0 && pDefDelta === 0 && mDefDelta === 0;
+    return {
+      verdict: identicalSplit ? 'equal' : 'tradeoff',
+      badgeText: identicalSplit ? '= Matches best' : '⇄ Different stat split',
+      badgeClass: identicalSplit
+        ? 'bg-slate-900/90 text-slate-300 border-slate-700/80'
+        : 'bg-sky-950/85 text-sky-300 border-sky-400/45',
+      tooltip,
+    };
+  }
+
+  return {
+    verdict: 'weaker',
+    badgeText: `▼ ${deltaSummary}`,
+    badgeClass: 'bg-rose-950/75 text-rose-300 border-rose-500/40',
+    tooltip,
+  };
+}
 
 interface ArenaViewProps {
   profile: PlayerProfile;
@@ -130,6 +241,7 @@ export const ArenaView: React.FC<ArenaViewProps> = ({
   const [quickPool, setQuickPool] = useState<'unlocked' | 'all'>('unlocked');
   const [selectedTierNum, setSelectedTierNum] = useState<number>(1);
   const [selectedFighterId, setSelectedFighterId] = useState<string>('t1-f1');
+  const { openPreview } = useCardPreview();
   const [phase, setPhase] = useState<MatchPhase>('setup');
 
   // Active match state
@@ -159,6 +271,12 @@ export const ArenaView: React.FC<ArenaViewProps> = ({
     returning: boolean;
   } | null>(null);
   const [hoverCell, setHoverCell] = useState<{ row: number; col: number } | null>(null);
+  const [hoveredBiomeTile, setHoveredBiomeTile] = useState<{
+    biome: BiomeType;
+    x: number;
+    y: number;
+    preview: TerrainEvaluation | null;
+  } | null>(null);
 
   const timersRef = useRef<number[]>([]);
   const boardGridRef = useRef<HTMLDivElement | null>(null);
@@ -261,8 +379,18 @@ export const ArenaView: React.FC<ArenaViewProps> = ({
 
       const pHand = buildPlayerHand(activeDeck.cards, profile.inventory);
       const rHand = buildOpponentHand(fighter.id);
-      const freshBoard = createBoard();
-      const blockedCount = freshBoard.flat().filter((c) => c.blocked).length;
+      const regionBiomes = getFighterBiomes(fighter.id);
+      const freshBoard = createBoard(regionBiomes);
+      const uniqueSpawnedBiomes = Array.from(
+        new Set(
+          freshBoard
+            .flat()
+            .map((c) => c.terrain)
+            .filter((t): t is BiomeType => Boolean(t))
+        )
+      )
+        .map((b) => BIOME_META[b].shortName)
+        .join(' & ');
       const starter: Owner = Math.random() < 0.55 ? 'player' : 'rival';
 
       setBoard(freshBoard);
@@ -278,7 +406,7 @@ export const ArenaView: React.FC<ArenaViewProps> = ({
       setSummary(null);
       setIsAnimating(false);
       setLastBattleLog(
-        `4×4 Duel vs ${fighter.name} (${blockedCount} sealed monoliths · 14 cards fill the board). ${
+        `Open 4×4 Duel vs ${fighter.name} (${BIOME_TILE_COUNT} Biome tiles: ${uniqueSpawnedBiomes}). ${
           starter === 'player' ? 'Your move!' : `${fighter.name} leads.`
         }`
       );
@@ -432,6 +560,10 @@ export const ArenaView: React.FC<ArenaViewProps> = ({
 
       const comboFlips = resolution.flips.filter((f) => f.reason === 'combo').length;
       const unopposedFlips = resolution.flips.filter((f) => f.reason === 'unopposed').length;
+      const placedMod = resolution.nextBoard[row][col].card?.terrainMod;
+      const terrainSuffix = placedMod
+        ? ` · ${BIOME_META[placedMod.biome].shortName} (${placedMod.label})`
+        : '';
       const activeAugment = resolveCardAugment(chosen.cardId, chosen.augmentId);
       const augCount = resolution.augments.length;
       const augSuffix =
@@ -462,7 +594,7 @@ export const ArenaView: React.FC<ArenaViewProps> = ({
         const defHex = toHexDigit(c.defenderVal);
         const clashSummary = `${c.attackerName} (${atkHex}${c.attackType}) vs ${c.defenderName} (${defHex}) · ${
           c.attackerWon ? `${c.attackerName} wins clash!` : `${c.defenderName} counter-flips!`
-        }${comboFlips > 0 ? ` +${comboFlips} Combo!` : ''}${augSuffix}`;
+        }${comboFlips > 0 ? ` +${comboFlips} Combo!` : ''}${terrainSuffix}${augSuffix}`;
         setLastBattleLog(clashSummary);
 
         const clashTimer = window.setTimeout(() => {
@@ -488,7 +620,7 @@ export const ArenaView: React.FC<ArenaViewProps> = ({
         setLastBattleLog(
           `${chosenDef.name} captured ${unopposedFlips} unopposed card${
             unopposedFlips > 1 ? 's' : ''
-          }!${augSuffix}`
+          }!${terrainSuffix}${augSuffix}`
         );
         const soundTimer = window.setTimeout(() => {
           sound.flip(unopposedFlips);
@@ -509,7 +641,7 @@ export const ArenaView: React.FC<ArenaViewProps> = ({
         setLastBattleLog(
           `${owner === 'player' ? 'You' : currentFighter.name} deployed ${chosenDef.name} (${formatTetraCode(
             chosen.stats
-          )} · ${chosen.arrows.length}▲).`
+          )})${terrainSuffix}.`
         );
       }
 
@@ -850,40 +982,17 @@ export const ArenaView: React.FC<ArenaViewProps> = ({
   }, [selectedHandCard]);
 
   // Live tactical Capture / Clash preview when dragging or hovering an open board socket
-  const hoverTacticalPreview = useMemo(() => {
-    const activeCard = draggingCard?.card ?? selectedHandCard;
-    if (
-      !hoverCell ||
-      !activeCard ||
-      phase !== 'playing' ||
-      turn !== 'player' ||
-      isAnimating
-    ) {
-      return {
-        targetMap: {} as Record<string, 'unopposed' | 'clash'>,
-        highlightArrows: [] as ArrowDir[],
-      };
+  const activeBoardBiomes = useMemo(() => {
+    const counts = new Map<BiomeType, number>();
+    for (const row of board) {
+      for (const cell of row) {
+        if (cell.terrain) {
+          counts.set(cell.terrain, (counts.get(cell.terrain) ?? 0) + 1);
+        }
+      }
     }
-
-    const targetMap: Record<string, 'unopposed' | 'clash'> = {};
-    const highlightArrows: ArrowDir[] = [];
-    const size = board.length;
-
-    for (const dir of EIGHT_DIRS) {
-      if (!activeCard.arrows.includes(dir.myArrow)) continue;
-      const nr = hoverCell.row + dir.dr;
-      const nc = hoverCell.col + dir.dc;
-      if (nr < 0 || nr >= size || nc < 0 || nc >= size) continue;
-      const neighbor = board[nr]?.[nc]?.card;
-      if (!neighbor || neighbor.owner === 'player') continue;
-
-      const pointsBack = neighbor.arrows.includes(dir.oppArrow);
-      targetMap[`${nr}-${nc}`] = pointsBack ? 'clash' : 'unopposed';
-      highlightArrows.push(dir.myArrow);
-    }
-
-    return { targetMap, highlightArrows };
-  }, [board, draggingCard, hoverCell, isAnimating, phase, selectedHandCard, turn]);
+    return Array.from(counts.entries());
+  }, [board]);
 
   const previewDeckHand = useMemo(
     () => buildPlayerHand(activeDeck.cards, profile.inventory),
@@ -1351,6 +1460,14 @@ export const ArenaView: React.FC<ArenaViewProps> = ({
                     </span>
                   </div>
                   <div className="flex items-center justify-between gap-2">
+                    <span className="text-slate-400">Arena Biomes</span>
+                    <div className="flex flex-wrap items-center justify-end gap-1">
+                      {getFighterBiomes(currentFighter.id).map((b) => (
+                        <BiomePill key={b} biome={b} compact />
+                      ))}
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-between gap-2">
                     <span className="text-slate-400">Victory Payout</span>
                     <span className="font-mono font-bold text-amber-300">
                       +{currentFighter.winGold}g
@@ -1514,7 +1631,7 @@ export const ArenaView: React.FC<ArenaViewProps> = ({
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 text-center text-xs">
                 <div className="rounded-xl bg-[#0b1120] border border-slate-800 p-3">
                   <div className="text-slate-400">Board</div>
-                  <div className="font-mono font-bold text-slate-100 mt-0.5">4×4 (2 Sealed)</div>
+                  <div className="font-mono font-bold text-slate-100 mt-0.5">4×4 Open</div>
                 </div>
                 <div className="rounded-xl bg-[#0b1120] border border-slate-800 p-3">
                   <div className="text-slate-400">Hands</div>
@@ -1534,6 +1651,18 @@ export const ArenaView: React.FC<ArenaViewProps> = ({
                     #{String(currentFighter.minCardNumber).padStart(2, '0')}–#
                     {String(currentFighter.maxCardNumber).padStart(2, '0')}
                   </div>
+                </div>
+              </div>
+
+              {/* Arena Biome Forecast */}
+              <div className="rounded-xl bg-[#0b1120] border border-slate-800 px-3.5 py-2.5 flex flex-wrap items-center justify-between gap-2 text-xs">
+                <span className="text-slate-400 font-medium">
+                  Arena Biomes (4 tiles spawned)
+                </span>
+                <div className="flex flex-wrap items-center gap-1.5">
+                  {getFighterBiomes(currentFighter.id).map((b) => (
+                    <BiomePill key={b} biome={b} compact />
+                  ))}
                 </div>
               </div>
 
@@ -1725,9 +1854,39 @@ export const ArenaView: React.FC<ArenaViewProps> = ({
             </div>
           )}
 
-          {/* Sculpted 4x4 Sanctuary Board Frame */}
-          <div className="w-full max-w-[490px] sm:max-w-[580px] rounded-2xl hearth-table-surface border-2 border-amber-500/35 p-2 sm:p-3 shadow-[0_24px_60px_rgba(0,0,0,0.7),inset_0_1px_0_rgba(255,255,255,0.12)]">
-            <div ref={boardGridRef} className="grid grid-cols-4 gap-2 sm:gap-2.5">
+          {/* Active Board Biomes Legend Strip */}
+          {activeBoardBiomes.length > 0 && (
+            <div className="w-full max-w-[490px] sm:max-w-[580px] mb-2 flex flex-wrap items-center justify-between gap-2 px-2.5 py-1.5 rounded-xl bg-[#0d1424]/90 border border-slate-800/90 text-[11px]">
+              <span className="text-slate-400 font-medium">
+                4 Biome Tiles <span className="hidden sm:inline text-slate-500">· Hover for effects</span>
+              </span>
+              <div className="flex flex-wrap items-center gap-1.5">
+                {activeBoardBiomes.map(([biome, count]) => (
+                  <BiomePill key={biome} biome={biome} count={count} compact />
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Continuous Blended Open 4x4 Aerial Battlefield Canvas (16 Playable Tiles, 4 Biomes) */}
+          <div className="relative w-full max-w-[490px] sm:max-w-[580px] rounded-2xl border-2 border-amber-500/35 p-2 sm:p-2.5 overflow-hidden bg-[#0a0f18] shadow-[0_24px_60px_rgba(0,0,0,0.75),inset_0_1px_0_rgba(255,255,255,0.1)]">
+            {/* Unbroken Weathered Stone Battlefield Floor Beneath All 16 Squares */}
+            <div
+              aria-hidden="true"
+              style={{
+                backgroundImage: `url(${NEUTRAL_TERRAIN_IMAGE})`,
+                backgroundSize: '260px 346px',
+                backgroundRepeat: 'repeat',
+              }}
+              className="pointer-events-none absolute inset-0 opacity-80 brightness-[0.68] contrast-[1.08]"
+            />
+            {/* Soft Moody Vignette Unifying the Whole Map */}
+            <div
+              aria-hidden="true"
+              className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_90%_90%_at_50%_50%,rgba(6,10,18,0.08)_0%,rgba(6,10,18,0.52)_100%)]"
+            />
+
+            <div ref={boardGridRef} className="relative z-10 grid grid-cols-4 gap-1.5 sm:gap-2">
               {board.map((row, rIdx) =>
                 row.map((cell, cIdx) => {
                   const key = `${rIdx}-${cIdx}`;
@@ -1736,70 +1895,67 @@ export const ArenaView: React.FC<ArenaViewProps> = ({
                     turn === 'player' &&
                     !isAnimating &&
                     Boolean(selectedHandUid) &&
-                    !cell.blocked &&
                     !cell.card;
+                  const biomeMeta = cell.terrain ? BIOME_META[cell.terrain] : null;
+                  const activePreviewDef =
+                    phase === 'playing' && turn === 'player' && !isAnimating
+                      ? CARD_MAP[(draggingCard?.card ?? selectedHandCard)?.cardId ?? '']
+                      : undefined;
+                  const terrainPreview =
+                    !cell.card && cell.terrain && activePreviewDef
+                      ? evaluateTerrainEffect(cell.terrain, activePreviewDef)
+                      : null;
 
-                  if (cell.blocked) {
+                  if (cell.card) {
+                    const placedCard = cell.card;
                     return (
                       <div
                         key={key}
-                        aria-label="Sealed obsidian tile"
-                        className="aspect-[5/7] rounded-xl bg-gradient-to-b from-[#0c101c] via-[#131827] to-[#080b13] border border-amber-500/20 shadow-[inset_0_3px_12px_rgba(0,0,0,0.85),inset_0_0_0_1px_rgba(255,255,255,0.03)] flex items-center justify-center relative overflow-hidden select-none"
+                        title={
+                          biomeMeta
+                            ? `${biomeMeta.name}: ${
+                                placedCard.terrainMod
+                                  ? placedCard.terrainMod.label
+                                  : 'No terrain effect on this card'
+                              } · Click to inspect`
+                            : 'Click card to inspect stats'
+                        }
+                        className="relative aspect-[5/7]"
                       >
-                        {/* Subtle Carved Sanctum Frame */}
-                        <div className="pointer-events-none absolute inset-[5px] sm:inset-[6px] rounded-[5px] border border-amber-400/15 flex items-center justify-center p-1.5">
-                          <div className="w-full h-full rounded-t-[999px] rounded-b-[3px] border border-amber-400/12 bg-black/30 flex items-center justify-center">
-                            <svg
-                              aria-hidden="true"
-                              viewBox="0 0 40 56"
-                              className="w-6 h-8 sm:w-8 sm:h-11 text-amber-300/28"
-                              fill="none"
-                            >
-                              <path
-                                d="M20 6L32 28L20 50L8 28L20 6Z"
-                                stroke="currentColor"
-                                strokeWidth="1.2"
-                              />
-                              <path
-                                d="M20 14L27 28L20 42L13 28L20 14Z"
-                                stroke="currentColor"
-                                strokeWidth="0.9"
-                                opacity="0.7"
-                              />
-                              <circle cx="20" cy="28" r="2.2" fill="currentColor" opacity="0.85" />
-                              <line
-                                x1="6"
-                                y1="28"
-                                x2="34"
-                                y2="28"
-                                stroke="currentColor"
-                                strokeWidth="0.8"
-                                opacity="0.45"
-                              />
-                            </svg>
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  }
-
-                  if (cell.card) {
-                    const targetStatus = hoverTacticalPreview.targetMap[key] ?? null;
-                    return (
-                      <div key={key} className="aspect-[5/7]">
                         <GameCard
-                          cardId={cell.card.cardId}
-                          stats={cell.card.stats}
-                          baseStats={cell.card.baseStats}
-                          arrows={cell.card.arrows}
-                          augmentId={cell.card.augmentId}
-                          owner={cell.card.owner}
-                          justPlaced={cell.card.justPlaced}
-                          flipKey={cell.card.lastFlippedAt}
-                          lastAugmented={cell.card.lastAugmented}
-                          targetStatus={targetStatus}
+                          cardId={placedCard.cardId}
+                          stats={placedCard.stats}
+                          baseStats={placedCard.baseStats}
+                          arrows={placedCard.arrows}
+                          augmentId={placedCard.augmentId}
+                          owner={placedCard.owner}
+                          justPlaced={placedCard.justPlaced}
+                          flipKey={placedCard.lastFlippedAt}
+                          lastAugmented={placedCard.lastAugmented}
                           size="sm"
+                          onClick={() => {
+                            sound.select();
+                            openPreview({
+                              cardId: placedCard.cardId,
+                              stats: placedCard.stats,
+                              baseStats: placedCard.baseStats,
+                              arrows: placedCard.arrows,
+                              augmentId: placedCard.augmentId,
+                              owner: placedCard.owner,
+                              terrain: cell.terrain,
+                              terrainMod: placedCard.terrainMod,
+                              lastAugmented: placedCard.lastAugmented,
+                            });
+                          }}
                         />
+                        {biomeMeta && (
+                          <span
+                            aria-label={`${biomeMeta.name} tile`}
+                            className={`pointer-events-none absolute -top-1 -left-1 z-30 w-4 h-4 sm:w-5 sm:h-5 rounded-full border flex items-center justify-center shadow-md ${biomeMeta.badgeClass}`}
+                          >
+                            <BiomeIcon biome={biomeMeta.id} className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
+                          </span>
+                        )}
                       </div>
                     );
                   }
@@ -1814,49 +1970,92 @@ export const ArenaView: React.FC<ArenaViewProps> = ({
                       type="button"
                       data-drop-row={canPlaceHere ? rIdx : undefined}
                       data-drop-col={canPlaceHere ? cIdx : undefined}
-                      disabled={!canPlaceHere}
-                      onMouseEnter={() => {
+                      aria-disabled={!canPlaceHere}
+                      onMouseEnter={(e) => {
+                        if (biomeMeta && !isDragActive) {
+                          const rect = e.currentTarget.getBoundingClientRect();
+                          const pad = 128;
+                          const clampedX =
+                            typeof window !== 'undefined'
+                              ? Math.max(
+                                  pad,
+                                  Math.min(window.innerWidth - pad, rect.left + rect.width / 2)
+                                )
+                              : rect.left + rect.width / 2;
+                          setHoveredBiomeTile({
+                            biome: biomeMeta.id,
+                            x: clampedX,
+                            y: rect.top - 8,
+                            preview: terrainPreview,
+                          });
+                        }
                         if (canPlaceHere && !isDragActive) {
                           sound.hover();
                           setHoverCell({ row: rIdx, col: cIdx });
                         }
                       }}
                       onMouseLeave={() => {
+                        setHoveredBiomeTile(null);
                         if (!isDragActive) {
                           setHoverCell((cur) =>
                             cur?.row === rIdx && cur?.col === cIdx ? null : cur
                           );
                         }
                       }}
-                      onClick={() => handleCellClick(rIdx, cIdx)}
-                      aria-label={`Place card at row ${rIdx + 1}, column ${cIdx + 1}`}
-                      className={`group relative aspect-[5/7] rounded-xl hearth-tile-socket border transition-all duration-150 flex flex-col items-center justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 ${
+                      onClick={() => {
+                        setHoveredBiomeTile(null);
+                        if (canPlaceHere) {
+                          handleCellClick(rIdx, cIdx);
+                        }
+                      }}
+                      aria-label={
+                        biomeMeta
+                          ? `${biomeMeta.name} tile at row ${rIdx + 1}, column ${cIdx + 1}`
+                          : `Stone ground tile at row ${rIdx + 1}, column ${cIdx + 1}`
+                      }
+                      className={`group relative aspect-[5/7] rounded-lg border transition-all duration-150 overflow-hidden bg-transparent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 ${
                         isDropTarget
-                          ? 'border-amber-300 bg-amber-500/18 ring-2 ring-amber-300/75 shadow-[0_0_24px_rgba(251,191,36,0.42),inset_0_0_16px_rgba(251,191,36,0.22)] scale-[1.03] cursor-pointer'
+                          ? 'border-amber-300 ring-2 ring-amber-300/80 shadow-[0_0_24px_rgba(251,191,36,0.45)] scale-[1.03] cursor-pointer z-20'
                           : isDragActive && canPlaceHere
-                          ? 'border-amber-400/45 bg-amber-950/15'
+                          ? 'border-amber-300/40 bg-amber-400/[0.04]'
                           : canPlaceHere
-                          ? 'border-slate-700/80 hover:border-amber-300/75 hover:bg-slate-800/45 cursor-pointer active:scale-[0.96]'
-                          : 'border-slate-800/80 cursor-default'
+                          ? 'border-white/[0.11] hover:border-amber-300/70 cursor-pointer active:scale-[0.97]'
+                          : 'border-white/[0.07] cursor-default'
                       }`}
                     >
-                      {isDropTarget ? (
-                        <div className="pointer-events-none flex flex-col items-center gap-1">
-                          <span className="w-3 h-3 rotate-45 rounded-[2px] border border-amber-200 bg-amber-300/80 shadow-[0_0_10px_rgba(251,191,36,0.9)] animate-pulse" />
-                          <span className="font-[var(--font-display)] text-[8px] sm:text-[9px] font-bold uppercase tracking-widest text-amber-200">
-                            Drop
-                          </span>
-                        </div>
-                      ) : (
-                        <span
-                          className={`w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full transition-transform ${
-                            isDragActive && canPlaceHere
-                              ? 'bg-amber-300/75 scale-125'
-                              : canPlaceHere
-                              ? 'bg-slate-600/60 group-hover:scale-150 group-hover:bg-amber-300'
-                              : 'bg-slate-800'
-                          }`}
-                        />
+                      {/* Feathered Top-Down Biome Feature Blended Directly Into the Stone Battlefield */}
+                      {biomeMeta && (
+                        <>
+                          <img
+                            src={biomeMeta.tileImage}
+                            alt={biomeMeta.name}
+                            loading="eager"
+                            decoding="async"
+                            draggable={false}
+                            style={{
+                              filter: biomeMeta.tileImageFilter,
+                              maskImage:
+                                'radial-gradient(ellipse 84% 86% at 50% 50%, rgba(0,0,0,1) 46%, rgba(0,0,0,0.72) 74%, rgba(0,0,0,0) 100%)',
+                              WebkitMaskImage:
+                                'radial-gradient(ellipse 84% 86% at 50% 50%, rgba(0,0,0,1) 46%, rgba(0,0,0,0.72) 74%, rgba(0,0,0,0) 100%)',
+                            }}
+                            className={`pointer-events-none absolute -inset-[6%] w-[112%] h-[112%] object-cover select-none transition-transform duration-200 ${
+                              isDropTarget ? 'scale-[1.06]' : 'group-hover:scale-[1.04]'
+                            }`}
+                          />
+                          <div
+                            style={{ background: biomeMeta.tileBlendGlow }}
+                            className="pointer-events-none absolute inset-0"
+                          />
+                        </>
+                      )}
+
+                      {/* Subtle Carved Tactical Socket Depth */}
+                      <div className="pointer-events-none absolute inset-0 rounded-lg shadow-[inset_0_1px_8px_rgba(0,0,0,0.42)]" />
+
+                      {/* Subtle Drop Glow Only When Actively Targeting */}
+                      {isDropTarget && (
+                        <div className="pointer-events-none absolute inset-0 bg-amber-300/15 shadow-[inset_0_0_18px_rgba(251,191,36,0.45)]" />
                       )}
                     </button>
                   );
@@ -1943,29 +2142,82 @@ export const ArenaView: React.FC<ArenaViewProps> = ({
 
           {selectedCardDef && selectedHandCard && (
             <div className="mt-2 hidden lg:block rounded-xl bg-[#10182a] border border-amber-500/25 p-3 text-xs space-y-1.5 shadow-md">
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between gap-2">
                 <span className="font-semibold text-slate-100">{selectedCardDef.name}</span>
                 <span className="font-mono font-bold text-amber-300">
                   {formatTetraCode(selectedHandCard.stats)}
                 </span>
               </div>
-              <div className="flex items-center justify-between text-slate-400">
-                <span>
-                  Pwr {toHexDigit(selectedHandCard.stats.power)} · Type {selectedHandCard.stats.type}{' '}
-                  · P.Def {toHexDigit(selectedHandCard.stats.pDef)} · M.Def{' '}
-                  {toHexDigit(selectedHandCard.stats.mDef)}
-                </span>
-                <span className="flex items-center gap-1 text-amber-300">
+              <div className="flex items-center justify-between gap-2">
+                <CardTraitPills
+                  element={selectedCardDef.element}
+                  tribe={selectedCardDef.tribe}
+                  compact
+                />
+                <span className="flex items-center gap-1 text-amber-300 font-mono text-[11px]">
                   <Compass className="w-3.5 h-3.5" />
-                  {selectedHandCard.arrows.length}▲
+                  {selectedHandCard.arrows.length}
                 </span>
+              </div>
+              <div className="text-slate-400">
+                Pwr {toHexDigit(selectedHandCard.stats.power)} · Type {selectedHandCard.stats.type}{' '}
+                · P.Def {toHexDigit(selectedHandCard.stats.pDef)} · M.Def{' '}
+                {toHexDigit(selectedHandCard.stats.mDef)}
               </div>
             </div>
           )}
         </div>
       </div>
 
-      {/* Floating 60fps Dragged Card Ghost with Velocity Tilt & Live Attack Arrow Glow */}
+      {/* Hover-Only Unclipped Biome Tile Tooltip Portal */}
+      {hoveredBiomeTile &&
+        !draggingCard &&
+        phase === 'playing' &&
+        typeof document !== 'undefined' &&
+        (() => {
+          const b = BIOME_META[hoveredBiomeTile.biome];
+          const p = hoveredBiomeTile.preview;
+          return createPortal(
+            <div
+              role="tooltip"
+              style={{
+                left: `${hoveredBiomeTile.x}px`,
+                top: `${hoveredBiomeTile.y}px`,
+                transform: 'translate(-50%, -100%)',
+              }}
+              className="pointer-events-none fixed z-[200] w-max max-w-[260px] rounded-xl bg-slate-950/96 border border-slate-700/90 px-3 py-2 text-xs shadow-[0_14px_34px_rgba(0,0,0,0.85)] space-y-1"
+            >
+              <div className="flex items-center gap-1.5 font-semibold">
+                <span
+                  className={`w-5 h-5 rounded-full border flex items-center justify-center shrink-0 ${b.badgeClass}`}
+                >
+                  <BiomeIcon biome={b.id} className="w-3 h-3" />
+                </span>
+                <span className={`font-[var(--font-display)] ${b.accentTextClass}`}>
+                  {b.name}
+                </span>
+              </div>
+              <div className="text-[11px] text-emerald-300 leading-snug">
+                ▲ {b.favorsSummary}
+              </div>
+              <div className="text-[11px] text-rose-300 leading-snug">
+                ▼ {b.hindersSummary}
+              </div>
+              {p && p.hasEffect && (
+                <div
+                  className={`pt-1 mt-1 border-t border-slate-800 font-mono text-[11px] font-bold ${
+                    p.isPositive ? 'text-emerald-200' : 'text-rose-200'
+                  }`}
+                >
+                  Selected card: {p.isPositive ? '▲' : '▼'} {p.shortTag}
+                </div>
+              )}
+            </div>,
+            document.body
+          );
+        })()}
+
+      {/* Floating 60fps Dragged Card Ghost */}
       {draggingCard && (
         <div
           ref={(el) => {
@@ -1995,7 +2247,6 @@ export const ArenaView: React.FC<ArenaViewProps> = ({
             owner="player"
             size="sm"
             showName
-            highlightArrows={hoverTacticalPreview.highlightArrows}
             disableLongPress
           />
         </div>
@@ -2109,8 +2360,7 @@ export const ArenaView: React.FC<ArenaViewProps> = ({
                       <span>
                         <strong>Mythic RNG Drop Triggered!</strong>{' '}
                         {CARD_MAP[summary.bonusMythicDrop.cardId]?.name} (
-                        {formatTetraCode(summary.bonusMythicDrop.stats)} ·{' '}
-                        {summary.bonusMythicDrop.arrows.length}▲) materialized in the spoils pool!
+                        {formatTetraCode(summary.bonusMythicDrop.stats)}) materialized in the spoils pool!
                       </span>
                     </div>
                   )}
@@ -2132,9 +2382,18 @@ export const ArenaView: React.FC<ArenaViewProps> = ({
                     {summary.rivalHandCards.map((sCard) => {
                       const cardDef = CARD_MAP[sCard.cardId];
                       const isClaimed = summary.spoilClaimedUid === sCard.uid;
-                      const ownedCopies = profile.owned[sCard.cardId] ?? 0;
+                      const ownedInstances = profile.inventory[sCard.cardId] ?? [];
+                      const ownedCopies = profile.owned[sCard.cardId] ?? ownedInstances.length;
+                      const comparison = !summary.spoilClaimedUid
+                        ? compareSpoilToLibrary(sCard, ownedInstances)
+                        : null;
                       const isBonusMythic = summary.bonusMythicDrop?.uid === sCard.uid;
                       const lockedOut = Boolean(summary.spoilClaimedUid) && !isClaimed;
+                      const isUpgradeHighlight =
+                        !summary.spoilClaimedUid &&
+                        !isBonusMythic &&
+                        comparison?.verdict === 'upgrade' &&
+                        ownedCopies < MAX_COPIES_PER_CARD;
                       return (
                         <div
                           key={sCard.uid}
@@ -2143,6 +2402,8 @@ export const ArenaView: React.FC<ArenaViewProps> = ({
                               ? 'bg-emerald-950/35 border-emerald-400/75'
                               : isBonusMythic && !summary.spoilClaimedUid
                               ? 'bg-amber-950/30 border-amber-400/70'
+                              : isUpgradeHighlight
+                              ? 'bg-emerald-950/20 border-emerald-500/45'
                               : 'bg-[#0b1120] border-slate-800/90'
                           } ${lockedOut ? 'opacity-45' : ''}`}
                         >
@@ -2163,8 +2424,8 @@ export const ArenaView: React.FC<ArenaViewProps> = ({
                             }
                           />
 
-                          {/* Full, Un-Squashed Card Name & Stats Readout */}
-                          <div className="space-y-1 text-center px-0.5">
+                          {/* Full, Un-Squashed Card Name & Library Comparison Readout */}
+                          <div className="space-y-1.5 text-center px-0.5">
                             <div className="font-[var(--font-display)] text-sm font-bold text-slate-100 leading-snug">
                               {cardDef?.name ?? 'Card'}
                             </div>
@@ -2180,11 +2441,19 @@ export const ArenaView: React.FC<ArenaViewProps> = ({
                               <span className="font-mono font-bold text-amber-200">
                                 {formatTetraCode(sCard.stats)}
                               </span>
-                              <span className="text-slate-600">·</span>
-                              <span className="font-mono text-sky-300">{sCard.arrows.length}▲</span>
                             </div>
+                            {comparison && (
+                              <div className="flex justify-center">
+                                <span
+                                  title={comparison.tooltip}
+                                  className={`inline-flex items-center rounded-md border px-2 py-0.5 font-mono text-[11px] font-semibold leading-tight cursor-help ${comparison.badgeClass}`}
+                                >
+                                  {comparison.badgeText}
+                                </span>
+                              </div>
+                            )}
                             <div
-                              className={`text-xs font-semibold pt-0.5 ${
+                              className={`text-xs font-semibold ${
                                 isClaimed
                                   ? 'text-emerald-300'
                                   : isBonusMythic
@@ -2202,6 +2471,8 @@ export const ArenaView: React.FC<ArenaViewProps> = ({
                                 ? '★ Mythic Bonus Drop'
                                 : ownedCopies === 0
                                 ? '★ New Card'
+                                : ownedCopies >= MAX_COPIES_PER_CARD
+                                ? `Owned: ${ownedCopies}/${MAX_COPIES_PER_CARD} · Auto-sells`
                                 : `Owned: ${ownedCopies}/${MAX_COPIES_PER_CARD}`}
                             </div>
                           </div>

@@ -1,5 +1,5 @@
 import { createContext, useContext } from 'react';
-import { ArrowDir, Owner, TetraStats } from '../types/game';
+import { ArrowDir, BiomeType, Owner, PlacedCard, TetraStats } from '../types/game';
 
 export interface CardPreviewData {
   cardId: string;
@@ -8,6 +8,8 @@ export interface CardPreviewData {
   arrows: ArrowDir[];
   augmentId?: string;
   owner?: Owner | 'neutral';
+  terrain?: BiomeType | null;
+  terrainMod?: PlacedCard['terrainMod'];
   lastAugmented?: {
     label: string;
     isBuff: boolean;

@@ -52,14 +52,14 @@ export const HomeView: React.FC<HomeViewProps> = ({
 
           <div className="space-y-3">
             <h1 className="font-[var(--font-display)] text-4xl sm:text-5xl lg:text-[54px] font-bold tracking-wide text-amber-100 leading-[1.08]">
-              Aether Triad
+              GridDuel
             </h1>
             <p className="font-[var(--font-serif)] italic text-lg sm:text-xl text-amber-200/85">
-              “A kingdom is only as wide as its arrows.”
+              “Master the terrain, command the arrows, claim the board.”
             </p>
             <p className="text-sm sm:text-base text-slate-300 leading-relaxed max-w-xl mx-auto lg:mx-0">
-              Outflank rivals across a 4×4 obsidian board using 8-way compass arrows, hexadecimal
-              clashes, combo chains, and custom Runeforge augments.
+              Outflank rivals across an open 4×4 biome battlefield using 8-way compass arrows,
+              elemental &amp; tribal terrain shifts, combo chains, and custom Runeforge augments.
             </p>
           </div>
 

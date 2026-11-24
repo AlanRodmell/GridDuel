@@ -14,19 +14,19 @@ export interface MusicTrackMeta {
 export const MUSIC_TRACKS: MusicTrackMeta[] = [
   {
     id: 'tavern',
-    title: 'Treno Candlelight',
+    title: 'Hearthfire Tavern',
     subtitle: 'Renaissance Lute, Wooden Flute & Tavern Percussion',
     bpm: 82,
   },
   {
     id: 'duel',
-    title: 'Crossed Blades of Lindblum',
+    title: 'Crossed Blades of the Keep',
     subtitle: 'Harpsichord Ostinato, Strings & Tactical Drums',
     bpm: 92,
   },
   {
     id: 'boss',
-    title: 'Eidolon’s Sanctum',
+    title: 'Sovereign’s Sanctum',
     subtitle: 'Grandmaster Brass, Timpani & Baroque Celesta',
     bpm: 98,
   },
@@ -47,7 +47,7 @@ interface StepNote {
 }
 
 /**
- * 1. "Treno Candlelight" (Tavern / Lobby / Compendium Theme)
+ * 1. "Hearthfire Tavern" (Tavern / Lobby / Compendium Theme)
  * 64-step (4-bar) D Dorian Renaissance card-hall groove at a relaxed 82 BPM.
  * Spacious lute chords and lyrical flute phrases with breathing room.
  */
@@ -126,7 +126,7 @@ const TAVERN_PATTERN: StepNote[] = [
 ];
 
 /**
- * 2. "Crossed Blades of Lindblum" (Arena Duel Theme)
+ * 2. "Crossed Blades of the Keep" (Arena Duel Theme)
  * 64-step (4-bar) A Minor tactical card duel theme at a measured 92 BPM.
  * Poised 8th-note harpsichord accompaniment and warm horn melody without rushed 16th runs.
  */
@@ -205,7 +205,7 @@ const DUEL_PATTERN: StepNote[] = [
 ];
 
 /**
- * 3. "Eidolon's Sanctum" (Boss & Tier 9-10 Grandmaster Theme)
+ * 3. "Sovereign's Sanctum" (Boss & Tier 9-10 Grandmaster Theme)
  * 64-step (4-bar) C Harmonic Minor symphonic boss theme at a stately 98 BPM.
  * Majestic orchestral chords and deliberate brass phrases instead of rapid arpeggios.
  */

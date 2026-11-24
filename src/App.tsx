@@ -105,7 +105,7 @@ export default function App() {
             onClick={() => switchTab('home')}
             className="font-[var(--font-display)] text-lg sm:text-xl font-bold tracking-wider text-amber-200 hover:text-amber-100 transition-colors whitespace-nowrap shrink-0 cursor-pointer"
           >
-            Aether Triad
+            GridDuel
           </button>
 
           <nav

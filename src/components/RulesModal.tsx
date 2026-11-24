@@ -1,5 +1,7 @@
 import React from 'react';
-import { Wand2, X } from 'lucide-react';
+import { Map, Wand2, X } from 'lucide-react';
+import { ALL_BIOMES, BIOME_META } from '../data/biomes';
+import { BiomeIcon } from './BiomeBadge';
 
 interface RulesModalProps {
   open: boolean;
@@ -18,7 +20,7 @@ export const RulesModal: React.FC<RulesModalProps> = ({ open, onClose }) => {
       onClick={onClose}
     >
       <div
-        className="w-full sm:max-w-xl max-h-[88dvh] flex flex-col rounded-t-3xl sm:rounded-2xl bg-[#11192c] border border-slate-700/70 shadow-2xl overflow-hidden"
+        className="w-full sm:max-w-2xl max-h-[88dvh] flex flex-col rounded-t-3xl sm:rounded-2xl bg-[#11192c] border border-slate-700/70 shadow-2xl overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="sm:hidden w-10 h-1 rounded-full bg-slate-600 mx-auto mt-2.5" />
@@ -28,7 +30,7 @@ export const RulesModal: React.FC<RulesModalProps> = ({ open, onClose }) => {
             id="rules-modal-title"
             className="font-[var(--font-display)] text-lg font-bold text-amber-200 tracking-wide"
           >
-            Tetra Master &amp; Augment Guide
+            GridDuel Field &amp; Combat Guide
           </h2>
           <button
             type="button"
@@ -41,27 +43,65 @@ export const RulesModal: React.FC<RulesModalProps> = ({ open, onClose }) => {
         </div>
 
         <div className="overflow-y-auto px-5 py-4 space-y-5 text-sm text-slate-300 leading-relaxed">
-          {/* 1. The 4x4 Board & 7-Card Hands */}
+          {/* 1. Open 4x4 Battlefield & 7-Card Hands */}
           <section className="space-y-1.5">
             <h3 className="text-xs font-semibold text-amber-300 tracking-wide">
-              1. The 4×4 Tactical Board &amp; 7-Card Hands
+              1. Open 4×4 Battlefield &amp; 7-Card Hands
             </h3>
             <p>
-              Each duel is played on a <strong>4×4 grid (16 tiles)</strong> with{' '}
-              <strong>2 randomly placed sealed obsidian tiles</strong> and 14 open sockets. You and
-              your rival each bring a hand of <strong>7 cards</strong> and take turns filling every
-              open socket on the board. Control the most cards (Blue vs Crimson) when all 14 cards
-              are played to win!
+              Each duel is played on a fully open <strong>4×4 grid (16 playable tiles)</strong>{' '}
+              seeded with <strong>4 tactical Biome tiles</strong> based on the arena region. You and
+              your rival each play <strong>7 cards</strong> (14 total, leaving 2 tiles open at match
+              end), so you can always maneuver around hostile terrain or plant specialists onto
+              favorable ground. Control the most cards (Blue vs Crimson) after all 14 cards are
+              played to win!
             </p>
           </section>
 
-          {/* 2. Card Arrows & Captures */}
-          <section className="space-y-1.5 border-t border-slate-800 pt-4">
-            <h3 className="text-xs font-semibold text-amber-300 tracking-wide">
-              2. Arrows, Clashes &amp; Combos
+          {/* 2. Biome Terrain & Elemental/Tribal Matchups */}
+          <section className="space-y-2 border-t border-slate-800 pt-4">
+            <h3 className="text-xs font-semibold text-emerald-300 tracking-wide flex items-center gap-1.5">
+              <Map className="w-3.5 h-3.5" />
+              <span>2. Biome Terrain Tiles (Avoid or Capitalize)</span>
             </h3>
             <p>
-              Every rolled card copy has its own golden arrows around its 8 edges and corners:
+              Every card carries an <strong>Element</strong> (Fire, Water, Nature, Storm, Light,
+              Shadow, Steel) and a <strong>Tribe</strong> (Mortal, Fey, Undead, Construct, Beast).
+              Deploying onto a Biome tile immediately applies its stat boost or penalty before
+              clashes resolve—select or drag a card to preview exact deltas right on the board:
+            </p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs pt-1">
+              {ALL_BIOMES.map((biomeId) => {
+                const b = BIOME_META[biomeId];
+                return (
+                  <div
+                    key={biomeId}
+                    className="rounded-xl bg-[#0c1322] border border-slate-800 p-2.5 space-y-1"
+                  >
+                    <div className="flex items-center gap-1.5 font-semibold">
+                      <span
+                        className={`w-5 h-5 rounded-full border flex items-center justify-center shrink-0 ${b.badgeClass}`}
+                      >
+                        <BiomeIcon biome={biomeId} className="w-3 h-3" />
+                      </span>
+                      <span className={b.accentTextClass}>{b.name}</span>
+                    </div>
+                    <div className="text-emerald-300">▲ {b.favorsSummary}</div>
+                    <div className="text-rose-300">▼ {b.hindersSummary}</div>
+                  </div>
+                );
+              })}
+            </div>
+          </section>
+
+          {/* 3. Card Arrows & Captures */}
+          <section className="space-y-1.5 border-t border-slate-800 pt-4">
+            <h3 className="text-xs font-semibold text-amber-300 tracking-wide">
+              3. Arrows, Clashes &amp; Combos
+            </h3>
+            <p>
+              Every rolled card copy has its own blazing orange arrows around its 8 edges and
+              corners:
             </p>
             <ul className="space-y-1.5 list-disc pl-5 text-slate-300">
               <li>
@@ -72,7 +112,7 @@ export const RulesModal: React.FC<RulesModalProps> = ({ open, onClose }) => {
               <li>
                 <strong className="text-slate-100">Arrow Clash:</strong> When your card’s arrow
                 points at a rival card that points an arrow <em>back at yours</em>, a Card Clash
-                erupts using the 4-character stat code.
+                erupts using their effective (rolled + terrain + augmented) stats.
               </li>
               <li>
                 <strong className="text-slate-100">Combo Chain:</strong> Any card won in an Arrow
@@ -82,47 +122,30 @@ export const RulesModal: React.FC<RulesModalProps> = ({ open, onClose }) => {
             </ul>
           </section>
 
-          {/* 3. Battlefield Augments & Runeforge Crafting */}
+          {/* 4. Battlefield Augments & Runeforge Crafting */}
           <section className="space-y-1.5 border-t border-slate-800 pt-4">
             <h3 className="text-xs font-semibold text-violet-300 tracking-wide flex items-center gap-1.5">
               <Wand2 className="w-3.5 h-3.5" />
-              <span>3. Battlefield Augments &amp; Shop Runeforge</span>
+              <span>4. Battlefield Augments &amp; Shop Runeforge</span>
             </h3>
             <p>
               Augments are rare battlefield powers that trigger when a card is placed on the 4×4
               grid. Only <strong>5 Mythic Legendaries</strong> carry innate traits—for every other
               card, visit the <strong>Runeforge</strong> tab in the <strong>Shop</strong> to spend
-              Gold and imbue a custom Rune onto your best card copies:
+              Gold and imbue a custom Rune onto your best card copies.
             </p>
-            <ul className="space-y-1.5 list-disc pl-5 text-slate-300">
-              <li>
-                <strong className="text-emerald-300">Minor &amp; Major Type Synergies:</strong>{' '}
-                Imbue runes like <em>Iron Bulwark</em>, <em>Astral Ward</em>, or{' '}
-                <em>Tempest Matrix</em> to fortify friendly <strong>P, M, X, or A-type</strong>{' '}
-                allies already on the board.
-              </li>
-              <li>
-                <strong className="text-sky-300">Adjacent Phalanx &amp; Sanctum Auras:</strong>{' '}
-                Buff adjacent allies or your entire side of the board when deployed.
-              </li>
-              <li>
-                <strong className="text-rose-300">Rival Sunder Hexes:</strong> Forge{' '}
-                <em>Wither Hex</em>, <em>Armor Sunder</em>, or <em>Abyssal Blight</em> to weaken
-                adjacent rival cards right before your arrows clash against them!
-              </li>
-            </ul>
           </section>
 
-          {/* 4. The 4-Character Stat Code & Multi-Copy Rolling */}
+          {/* 5. The 4-Character Stat Code */}
           <section className="space-y-2 border-t border-slate-800 pt-4">
             <h3 className="text-xs font-semibold text-amber-300 tracking-wide">
-              4. Rolled Stat Codes &amp; Arrow Configurations (Max 5 Copies)
+              5. Rolled Hex Stat Codes (Max 5 Copies)
             </h3>
             <p>
-              Every time you win, buy, or pull a card, it rolls unique hexadecimal stats (
-              <span className="font-mono text-amber-200">0–9, A–F</span>) within its rarity tier AND
-              a unique <strong>8-way arrow layout</strong>. Collect up to <strong>5 copies</strong>{' '}
-              per card and sell extra rolls for Gold!
+              Every card copy rolls hexadecimal stats (
+              <span className="font-mono text-amber-200">0–9, A–F</span>) within its rarity tier and
+              an 8-way arrow layout. Hover any of the 4 circular orbs on a card to see its exact
+              stat label:
             </p>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 text-xs pt-1">
               <div className="rounded-xl bg-[#0c1322] border border-slate-800 p-3">

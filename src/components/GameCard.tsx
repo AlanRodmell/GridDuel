@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { Shield, Sparkles, Swords, Wand2, Zap } from 'lucide-react';
 import {
   ALL_ARROW_DIRS,
@@ -99,6 +100,40 @@ const GameCardInner: React.FC<GameCardProps> = ({
     variant === 'tarot' ? 'full' : 'thumb'
   );
   const { openPreview } = useCardPreview();
+  const [orbTip, setOrbTip] = useState<{ text: string; x: number; y: number } | null>(null);
+
+  const showOrbTip = (e: React.MouseEvent<HTMLElement>, text: string) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const halfViewportPad = 92;
+    const rawX = rect.left + rect.width / 2;
+    const clampedX =
+      typeof window !== 'undefined'
+        ? Math.max(halfViewportPad, Math.min(window.innerWidth - halfViewportPad, rawX))
+        : rawX;
+    setOrbTip({ text, x: clampedX, y: rect.top - 8 });
+  };
+
+  const hideOrbTip = () => {
+    setOrbTip(null);
+  };
+
+  const orbTooltipPortal =
+    orbTip && typeof document !== 'undefined'
+      ? createPortal(
+          <div
+            role="tooltip"
+            style={{
+              left: `${orbTip.x}px`,
+              top: `${orbTip.y}px`,
+              transform: 'translate(-50%, -100%)',
+            }}
+            className="pointer-events-none fixed z-[200] whitespace-nowrap rounded-lg bg-slate-950/95 border border-amber-400/60 px-2.5 py-1 text-[11px] font-mono font-semibold text-amber-100 shadow-[0_8px_24px_rgba(0,0,0,0.75)]"
+          >
+            {orbTip.text}
+          </div>,
+          document.body
+        )
+      : null;
   const longPressTimerRef = useRef<number | null>(null);
   const pressStartRef = useRef<{ x: number; y: number; pointerId: number } | null>(null);
   const suppressClickUntilRef = useRef<number>(0);
@@ -149,6 +184,7 @@ const GameCardInner: React.FC<GameCardProps> = ({
     imgStage === 'thumb' ? getCardThumbUrl(card.image) : card.image;
 
   const handlePointerDown = (e: React.PointerEvent) => {
+    setOrbTip(null);
     if (faceDown || disableLongPress) return;
     if (e.pointerType === 'mouse' && e.button !== 0) return;
 
@@ -481,12 +517,13 @@ const GameCardInner: React.FC<GameCardProps> = ({
                 </p>
               </div>
 
-              {/* 5. Four Full-Size Circular Metallic-Ringed Stat Orbs (Hover for Labels) */}
+              {/* 5. Four Full-Size Circular Metallic-Ringed Stat Orbs (Hover for Unclipped Portal Tooltip) */}
               <div className="grid grid-cols-4 gap-2 pt-0.5 shrink-0">
-                {tarotStats.map((item, idx) => (
+                {tarotStats.map((item) => (
                   <div
                     key={item.label}
-                    title={item.tooltip}
+                    onMouseEnter={(e) => showOrbTip(e, item.tooltip)}
+                    onMouseLeave={hideOrbTip}
                     className="group/orb relative flex items-center justify-center"
                   >
                     <div
@@ -504,23 +541,13 @@ const GameCardInner: React.FC<GameCardProps> = ({
                         </span>
                       </div>
                     </div>
-                    <span
-                      className={`pointer-events-none absolute -top-7 z-40 whitespace-nowrap rounded-md bg-slate-950/95 border border-amber-400/50 px-1.5 py-0.5 text-[10px] font-mono font-semibold text-amber-100 shadow-lg opacity-0 group-hover/orb:opacity-100 transition-opacity duration-150 ${
-                        idx === 0
-                          ? 'left-0'
-                          : idx === 3
-                          ? 'right-0'
-                          : 'left-1/2 -translate-x-1/2'
-                      }`}
-                    >
-                      {item.tooltip}
-                    </span>
                   </div>
                 ))}
               </div>
             </div>
           </div>
         </div>
+        {orbTooltipPortal}
       </Tag>
     );
   }
@@ -755,10 +782,11 @@ const GameCardInner: React.FC<GameCardProps> = ({
               </div>
             ) : (
               <div className="w-full grid grid-cols-4 gap-[3px] sm:gap-[4px] place-items-center shrink-0 pt-[1px]">
-                {squareOrbs.map((orb, idx) => (
+                {squareOrbs.map((orb) => (
                   <div
                     key={orb.key}
-                    title={orb.tooltip}
+                    onMouseEnter={(e) => showOrbTip(e, orb.tooltip)}
+                    onMouseLeave={hideOrbTip}
                     className="group/orb relative w-full flex items-center justify-center min-w-0"
                   >
                     <div
@@ -779,17 +807,6 @@ const GameCardInner: React.FC<GameCardProps> = ({
                         <span className={orb.colorClass}>{orb.value}</span>
                       </div>
                     </div>
-                    <span
-                      className={`pointer-events-none absolute -top-6 z-40 whitespace-nowrap rounded-md bg-slate-950/95 border border-amber-400/50 px-1.5 py-0.5 text-[9px] sm:text-[10px] font-mono font-semibold text-amber-100 shadow-lg opacity-0 group-hover/orb:opacity-100 transition-opacity duration-150 ${
-                        idx === 0
-                          ? 'left-0'
-                          : idx === 3
-                          ? 'right-0'
-                          : 'left-1/2 -translate-x-1/2'
-                      }`}
-                    >
-                      {orb.tooltip}
-                    </span>
                   </div>
                 ))}
               </div>
@@ -877,6 +894,7 @@ const GameCardInner: React.FC<GameCardProps> = ({
           </svg>
         )}
       </div>
+      {orbTooltipPortal}
     </Tag>
   );
 };
