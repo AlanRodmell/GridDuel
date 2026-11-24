@@ -12,6 +12,7 @@ import {
   Flag,
   Home,
   Lock,
+  Map as MapIcon,
   Play,
   RefreshCw,
   Shield,
@@ -215,6 +216,7 @@ interface ArenaViewProps {
   onGoHome: () => void;
   onGoToGallery: () => void;
   onOpenRules: () => void;
+  onLaunchBattlefield?: () => void;
   onToggleSound?: () => void;
   onMatchActiveChange?: (active: boolean) => void;
   onMatchThemeChange?: (theme: 'tavern' | 'duel' | 'boss') => void;
@@ -236,6 +238,7 @@ export const ArenaView: React.FC<ArenaViewProps> = ({
   onGoHome,
   onGoToGallery,
   onOpenRules,
+  onLaunchBattlefield,
   onToggleSound,
   onMatchActiveChange,
   onMatchThemeChange,
@@ -246,7 +249,6 @@ export const ArenaView: React.FC<ArenaViewProps> = ({
   const [gameMode, setGameMode] = useState<MatchMode>(
     initialIntent === 'quick' ? 'quick' : 'arena'
   );
-  const [quickPool, setQuickPool] = useState<'unlocked' | 'all'>('unlocked');
   const [selectedTierNum, setSelectedTierNum] = useState<number>(1);
   const [selectedFighterId, setSelectedFighterId] = useState<string>('t1-f1');
   const { openPreview } = useCardPreview();
@@ -1212,23 +1214,28 @@ export const ArenaView: React.FC<ArenaViewProps> = ({
     [activeDeck.cards, profile.inventory]
   );
 
+  const unlockedLadderTiers = useMemo(
+    () => LADDER_TIERS.filter((t) => isTierUnlocked(t.tierNumber, profile.fighterWins ?? {})),
+    [profile.fighterWins]
+  );
+
+  const unlockedFighters = useMemo(() => {
+    const list = unlockedLadderTiers.flatMap((t) => t.fighters);
+    return list.length > 0 ? list : LADDER_TIERS[0].fighters;
+  }, [unlockedLadderTiers]);
+
   const rollRandomFighter = useCallback(
-    (pool: 'unlocked' | 'all', excludeId?: string) => {
-      const candidates =
-        pool === 'all'
-          ? ALL_FIGHTERS
-          : ALL_FIGHTERS.filter((f) => isTierUnlocked(f.tierNumber, profile.fighterWins ?? {}));
-      const basePool = candidates.length > 0 ? candidates : ALL_FIGHTERS;
+    (excludeId?: string) => {
       const filtered =
-        basePool.length > 1 && excludeId
-          ? basePool.filter((f) => f.id !== excludeId)
-          : basePool;
-      const picked = filtered[Math.floor(Math.random() * filtered.length)] ?? ALL_FIGHTERS[0];
+        unlockedFighters.length > 1 && excludeId
+          ? unlockedFighters.filter((f) => f.id !== excludeId)
+          : unlockedFighters;
+      const picked = filtered[Math.floor(Math.random() * filtered.length)] ?? unlockedFighters[0];
       setSelectedTierNum(picked.tierNumber);
       setSelectedFighterId(picked.id);
       return picked;
     },
-    [profile.fighterWins]
+    [unlockedFighters]
   );
 
   // Sync setup step when launched from Home CTA (Play a Match / Arena / Quick Random Duel)
@@ -1238,7 +1245,7 @@ export const ArenaView: React.FC<ArenaViewProps> = ({
     if (initialIntent === 'quick') {
       setGameMode('quick');
       setSetupStep('details');
-      rollRandomFighter(quickPool);
+      rollRandomFighter();
     } else if (initialIntent === 'arena') {
       setGameMode('arena');
       setSetupStep('details');
@@ -1251,8 +1258,7 @@ export const ArenaView: React.FC<ArenaViewProps> = ({
   const playerAvatarCard =
     CARD_MAP[previewDeckHand[0]?.cardId ?? 'ember-imp'] ?? CARD_MAP['ember-imp'];
   const rivalAvatarCard = CARD_MAP[currentFighter.avatarCardId] ?? CARD_MAP['ember-imp'];
-  const currentTierUnlocked =
-    gameMode === 'quick' || isTierUnlocked(currentTier.tierNumber, profile.fighterWins ?? {});
+  const currentTierUnlocked = isTierUnlocked(currentTier.tierNumber, profile.fighterWins ?? {});
   const currentTierProg = getTierProgress(currentTier.tierNumber, profile.fighterWins ?? {});
 
   // ==================== GUIDED SETUP FLOW (MODE → DETAILS → DECK) ====================
@@ -1348,7 +1354,7 @@ export const ArenaView: React.FC<ArenaViewProps> = ({
               </p>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-5 max-w-4xl mx-auto pt-2">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-5 max-w-5xl mx-auto pt-2">
               {/* Mode Card 1: Championship Arena */}
               <button
                 type="button"
@@ -1357,7 +1363,7 @@ export const ArenaView: React.FC<ArenaViewProps> = ({
                   setGameMode('arena');
                   setSetupStep('details');
                 }}
-                className="group rounded-3xl bg-gradient-to-b from-[#1a2542] via-[#11192e] to-[#0b1120] border border-amber-400/40 hover:border-amber-300 p-6 sm:p-7 text-left flex flex-col justify-between gap-6 shadow-[0_18px_42px_rgba(0,0,0,0.45)] transition-transform duration-200 hover:-translate-y-1 cursor-pointer"
+                className="group rounded-3xl bg-gradient-to-b from-[#1a2542] via-[#11192e] to-[#0b1120] border border-amber-400/40 hover:border-amber-300 p-6 text-left flex flex-col justify-between gap-6 shadow-[0_18px_42px_rgba(0,0,0,0.45)] transition-transform duration-200 hover:-translate-y-1 cursor-pointer"
               >
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
@@ -1370,12 +1376,12 @@ export const ArenaView: React.FC<ArenaViewProps> = ({
                   </div>
 
                   <div className="space-y-2">
-                    <h2 className="font-[var(--font-display)] text-xl sm:text-2xl font-bold text-amber-100 group-hover:text-amber-200 transition-colors">
+                    <h2 className="font-[var(--font-display)] text-xl font-bold text-amber-100 group-hover:text-amber-200 transition-colors">
                       Championship Arena
                     </h2>
                     <p className="text-sm text-slate-300 leading-relaxed">
-                      Progress through 10 themed sanctuaries, defeat tier bosses, earn first-win
-                      Gold bonuses, and hunt exclusive Mythic Legendary drops.
+                      Progress through 10 themed sanctuaries on an open 4×4 biome grid, defeat tier
+                      bosses, and unlock Mythic drops.
                     </p>
                   </div>
                 </div>
@@ -1386,16 +1392,54 @@ export const ArenaView: React.FC<ArenaViewProps> = ({
                 </div>
               </button>
 
-              {/* Mode Card 2: One-Off Random Match */}
+              {/* Mode Card 2: Tactical Battlefield (7x5 Chess-Like Wargame) */}
+              {onLaunchBattlefield && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    sound.select();
+                    onLaunchBattlefield();
+                  }}
+                  className="group rounded-3xl bg-gradient-to-b from-[#102c2c] via-[#0d1f24] to-[#0a111a] border border-emerald-400/45 hover:border-emerald-300 p-6 text-left flex flex-col justify-between gap-6 shadow-[0_18px_42px_rgba(0,0,0,0.45)] transition-transform duration-200 hover:-translate-y-1 cursor-pointer"
+                >
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <div className="w-12 h-12 rounded-2xl bg-emerald-500/15 border border-emerald-400/45 flex items-center justify-center text-emerald-300">
+                        <MapIcon className="w-6 h-6" />
+                      </div>
+                      <span className="px-2.5 py-1 rounded-full bg-emerald-950/90 border border-emerald-400/45 font-mono text-xs font-bold text-emerald-200">
+                        New · 7×5 Grid
+                      </span>
+                    </div>
+
+                    <div className="space-y-2">
+                      <h2 className="font-[var(--font-display)] text-xl font-bold text-emerald-100 group-hover:text-emerald-200 transition-colors">
+                        Tactical Battlefield
+                      </h2>
+                      <p className="text-sm text-slate-300 leading-relaxed">
+                        Deploy a 10-card army and march troops along their arrows like chess across
+                        rivers, marshes &amp; shrines to claim 8 VP or breach the Keep.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between pt-4 border-t border-slate-800/80 text-sm font-semibold text-emerald-300">
+                    <span>Enter Battlefield Skirmish</span>
+                    <ChevronRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
+                  </div>
+                </button>
+              )}
+
+              {/* Mode Card 3: One-Off Random Match */}
               <button
                 type="button"
                 onClick={() => {
                   sound.select();
                   setGameMode('quick');
-                  rollRandomFighter(quickPool);
+                  rollRandomFighter();
                   setSetupStep('details');
                 }}
-                className="group rounded-3xl bg-gradient-to-b from-[#132541] via-[#0e1a31] to-[#0a1120] border border-sky-400/40 hover:border-sky-300 p-6 sm:p-7 text-left flex flex-col justify-between gap-6 shadow-[0_18px_42px_rgba(0,0,0,0.45)] transition-transform duration-200 hover:-translate-y-1 cursor-pointer"
+                className="group rounded-3xl bg-gradient-to-b from-[#132541] via-[#0e1a31] to-[#0a1120] border border-sky-400/40 hover:border-sky-300 p-6 text-left flex flex-col justify-between gap-6 shadow-[0_18px_42px_rgba(0,0,0,0.45)] transition-transform duration-200 hover:-translate-y-1 cursor-pointer"
               >
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
@@ -1403,17 +1447,17 @@ export const ArenaView: React.FC<ArenaViewProps> = ({
                       <Dices className="w-6 h-6" />
                     </div>
                     <span className="px-2.5 py-1 rounded-full bg-sky-950/90 border border-sky-400/40 font-mono text-xs font-bold text-sky-200">
-                      One-Off Match
+                      4×4 Quick Duel
                     </span>
                   </div>
 
                   <div className="space-y-2">
-                    <h2 className="font-[var(--font-display)] text-xl sm:text-2xl font-bold text-sky-100 group-hover:text-sky-200 transition-colors">
+                    <h2 className="font-[var(--font-display)] text-xl font-bold text-sky-100 group-hover:text-sky-200 transition-colors">
                       Quick Random Duel
                     </h2>
                     <p className="text-sm text-slate-300 leading-relaxed">
-                      Draw a surprise opponent for a standalone 4×4 match. Re-roll your rival at
-                      will, test new Runeforge builds, and still win Gold &amp; 1 Spoil card.
+                      Draw a surprise opponent from your unlocked ladder tiers for a brisk 4×4 duel
+                      with Gold &amp; Spoil rewards.
                     </p>
                   </div>
                 </div>
@@ -1759,46 +1803,26 @@ export const ArenaView: React.FC<ArenaViewProps> = ({
             </div>
 
             <div className="rounded-3xl bg-gradient-to-b from-[#162442] via-[#10182d] to-[#0b1120] border border-sky-400/40 p-6 sm:p-7 space-y-6 shadow-[0_22px_50px_rgba(0,0,0,0.5)]">
-              {/* Pool Toggle + Re-roll */}
+              {/* Ladder-Locked Pool Info + Re-roll */}
               <div className="flex flex-wrap items-center justify-between gap-3">
-                <div className="inline-flex items-center gap-1 p-1 rounded-xl bg-[#0a101d] border border-slate-800 text-xs">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      sound.select();
-                      setQuickPool('unlocked');
-                      rollRandomFighter('unlocked', currentFighter.id);
-                    }}
-                    className={`px-3 py-1.5 rounded-lg font-medium transition-colors cursor-pointer ${
-                      quickPool === 'unlocked'
-                        ? 'bg-sky-500 text-slate-950 font-semibold'
-                        : 'text-slate-400 hover:text-white'
-                    }`}
-                  >
-                    Unlocked Tiers
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      sound.select();
-                      setQuickPool('all');
-                      rollRandomFighter('all', currentFighter.id);
-                    }}
-                    className={`px-3 py-1.5 rounded-lg font-medium transition-colors cursor-pointer ${
-                      quickPool === 'all'
-                        ? 'bg-amber-500 text-slate-950 font-semibold'
-                        : 'text-slate-400 hover:text-white'
-                    }`}
-                  >
-                    Any Challenger (Wild)
-                  </button>
+                <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-[#0a101d] border border-slate-800 text-xs">
+                  <Lock className="w-3.5 h-3.5 text-sky-400 shrink-0" />
+                  <span className="text-slate-300">
+                    Pool:{' '}
+                    <strong className="text-sky-200">
+                      {unlockedLadderTiers.length === 1
+                        ? 'Tier 1'
+                        : `Tiers 1–${unlockedLadderTiers[unlockedLadderTiers.length - 1]?.tierNumber ?? 1}`}
+                    </strong>{' '}
+                    <span className="text-slate-500">({unlockedFighters.length} rivals)</span>
+                  </span>
                 </div>
 
                 <button
                   type="button"
                   onClick={() => {
                     sound.select();
-                    rollRandomFighter(quickPool, currentFighter.id);
+                    rollRandomFighter(currentFighter.id);
                   }}
                   className="inline-flex items-center gap-1.5 min-h-[36px] px-3.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xs font-semibold text-sky-200 transition-colors cursor-pointer"
                 >
@@ -2970,7 +2994,7 @@ export const ArenaView: React.FC<ArenaViewProps> = ({
                     type="button"
                     onClick={() => {
                       sound.select();
-                      const next = rollRandomFighter(quickPool, currentFighter.id);
+                      const next = rollRandomFighter(currentFighter.id);
                       startMatchWithFighter(next.id);
                     }}
                     className="min-h-[44px] px-5 rounded-xl bg-gradient-to-b from-amber-300 via-amber-400 to-amber-500 hover:from-amber-200 hover:to-amber-400 text-slate-950 font-bold text-xs sm:text-sm flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
