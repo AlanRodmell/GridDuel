@@ -151,6 +151,21 @@
   animation: previewPop 200ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
+@keyframes scrubPop {
+  0% {
+    transform: translateY(10px) scale(0.92);
+    opacity: 0.72;
+  }
+  100% {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+  }
+}
+
+.animate-scrub-pop {
+  animation: scrubPop 130ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
 .no-touch-callout {
   -webkit-touch-callout: none;
   -webkit-user-select: none;
@@ -175,13 +190,25 @@
   filter: drop-shadow(0 22px 26px rgba(0, 0, 0, 0.75));
 }
 
+/* Zero-scroll mobile match stage: keeps authentic 5:7 Tarot board proportions inside 100dvh */
+@media (max-width: 1023px) {
+  .mobile-board-stage {
+    container-type: size;
+  }
+
+  .mobile-board-fit {
+    width: min(100cqw, calc(100cqh * 5 / 7));
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .animate-card-flip,
   .animate-card-drop,
   .animate-callout,
   .animate-foil-shimmer,
   .animate-arrow-pulse,
-  .animate-preview-pop {
+  .animate-preview-pop,
+  .animate-scrub-pop {
     animation: none !important;
   }
 }

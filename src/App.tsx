@@ -48,12 +48,15 @@ export default function App() {
   const [activeTab, setActiveTab] = useState<TabId>('home');
   const [playIntent, setPlayIntent] = useState<PlayLaunchIntent>('choose');
   const [playLaunchNonce, setPlayLaunchNonce] = useState(0);
+  const [isMatchActive, setIsMatchActive] = useState(false);
   const [rulesOpen, setRulesOpen] = useState(false);
   const [musicModalOpen, setMusicModalOpen] = useState(false);
   const [musicEnabled, setMusicEnabled] = useState(false);
   const [musicVolume, setMusicVolume] = useState(0.55);
   const [activeMusicTheme, setActiveMusicTheme] = useState<MusicThemeId>('tavern');
   const [adaptiveMusic, setAdaptiveMusic] = useState(true);
+
+  const hideChromeForMobileMatch = activeTab === 'arena' && isMatchActive;
 
   const handleToggleMusic = useCallback((enabled: boolean) => {
     setMusicEnabled(enabled);
@@ -82,6 +85,9 @@ export default function App() {
   const switchTab = (tab: TabId) => {
     sound.select();
     setActiveTab(tab);
+    if (tab !== 'arena') {
+      setIsMatchActive(false);
+    }
     if (adaptiveMusic && tab !== 'arena') {
       setActiveMusicTheme('tavern');
       music.setTheme('tavern');
@@ -97,8 +103,12 @@ export default function App() {
   return (
     <CardPreviewProvider>
     <div className="min-h-dvh flex flex-col bg-[#0B111E] text-slate-100">
-      {/* Desktop Top Navigation Bar & Compact Mobile Header */}
-      <header className="sticky top-0 z-30 h-[54px] md:h-16 bg-[#0B111E]/96 border-b border-slate-800/80">
+      {/* Desktop Top Navigation Bar & Compact Mobile Header (hidden on mobile during active duel) */}
+      <header
+        className={`${
+          hideChromeForMobileMatch ? 'hidden lg:block ' : ''
+        }sticky top-0 z-30 h-[54px] md:h-16 bg-[#0B111E]/96 border-b border-slate-800/80`}
+      >
         <div className="h-full max-w-7xl mx-auto px-4 sm:px-6 flex items-center justify-between gap-4 sm:gap-8">
           <button
             type="button"
@@ -226,7 +236,11 @@ export default function App() {
         </div>
       </header>
 
-      <main className="flex-1 pb-20 md:pb-10">
+      <main
+        className={`flex-1 ${
+          hideChromeForMobileMatch ? 'pb-0 lg:pb-10' : 'pb-20 md:pb-10'
+        }`}
+      >
         {activeTab === 'home' && (
           <HomeView
             profile={profile}
@@ -255,6 +269,8 @@ export default function App() {
             onGoHome={() => switchTab('home')}
             onGoToGallery={() => switchTab('gallery')}
             onOpenRules={() => setRulesOpen(true)}
+            onToggleSound={toggleSound}
+            onMatchActiveChange={setIsMatchActive}
             onMatchThemeChange={handleMatchThemeChange}
           />
         )}
@@ -288,7 +304,8 @@ export default function App() {
         )}
       </main>
 
-      {/* Mobile Fixed Bottom Tab Bar */}
+      {/* Mobile Fixed Bottom Tab Bar (hidden during active duel for full-screen board focus) */}
+      {!hideChromeForMobileMatch && (
       <nav
         aria-label="Mobile navigation"
         className="md:hidden fixed bottom-0 inset-x-0 z-40 bg-[#0B111E]/98 border-t border-slate-800/90 pb-safe"
@@ -354,6 +371,7 @@ export default function App() {
           </button>
         </div>
       </nav>
+      )}
 
       <RulesModal open={rulesOpen} onClose={() => setRulesOpen(false)} />
       <MusicModal
