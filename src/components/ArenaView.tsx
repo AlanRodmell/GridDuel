@@ -1428,17 +1428,17 @@ export const ArenaView: React.FC<ArenaViewProps> = ({
         )}
 
         {/* --------------------------------------------------------------- */}
-        {/* STEP 2A: CHAMPIONSHIP ARENA DETAILS → CONFIRM                   */}
+        {/* STEP 2A: CHAMPIONSHIP ARENA DETAILS → SINGLE TABBED COMPONENT   */}
         {/* --------------------------------------------------------------- */}
         {setupStep === 'details' && gameMode === 'arena' && (
-          <div className="space-y-5">
-            <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3">
+          <div className="max-w-3xl mx-auto space-y-4">
+            <div className="flex flex-wrap items-end justify-between gap-3">
               <div>
                 <h1 className="font-[var(--font-display)] text-2xl sm:text-3xl font-bold text-slate-100 tracking-wide">
                   Championship Arena
                 </h1>
                 <p className="text-sm text-slate-400 mt-0.5">
-                  Pick a sanctuary tier and confirm your challenger.
+                  Choose a tier and challenger tab, then head into Deck Build.
                 </p>
               </div>
               <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-[#10182a] border border-slate-800 text-xs">
@@ -1450,7 +1450,7 @@ export const ArenaView: React.FC<ArenaViewProps> = ({
             </div>
 
             {/* Compact 10-Tier Strip */}
-            <div className="grid grid-cols-5 lg:grid-cols-10 gap-1.5">
+            <div className="grid grid-cols-5 sm:grid-cols-10 gap-1.5">
               {LADDER_TIERS.map((tier) => {
                 const unlocked = isTierUnlocked(tier.tierNumber, profile.fighterWins ?? {});
                 const prog = getTierProgress(tier.tierNumber, profile.fighterWins ?? {});
@@ -1464,7 +1464,7 @@ export const ArenaView: React.FC<ArenaViewProps> = ({
                     onClick={() => handleSelectTier(tier.tierNumber)}
                     className={`rounded-xl px-2 py-2 text-left border transition-colors cursor-pointer ${
                       isSelected
-                        ? 'bg-[#1c2948] border-amber-400 text-amber-200'
+                        ? 'bg-[#1c2948] border-amber-400 text-amber-200 shadow-[0_0_12px_rgba(251,191,36,0.18)]'
                         : unlocked
                         ? 'bg-[#10182a] border-slate-800 text-slate-200 hover:border-slate-700'
                         : 'bg-[#0b101c] border-slate-900 text-slate-500 opacity-65'
@@ -1489,25 +1489,106 @@ export const ArenaView: React.FC<ArenaViewProps> = ({
               })}
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
-              {/* Left: Fighters in Selected Tier */}
-              <div className="lg:col-span-7 space-y-3">
-                <div className="flex items-center justify-between gap-2 px-1">
-                  <div>
-                    <h2 className="font-[var(--font-display)] text-lg font-bold text-slate-100">
-                      Tier {currentTier.tierNumber}: {currentTier.name}
-                    </h2>
-                    <p className="text-xs text-slate-400">{currentTier.regionSubtitle}</p>
-                  </div>
-                  <span className={`text-xs font-semibold ${currentTier.accentColor}`}>
-                    {currentTier.cardRangeLabel}
-                  </span>
+            {/* Single Unified Tabbed Challenger Showcase */}
+            <div className="rounded-3xl bg-gradient-to-b from-[#17233f] via-[#11192e] to-[#0b1120] border border-amber-500/35 overflow-hidden shadow-[0_22px_50px_rgba(0,0,0,0.5)]">
+              {/* Region Header Bar */}
+              <div className="px-5 sm:px-6 pt-5 pb-4 border-b border-slate-800/80 flex flex-wrap items-center justify-between gap-2">
+                <div>
+                  <h2 className="font-[var(--font-display)] text-lg sm:text-xl font-bold text-amber-100 leading-tight">
+                    {currentTier.name}
+                  </h2>
+                  <p className="text-xs text-slate-400 mt-0.5">{currentTier.regionSubtitle}</p>
                 </div>
+                <span
+                  className={`px-2.5 py-1 rounded-lg bg-[#0b1120] border border-slate-800 text-xs font-semibold ${currentTier.accentColor}`}
+                >
+                  {currentTier.cardRangeLabel}
+                </span>
+              </div>
 
+              {/* Challenger Tabs Bar */}
+              <div
+                role="tablist"
+                aria-label="Tier challengers"
+                className="flex items-stretch gap-1.5 px-4 sm:px-6 py-3 bg-[#0c1324]/80 border-b border-slate-800/80 overflow-x-auto"
+              >
+                {currentTier.fighters.map((fighter) => {
+                  const active = fighter.id === currentFighter.id;
+                  const winsCount = profile.fighterWins?.[fighter.id] ?? 0;
+                  const isConquered = winsCount > 0;
+                  const avatar = CARD_MAP[fighter.avatarCardId];
+
+                  return (
+                    <button
+                      key={fighter.id}
+                      type="button"
+                      role="tab"
+                      aria-selected={active}
+                      onClick={() => handleSelectFighter(fighter.id)}
+                      className={`flex-1 min-w-[122px] rounded-xl px-2.5 py-2 border flex items-center gap-2 text-left transition-all cursor-pointer ${
+                        active
+                          ? 'bg-[#1c2b4f] border-amber-400 text-amber-100 shadow-[0_4px_14px_rgba(251,191,36,0.2)]'
+                          : 'bg-[#0f172a]/80 border-slate-800 text-slate-300 hover:border-slate-700 hover:text-white'
+                      }`}
+                    >
+                      <div className="relative shrink-0">
+                        <div
+                          className={`w-8 h-8 rounded-lg overflow-hidden border ${
+                            isConquered
+                              ? 'border-emerald-400'
+                              : active
+                              ? 'border-amber-300'
+                              : 'border-slate-700'
+                          }`}
+                        >
+                          {avatar && (
+                            <img
+                              src={getCardThumbUrl(avatar.image)}
+                              alt={fighter.name}
+                              width={320}
+                              height={320}
+                              loading="lazy"
+                              decoding="async"
+                              className={`w-full h-full object-cover ${avatar.artFilter ?? ''}`}
+                            />
+                          )}
+                        </div>
+                        {isConquered && (
+                          <span className="absolute -top-1 -right-1 w-3.5 h-3.5 rounded-full bg-emerald-500 text-slate-950 flex items-center justify-center border border-emerald-200">
+                            <Check className="w-2.5 h-2.5 stroke-[3]" />
+                          </span>
+                        )}
+                      </div>
+
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-1">
+                          <span className="font-[var(--font-display)] text-xs font-bold truncate">
+                            {fighter.name}
+                          </span>
+                          {fighter.isBoss && (
+                            <Crown className="w-3 h-3 text-amber-300 shrink-0" />
+                          )}
+                        </div>
+                        <div className="text-[10px] font-mono text-slate-400">
+                          {isConquered ? (
+                            <span className="text-emerald-300">{winsCount}W</span>
+                          ) : (
+                            <span>#{fighter.orderInTier}</span>
+                          )}{' '}
+                          · <span className="text-amber-300">+{fighter.winGold}g</span>
+                        </div>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Active Challenger Details Body */}
+              <div className="p-5 sm:p-6 space-y-5">
                 {!currentTierUnlocked && (
-                  <div className="rounded-xl bg-amber-950/30 border border-amber-500/40 px-4 py-3 flex items-center justify-between gap-3 text-xs text-amber-200">
+                  <div className="rounded-xl bg-amber-950/35 border border-amber-500/40 px-4 py-3 flex flex-wrap items-center justify-between gap-3 text-xs text-amber-200">
                     <span>
-                      Beat{' '}
+                      Defeat{' '}
                       <strong>
                         {
                           LADDER_TIERS.find((t) => t.tierNumber === currentTier.tierNumber - 1)
@@ -1515,7 +1596,7 @@ export const ArenaView: React.FC<ArenaViewProps> = ({
                         }{' '}
                         challengers
                       </strong>{' '}
-                      in Tier {currentTier.tierNumber - 1} to unlock.
+                      in Tier {currentTier.tierNumber - 1} to unlock this tier.
                     </span>
                     <button
                       type="button"
@@ -1527,107 +1608,9 @@ export const ArenaView: React.FC<ArenaViewProps> = ({
                   </div>
                 )}
 
-                <div className="space-y-2">
-                  {currentTier.fighters.map((fighter) => {
-                    const active = fighter.id === currentFighter.id;
-                    const winsCount = profile.fighterWins?.[fighter.id] ?? 0;
-                    const isConquered = winsCount > 0;
-                    const avatar = CARD_MAP[fighter.avatarCardId];
-
-                    return (
-                      <button
-                        key={fighter.id}
-                        type="button"
-                        onClick={() => handleSelectFighter(fighter.id)}
-                        className={`w-full rounded-2xl p-3.5 text-left border flex items-center justify-between gap-3 transition-colors cursor-pointer ${
-                          active
-                            ? 'bg-[#1a2747] border-amber-400 shadow'
-                            : 'bg-[#10182a] border-slate-800 hover:border-slate-700'
-                        }`}
-                      >
-                        <div className="flex items-center gap-3 min-w-0">
-                          <div className="relative shrink-0">
-                            <div
-                              className={`w-12 h-12 rounded-xl overflow-hidden border-2 ${
-                                isConquered
-                                  ? 'border-emerald-400'
-                                  : active
-                                  ? 'border-amber-400'
-                                  : 'border-slate-700'
-                              }`}
-                            >
-                              {avatar && (
-                                <img
-                                  src={getCardThumbUrl(avatar.image)}
-                                  alt={fighter.name}
-                                  width={320}
-                                  height={320}
-                                  loading="lazy"
-                                  decoding="async"
-                                  className={`w-full h-full object-cover ${avatar.artFilter ?? ''}`}
-                                />
-                              )}
-                            </div>
-                            <span
-                              className={`absolute -top-1.5 -left-1.5 w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-mono font-bold border ${
-                                isConquered
-                                  ? 'bg-emerald-500 text-slate-950 border-emerald-200'
-                                  : 'bg-slate-900 text-slate-200 border-slate-600'
-                              }`}
-                            >
-                              {isConquered ? (
-                                <Check className="w-3 h-3 stroke-[3]" />
-                              ) : (
-                                fighter.orderInTier
-                              )}
-                            </span>
-                          </div>
-
-                          <div className="min-w-0">
-                            <div className="flex items-center gap-2">
-                              <span
-                                className={`font-[var(--font-display)] text-sm sm:text-base font-bold truncate ${
-                                  active ? 'text-amber-200' : 'text-slate-100'
-                                }`}
-                              >
-                                {fighter.name}
-                              </span>
-                              {fighter.isBoss && (
-                                <span className="px-1.5 py-0.5 rounded bg-amber-950 border border-amber-400/50 text-[10px] font-bold uppercase text-amber-200 shrink-0">
-                                  Boss
-                                </span>
-                              )}
-                            </div>
-                            <p className="text-xs text-slate-400 truncate">
-                              {fighter.title} · {fighter.specialty}
-                            </p>
-                          </div>
-                        </div>
-
-                        <div className="text-right shrink-0">
-                          <div className="font-mono text-xs sm:text-sm font-bold text-amber-300">
-                            +{fighter.winGold}g
-                          </div>
-                          {!isConquered ? (
-                            <div className="text-[11px] text-emerald-300">
-                              +{fighter.firstWinBonusGold}g 1st
-                            </div>
-                          ) : (
-                            <div className="text-[11px] font-mono text-emerald-400">
-                              {winsCount}W
-                            </div>
-                          )}
-                        </div>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-
-              {/* Right: Focused Challenger Confirmation Card */}
-              <div className="lg:col-span-5 rounded-2xl bg-gradient-to-b from-[#17233f] to-[#0f172a] border border-amber-500/35 p-5 space-y-5 shadow-[0_18px_40px_rgba(0,0,0,0.45)]">
-                <div className="flex items-center gap-3.5">
-                  <div className="w-16 h-16 rounded-2xl overflow-hidden border-2 border-amber-400 shrink-0 shadow">
+                {/* Challenger Spotlight */}
+                <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 text-center sm:text-left">
+                  <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl overflow-hidden border-2 border-amber-400 shrink-0 shadow-lg">
                     {rivalAvatarCard && (
                       <img
                         src={getCardThumbUrl(rivalAvatarCard.image)}
@@ -1640,47 +1623,36 @@ export const ArenaView: React.FC<ArenaViewProps> = ({
                       />
                     )}
                   </div>
-                  <div className="min-w-0">
-                    <div className="text-[11px] font-semibold uppercase tracking-wider text-amber-300">
-                      Tier {currentFighter.tierNumber} · Challenger #{currentFighter.orderInTier}
+                  <div className="flex-1 min-w-0 space-y-1.5">
+                    <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2 text-[11px]">
+                      <span className="font-semibold uppercase tracking-wider text-amber-300">
+                        Challenger #{currentFighter.orderInTier}
+                      </span>
+                      {currentFighter.isBoss && (
+                        <span className="px-2 py-0.5 rounded bg-amber-950 border border-amber-400/50 font-bold uppercase text-amber-200">
+                          Tier Boss
+                        </span>
+                      )}
+                      {(profile.fighterWins?.[currentFighter.id] ?? 0) > 0 && (
+                        <span className="px-2 py-0.5 rounded bg-emerald-950/90 border border-emerald-400/45 font-mono font-bold text-emerald-300">
+                          ✓ Defeated ({profile.fighterWins?.[currentFighter.id]}W)
+                        </span>
+                      )}
                     </div>
-                    <h3 className="font-[var(--font-display)] text-xl font-bold text-slate-100 truncate">
+                    <h3 className="font-[var(--font-display)] text-2xl sm:text-3xl font-bold text-white leading-tight">
                       {currentFighter.name}
                     </h3>
-                    <p className="text-xs text-slate-400">{currentFighter.title}</p>
+                    <p className="text-sm text-slate-300">
+                      {currentFighter.title}{' '}
+                      <span className="text-slate-500">·</span>{' '}
+                      <span className="text-amber-200 font-medium">{currentFighter.specialty}</span>
+                    </p>
                   </div>
                 </div>
 
-                <div className="rounded-xl bg-[#0b1120] border border-slate-800 p-3.5 space-y-2 text-xs">
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="text-slate-400">Specialty</span>
-                    <span className="text-amber-200 font-medium">{currentFighter.specialty}</span>
-                  </div>
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="text-slate-400">Spoils Card Pool</span>
-                    <span className="font-mono text-slate-200">
-                      #{String(currentFighter.minCardNumber).padStart(2, '0')}–#
-                      {String(currentFighter.maxCardNumber).padStart(2, '0')}
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="text-slate-400">Signature Cards</span>
-                    <span className="text-slate-200 font-medium text-right">
-                      {currentFighter.signatureCardIds
-                        .map((id) => CARD_MAP[id]?.name)
-                        .filter(Boolean)
-                        .join(', ')}
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="text-slate-400">Arena Biomes</span>
-                    <div className="flex flex-wrap items-center justify-end gap-1">
-                      {getFighterBiomes(currentFighter.id).map((b) => (
-                        <BiomePill key={b} biome={b} compact />
-                      ))}
-                    </div>
-                  </div>
-                  <div className="flex items-center justify-between gap-2">
+                {/* Clean Unified Match Specs Grid */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 text-xs">
+                  <div className="rounded-xl bg-[#0b1120] border border-slate-800 px-3.5 py-2.5 flex items-center justify-between gap-2">
                     <span className="text-slate-400">Victory Payout</span>
                     <span className="font-mono font-bold text-amber-300">
                       +{currentFighter.winGold}g
@@ -1692,49 +1664,80 @@ export const ArenaView: React.FC<ArenaViewProps> = ({
                       )}
                     </span>
                   </div>
+
+                  <div className="rounded-xl bg-[#0b1120] border border-slate-800 px-3.5 py-2.5 flex items-center justify-between gap-2">
+                    <span className="text-slate-400">Spoils Card Pool</span>
+                    <span className="font-mono font-semibold text-slate-200">
+                      #{String(currentFighter.minCardNumber).padStart(2, '0')}–#
+                      {String(currentFighter.maxCardNumber).padStart(2, '0')}
+                    </span>
+                  </div>
+
+                  <div className="rounded-xl bg-[#0b1120] border border-slate-800 px-3.5 py-2.5 flex items-center justify-between gap-2">
+                    <span className="text-slate-400 shrink-0">Signature Cards</span>
+                    <span className="text-slate-200 font-medium text-right truncate">
+                      {currentFighter.signatureCardIds
+                        .map((id) => CARD_MAP[id]?.name)
+                        .filter(Boolean)
+                        .join(', ')}
+                    </span>
+                  </div>
+
+                  <div className="rounded-xl bg-[#0b1120] border border-slate-800 px-3.5 py-2.5 flex items-center justify-between gap-2">
+                    <span className="text-slate-400 shrink-0">Arena Biomes</span>
+                    <div className="flex flex-wrap items-center justify-end gap-1">
+                      {getFighterBiomes(currentFighter.id).map((b) => (
+                        <BiomePill key={b} biome={b} compact />
+                      ))}
+                    </div>
+                  </div>
+
                   {(currentFighter.mythicDropChance ?? 0) > 0 && (
-                    <div className="flex items-center justify-between gap-2">
-                      <span className="text-slate-400">Mythic Bonus Drop</span>
+                    <div className="sm:col-span-2 rounded-xl bg-amber-950/30 border border-amber-400/40 px-3.5 py-2.5 flex items-center justify-between gap-2">
+                      <span className="text-amber-200/90 font-medium">Mythic Bonus Drop</span>
                       <span className="font-mono font-bold text-amber-200">
-                        ★ {Math.round((currentFighter.mythicDropChance ?? 0) * 100)}% Chance
+                        ★ {Math.round((currentFighter.mythicDropChance ?? 0) * 100)}% Chance on Win
                       </span>
                     </div>
                   )}
                 </div>
 
-                <div className="text-[11px] text-slate-400 text-center">
-                  {currentTier.tierNumber < 10
-                    ? `Tier Progress: ${currentTierProg.defeated}/${currentTier.requiredWinsToUnlockNext} wins to unlock Tier ${
-                        currentTier.tierNumber + 1
-                      }`
-                    : `Final Sanctum: ${currentTierProg.defeated}/${currentTier.fighters.length} defeated`}
-                </div>
+                {/* Action + Progress Footer */}
+                <div className="space-y-2.5 pt-1">
+                  <button
+                    type="button"
+                    disabled={!currentTierUnlocked}
+                    onClick={() => {
+                      sound.select();
+                      setSetupStep('deck');
+                    }}
+                    className={`w-full min-h-[52px] rounded-xl font-[var(--font-display)] font-bold text-sm sm:text-base tracking-wide flex items-center justify-center gap-2 transition-transform ${
+                      currentTierUnlocked
+                        ? 'bg-gradient-to-b from-amber-300 via-amber-400 to-amber-500 hover:from-amber-200 hover:to-amber-400 active:scale-[0.98] text-slate-950 shadow-[0_8px_22px_rgba(245,158,11,0.35)] cursor-pointer'
+                        : 'bg-slate-800 text-slate-500 cursor-not-allowed'
+                    }`}
+                  >
+                    {currentTierUnlocked ? (
+                      <>
+                        <span>Challenge {currentFighter.name} · Build Deck</span>
+                        <ChevronRight className="w-4 h-4" />
+                      </>
+                    ) : (
+                      <>
+                        <Lock className="w-4 h-4" />
+                        <span>Unlock Tier {currentTier.tierNumber} First</span>
+                      </>
+                    )}
+                  </button>
 
-                <button
-                  type="button"
-                  disabled={!currentTierUnlocked}
-                  onClick={() => {
-                    sound.select();
-                    setSetupStep('deck');
-                  }}
-                  className={`w-full min-h-[50px] rounded-xl font-[var(--font-display)] font-bold text-sm sm:text-base tracking-wide flex items-center justify-center gap-2 transition-transform ${
-                    currentTierUnlocked
-                      ? 'bg-gradient-to-b from-amber-300 via-amber-400 to-amber-500 hover:from-amber-200 hover:to-amber-400 active:scale-[0.98] text-slate-950 shadow-[0_8px_22px_rgba(245,158,11,0.35)] cursor-pointer'
-                      : 'bg-slate-800 text-slate-500 cursor-not-allowed'
-                  }`}
-                >
-                  {currentTierUnlocked ? (
-                    <>
-                      <span>Confirm Challenger · Build Deck</span>
-                      <ChevronRight className="w-4 h-4" />
-                    </>
-                  ) : (
-                    <>
-                      <Lock className="w-4 h-4" />
-                      <span>Unlock Tier {currentTier.tierNumber} First</span>
-                    </>
-                  )}
-                </button>
+                  <div className="text-[11px] text-slate-400 text-center">
+                    {currentTier.tierNumber < 10
+                      ? `Tier Progress: ${currentTierProg.defeated}/${currentTier.requiredWinsToUnlockNext} wins to unlock Tier ${
+                          currentTier.tierNumber + 1
+                        }`
+                      : `Final Sanctum: ${currentTierProg.defeated}/${currentTier.fighters.length} defeated`}
+                  </div>
+                </div>
               </div>
             </div>
           </div>

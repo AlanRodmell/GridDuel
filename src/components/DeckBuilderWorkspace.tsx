@@ -239,32 +239,28 @@ export const DeckBuilderWorkspace: React.FC<DeckBuilderWorkspaceProps> = ({
       )}
 
       {/* ================================================================= */}
-      {/* MAIN 2-PANEL DECK FORGE: LEFT ACTIVE DECK SPREAD | RIGHT LIBRARY  */}
+      {/* ACTIVE DECK PANEL: HORIZONTAL CASCADING CARD SPREAD               */}
       {/* ================================================================= */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 xl:gap-6 items-start">
-        {/* LEFT PANEL: Sticky Active Deck Spread (Cascading Fan) */}
-        <aside className="lg:col-span-4 xl:col-span-3 lg:sticky lg:top-[74px] rounded-2xl bg-gradient-to-b from-[#131d36] via-[#0f172a] to-[#0a101d] border border-amber-500/35 p-4 space-y-3.5 shadow-[0_18px_42px_rgba(0,0,0,0.5)]">
-          {/* Deck Title & Quick Slot Switcher */}
-          <div className="space-y-2">
-            <div className="flex items-start justify-between gap-2">
-              <div className="min-w-0">
-                <div className="text-[10px] font-bold uppercase tracking-widest text-amber-300/90">
-                  Active Deck
-                </div>
-                <h2 className="font-[var(--font-display)] text-lg font-bold text-amber-100 leading-tight">
-                  {activeDeck.name}
-                </h2>
-              </div>
-              <div className="text-right shrink-0">
-                <div className="font-mono text-sm font-bold text-emerald-300">
+      <section className="rounded-2xl bg-gradient-to-b from-[#131d36] via-[#0f172a] to-[#0a101d] border border-amber-500/35 p-4 sm:p-5 space-y-3 shadow-[0_18px_42px_rgba(0,0,0,0.5)]">
+        {/* Compact Deck Controls Strip */}
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="flex flex-wrap items-center gap-3 min-w-0">
+            <div className="min-w-0">
+              <div className="text-[10px] font-bold uppercase tracking-widest text-amber-300/90">
+                Active Deck ·{' '}
+                <span className="font-mono text-emerald-300">
                   {previewDeckHand.length}/{HAND_SIZE}
-                </div>
-                <div className="font-mono text-[11px] text-sky-300">{totalArrows}▲</div>
+                </span>{' '}
+                <span className="text-slate-500">·</span>{' '}
+                <span className="font-mono text-sky-300">{totalArrows} arrows</span>
               </div>
+              <h2 className="font-[var(--font-display)] text-lg sm:text-xl font-bold text-amber-100 leading-tight">
+                {activeDeck.name}
+              </h2>
             </div>
 
             {/* Quick Saved-Deck Pills */}
-            <div className="flex gap-1 overflow-x-auto pb-0.5">
+            <div className="flex items-center gap-1 overflow-x-auto max-w-full pb-0.5">
               {profile.decks.map((d, idx) => {
                 const isSel = idx === profile.activeDeckIndex;
                 return (
@@ -275,7 +271,7 @@ export const DeckBuilderWorkspace: React.FC<DeckBuilderWorkspaceProps> = ({
                       sound.select();
                       onSelectDeckSlot(idx);
                     }}
-                    className={`px-2 py-1 rounded-lg text-[11px] font-medium whitespace-nowrap transition-colors cursor-pointer border ${
+                    className={`px-2.5 py-1 rounded-lg text-[11px] font-medium whitespace-nowrap transition-colors cursor-pointer border ${
                       isSel
                         ? 'bg-amber-500 text-slate-950 border-amber-300 font-bold'
                         : 'bg-[#0a101e] text-slate-400 border-slate-800 hover:text-slate-100'
@@ -286,10 +282,12 @@ export const DeckBuilderWorkspace: React.FC<DeckBuilderWorkspaceProps> = ({
                 );
               })}
             </div>
+          </div>
 
+          <div className="flex flex-wrap items-center gap-2">
             {/* Compact Auto-Fill Row */}
-            <div className="flex items-center gap-1 pt-0.5">
-              <Sparkles className="w-3.5 h-3.5 text-amber-400 shrink-0 mr-0.5" />
+            <div className="inline-flex items-center gap-1 p-1 rounded-xl bg-[#090f1d] border border-slate-800">
+              <Sparkles className="w-3.5 h-3.5 text-amber-400 shrink-0 ml-1 mr-0.5" />
               {(
                 [
                   { id: 'power', label: 'Power' },
@@ -302,56 +300,68 @@ export const DeckBuilderWorkspace: React.FC<DeckBuilderWorkspaceProps> = ({
                   key={opt.id}
                   type="button"
                   onClick={() => onAutoBuildDeck(opt.id)}
-                  className="flex-1 py-1 rounded-md bg-slate-900/90 hover:bg-slate-800 border border-slate-700/80 text-[10.5px] font-semibold text-slate-200 transition-colors cursor-pointer"
+                  className="px-2 py-1 rounded-lg hover:bg-slate-800 text-[11px] font-semibold text-slate-200 transition-colors cursor-pointer"
                 >
                   {opt.label}
                 </button>
               ))}
             </div>
+
+            <button
+              type="button"
+              onClick={onOpenRules}
+              className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-[#090f1d] border border-slate-800 text-[11px] text-slate-300 hover:text-amber-200 hover:border-amber-400/40 transition-colors cursor-pointer"
+            >
+              <HelpCircle className="w-3.5 h-3.5" />
+              <span>Rules</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={onGoToGallery}
+              className="px-2.5 py-1.5 rounded-lg bg-[#090f1d] border border-slate-800 text-[11px] text-slate-300 hover:text-amber-200 hover:border-amber-400/40 transition-colors cursor-pointer"
+            >
+              Compendium →
+            </button>
           </div>
+        </div>
 
-          {/* Instruction Hint */}
-          <p className="text-[11px] text-slate-400 text-center">
-            Hover any card to pull it out · Click to remove
-          </p>
-
-          {/* CASCADING DECK SPREAD — Hover Pulls Card Completely Into View */}
-          <div
-            onMouseLeave={() => setHoveredDeckIdx(null)}
-            className="relative mx-auto w-full max-w-[238px] pt-1 pb-2"
-            style={{
-              // Reserve smooth extra room at the bottom when an upper card is expanded
-              paddingBottom:
-                hoveredDeckIdx !== null && hoveredDeckIdx < previewDeckHand.length - 1
-                  ? '195px'
-                  : '12px',
-              transition: 'padding-bottom 220ms cubic-bezier(0.22, 1, 0.36, 1)',
-            }}
-          >
+        {/* HORIZONTAL CASCADING DECK SPREAD — Hover Pulls Card Completely Into View */}
+        <div
+          onMouseLeave={() => setHoveredDeckIdx(null)}
+          className="relative w-full overflow-x-auto pt-5 pb-4 px-3 sm:px-6"
+        >
+          <div className="flex items-center justify-start md:justify-center min-w-max mx-auto">
             {previewDeckHand.map((hCard, idx) => {
               const isHovered = hoveredDeckIdx === idx;
-              const isBelowHovered = hoveredDeckIdx !== null && idx > hoveredDeckIdx;
+              const isLeftOfHovered = hoveredDeckIdx !== null && idx < hoveredDeckIdx;
+              const isRightOfHovered = hoveredDeckIdx !== null && idx > hoveredDeckIdx;
               const canRemove = previewDeckHand.length > 1;
+              const centerOffset = idx - (previewDeckHand.length - 1) / 2;
+              const restRotate = centerOffset * 1.1;
+              const restDropY = Math.abs(centerOffset) * 2.5;
 
               return (
                 <div
                   key={hCard.uid}
                   onMouseEnter={() => setHoveredDeckIdx(idx)}
                   style={{
-                    marginTop: idx === 0 ? 0 : '-205px',
+                    marginLeft: idx === 0 ? 0 : '-26px',
                     zIndex: isHovered ? 40 : idx + 1,
                     transform: isHovered
-                      ? 'translate3d(18px, -6px, 0) scale(1.06) rotate(-1deg)'
-                      : isBelowHovered
-                      ? 'translate3d(0, 198px, 0)'
-                      : 'translate3d(0, 0, 0)',
+                      ? 'translate3d(0, -16px, 0) scale(1.1) rotate(0deg)'
+                      : isLeftOfHovered
+                      ? `translate3d(-16px, ${restDropY}px, 0) rotate(${restRotate}deg)`
+                      : isRightOfHovered
+                      ? `translate3d(26px, ${restDropY}px, 0) rotate(${restRotate}deg)`
+                      : `translate3d(0, ${restDropY}px, 0) rotate(${restRotate}deg)`,
                     transition:
-                      'transform 220ms cubic-bezier(0.22, 1, 0.36, 1), filter 220ms ease',
+                      'transform 210ms cubic-bezier(0.22, 1, 0.36, 1), filter 210ms ease',
                     filter: isHovered
-                      ? 'drop-shadow(0 20px 28px rgba(0, 0, 0, 0.85))'
-                      : 'drop-shadow(0 -6px 12px rgba(0, 0, 0, 0.55))',
+                      ? 'drop-shadow(0 18px 28px rgba(0, 0, 0, 0.88))'
+                      : 'drop-shadow(-6px 8px 14px rgba(0, 0, 0, 0.55))',
                   }}
-                  className="relative will-change-transform"
+                  className="relative w-[124px] sm:w-[144px] lg:w-[162px] shrink-0 will-change-transform"
                 >
                   <GameCard
                     cardId={hCard.cardId}
@@ -381,38 +391,17 @@ export const DeckBuilderWorkspace: React.FC<DeckBuilderWorkspaceProps> = ({
               );
             })}
           </div>
+        </div>
 
-          {/* Primary Start Match CTA at Bottom of Deck Panel */}
-          <button
-            type="button"
-            onClick={onStartMatch}
-            className="w-full min-h-[48px] rounded-xl bg-gradient-to-b from-amber-300 via-amber-400 to-amber-500 hover:from-amber-200 hover:to-amber-400 active:scale-[0.98] text-slate-950 font-[var(--font-display)] font-bold text-sm sm:text-base tracking-wide shadow-[0_8px_24px_rgba(245,158,11,0.35)] border border-amber-200/70 flex items-center justify-center gap-2 transition-transform cursor-pointer"
-          >
-            <Play className="w-4 h-4 fill-current" />
-            <span>Start Match</span>
-          </button>
+        <p className="text-[11px] text-slate-400 text-center">
+          Hover any card in your hand to fan it into full view · Click to remove
+        </p>
+      </section>
 
-          <div className="flex items-center justify-between text-[11px] text-slate-400 pt-0.5">
-            <button
-              type="button"
-              onClick={onOpenRules}
-              className="inline-flex items-center gap-1 hover:text-amber-200 transition-colors cursor-pointer"
-            >
-              <HelpCircle className="w-3.5 h-3.5" />
-              <span>Rules</span>
-            </button>
-            <button
-              type="button"
-              onClick={onGoToGallery}
-              className="hover:text-amber-200 transition-colors cursor-pointer"
-            >
-              Full Compendium →
-            </button>
-          </div>
-        </aside>
-
-        {/* RIGHT PANEL: Full Owned Card Library (Main Part of Screen) */}
-        <section className="lg:col-span-8 xl:col-span-9 rounded-2xl bg-[#0e1526] border border-slate-800/90 p-4 sm:p-5 space-y-4">
+      {/* ================================================================= */}
+      {/* FULL-WIDTH OWNED CARD LIBRARY                                     */}
+      {/* ================================================================= */}
+      <section className="rounded-2xl bg-[#0e1526] border border-slate-800/90 p-4 sm:p-5 space-y-4">
           {/* Library Header & Filter Controls */}
           <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-3 pb-3 border-b border-slate-800/80">
             <div>
@@ -555,7 +544,7 @@ export const DeckBuilderWorkspace: React.FC<DeckBuilderWorkspaceProps> = ({
               </button>
             </div>
           ) : (
-            <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-5">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-4 sm:gap-5">
               {filteredLibrary.map((inst) => {
                 const def = CARD_MAP[inst.cardId];
                 if (!def) return null;
@@ -644,7 +633,6 @@ export const DeckBuilderWorkspace: React.FC<DeckBuilderWorkspaceProps> = ({
             </div>
           )}
         </section>
-      </div>
     </div>
   );
 };
