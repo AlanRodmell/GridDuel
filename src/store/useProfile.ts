@@ -30,7 +30,16 @@ function createStarterInventory(): Record<string, RolledCardInstance[]> {
   const inv: Record<string, RolledCardInstance[]> = {};
   for (const id of STARTER_CARD_IDS) {
     if (CARD_MAP[id]) {
-      inv[id] = [rollCardInstance(id, false)];
+      // Guarantee starter cards never roll below baseline stats or lose arrows
+      inv[id] = [
+        rollCardInstance(id, {
+          minStatDelta: 0,
+          maxStatDelta: 1,
+          minArrowDelta: 0,
+          maxArrowDelta: 1,
+          typeUpgradeMultiplier: 1,
+        }),
+      ];
     }
   }
   return inv;

@@ -1,6 +1,8 @@
 import {
   CARD_MAP,
   CARDS,
+  CardRollOptions,
+  getCardPower,
   getStatsPowerScore,
   resolveCardAugment,
   rollCardArrows,
@@ -100,21 +102,100 @@ export function createBoard(): BoardCell[][] {
 }
 
 /**
+ * Determines who places the first card on the 14-open-tile board.
+ * Because going SECOND grants the decisive Turn-14 final placement,
+ * early tiers let the rival lead more often (giving newcomers Turn 14),
+ * ramping smoothly to an unbiased 50/50 coin flip from Tier 3 onward.
+ */
+export function chooseMatchStarter(tierNumber: number): Owner {
+  const playerFirstChance =
+    tierNumber <= 1 ? 0.3 : tierNumber === 2 ? 0.4 : 0.5;
+  return Math.random() < playerFirstChance ? 'player' : 'rival';
+}
+
+function getOpponentRollOptions(
+  tierNumber: number,
+  orderInTier: number
+): CardRollOptions {
+  if (tierNumber <= 1) {
+    if (orderInTier <= 3) {
+      return {
+        minStatDelta: -1,
+        maxStatDelta: 0,
+        minArrowDelta: -1,
+        maxArrowDelta: 0,
+        typeUpgradeMultiplier: 0,
+      };
+    }
+    return {
+      minStatDelta: -1,
+      maxStatDelta: 1,
+      minArrowDelta: -1,
+      maxArrowDelta: 0,
+      typeUpgradeMultiplier: 0.25,
+    };
+  }
+  if (tierNumber === 2) {
+    return {
+      minStatDelta: -2,
+      maxStatDelta: 1,
+      minArrowDelta: -1,
+      maxArrowDelta: 1,
+      typeUpgradeMultiplier: 0.4,
+    };
+  }
+  return {
+    minStatDelta: -2,
+    maxStatDelta: 2,
+    minArrowDelta: -1,
+    maxArrowDelta: 1,
+    typeUpgradeMultiplier: 1,
+  };
+}
+
+/**
  * Builds a fair, tier-bounded 7-card hand for the selected Ladder Fighter:
  * - Includes 1-2 of the fighter's signature cards
- * - Draws the remaining cards strictly from their [minCardNumber, maxCardNumber] range
- * - Rolls each card's stats AND arrow configuration within its rarity tier range!
+ * - Draws remaining cards from their [minCardNumber, maxCardNumber] range
+ * - Gates expansion cards (#91+) out of early Tier 1 fights and power-caps them in early tiers
+ * - Scales stat/arrow roll variance and X/A upgrade chances by tier
  */
 export function buildOpponentHand(fighterId: string): HandCard[] {
   const fighter = FIGHTER_MAP[fighterId] ?? ALL_FIGHTERS[0];
   const baseEligible = CARDS.filter(
     (c) => c.number >= fighter.minCardNumber && c.number <= fighter.maxCardNumber
   );
-  // Also include expansion cards (#91+) whose rarity matches the fighter's tier rarities
-  const allowedRarities = new Set(baseEligible.map((c) => c.rarity));
-  const expansionEligible = CARDS.filter(
-    (c) => c.number > 90 && allowedRarities.has(c.rarity)
+  const maxBasePower = baseEligible.reduce(
+    (max, c) => Math.max(max, getCardPower(c)),
+    0
   );
+
+  // Gate expansion cards (#91+) so Tier 1 Fights #1-#3 strictly use starter Commons (#01-#08)
+  const allowedRarities = new Set(baseEligible.map((c) => c.rarity));
+  let expansionEligible: CardDef[] = [];
+  let maxExpansionInHand = HAND_SIZE;
+
+  if (fighter.tierNumber === 1) {
+    if (fighter.orderInTier >= 4) {
+      expansionEligible = CARDS.filter(
+        (c) =>
+          c.number > 90 &&
+          allowedRarities.has(c.rarity) &&
+          getCardPower(c) <= maxBasePower + 1
+      );
+      maxExpansionInHand = 1;
+    }
+  } else {
+    const powerAllowance = fighter.tierNumber === 2 ? 1.5 : 3;
+    expansionEligible = CARDS.filter(
+      (c) =>
+        c.number > 90 &&
+        allowedRarities.has(c.rarity) &&
+        (fighter.maxCardNumber >= 30 || getCardPower(c) <= maxBasePower + powerAllowance)
+    );
+    maxExpansionInHand = fighter.tierNumber === 2 ? 2 : HAND_SIZE;
+  }
+
   const eligible = [...baseEligible, ...expansionEligible];
 
   const chosenIds: string[] = [];
@@ -131,25 +212,31 @@ export function buildOpponentHand(fighterId: string): HandCard[] {
     [pool[i], pool[j]] = [pool[j], pool[i]];
   }
 
+  let expansionPicked = 0;
   for (const card of pool) {
     if (chosenIds.length >= HAND_SIZE) break;
+    if (card.number > 90 && expansionPicked >= maxExpansionInHand) continue;
     if (!chosenIds.includes(card.id)) {
       chosenIds.push(card.id);
+      if (card.number > 90) expansionPicked++;
     }
   }
 
-  while (chosenIds.length < HAND_SIZE && eligible.length > 0) {
-    const pick = eligible[Math.floor(Math.random() * eligible.length)];
+  const fallbackPool = baseEligible.length > 0 ? baseEligible : eligible;
+  while (chosenIds.length < HAND_SIZE && fallbackPool.length > 0) {
+    const pick = fallbackPool[Math.floor(Math.random() * fallbackPool.length)];
     chosenIds.push(pick.id);
   }
+
+  const rollOpts = getOpponentRollOptions(fighter.tierNumber, fighter.orderInTier);
 
   return chosenIds.slice(0, HAND_SIZE).map((cardId, i) => {
     const def = CARD_MAP[cardId] ?? CARDS[0];
     return {
       uid: `rival-${i}-${cardId}-${Math.random().toString(36).slice(2, 6)}`,
       cardId,
-      stats: rollCardStats(def),
-      arrows: rollCardArrows(def),
+      stats: rollCardStats(def, rollOpts),
+      arrows: rollCardArrows(def, rollOpts),
     };
   });
 }
@@ -499,12 +586,22 @@ export function isBoardFull(board: BoardCell[][]): boolean {
   return true;
 }
 
+function shuffleCopy<T>(items: T[]): T[] {
+  const copy = [...items];
+  for (let i = copy.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [copy[i], copy[j]] = [copy[j], copy[i]];
+  }
+  return copy;
+}
+
 export function chooseAiMove(
   board: BoardCell[][],
   rivalHand: HandCard[],
   fighterId: string
 ): { handIndex: number; row: number; col: number } | null {
   const fighter = FIGHTER_MAP[fighterId] ?? ALL_FIGHTERS[0];
+  const skill = Math.max(0, Math.min(1, fighter.aiSkill));
   const size = board.length;
   const emptyCells: [number, number][] = [];
 
@@ -517,6 +614,31 @@ export function chooseAiMove(
   }
   if (emptyCells.length === 0 || rivalHand.length === 0) return null;
 
+  // Low-skill novices inspect only a subset of their hand and board squares
+  // instead of exhaustively brute-forcing all 98 card x cell permutations.
+  const allHandIndices = rivalHand.map((_, idx) => idx);
+  const cardsToInspect =
+    skill >= 0.72
+      ? rivalHand.length
+      : Math.max(2, Math.min(rivalHand.length, Math.round(1.6 + skill * (rivalHand.length - 1.2))));
+  const candidateHandIndices =
+    cardsToInspect >= rivalHand.length
+      ? allHandIndices
+      : shuffleCopy(allHandIndices).slice(0, cardsToInspect);
+
+  const cellShare = skill >= 0.65 ? 1 : Math.min(1, 0.4 + skill * 0.9);
+  const cellsToInspect = Math.max(1, Math.ceil(emptyCells.length * cellShare));
+  const candidateCells =
+    cellsToInspect >= emptyCells.length
+      ? emptyCells
+      : shuffleCopy(emptyCells).slice(0, cellsToInspect);
+
+  // Skill-scaled tactical weights:
+  // - Novices barely read multi-step combos and occasionally misread close clashes.
+  // - Veterans (skill >= 0.65) value combos, augments, and arrow defense at full strength.
+  const comboWeight = Math.min(1, Math.max(0.1, (skill - 0.12) / 0.55));
+  const noiseAmp = Math.pow(1 - skill, 1.35) * 44;
+
   interface ScoredMove {
     handIndex: number;
     row: number;
@@ -524,24 +646,46 @@ export function chooseAiMove(
     score: number;
   }
 
+  const before = getScores(board);
   const moves: ScoredMove[] = [];
 
-  for (let i = 0; i < rivalHand.length; i++) {
-    const hCard = rivalHand[i];
+  for (const handIndex of candidateHandIndices) {
+    const hCard = rivalHand[handIndex];
 
-    for (const [r, c] of emptyCells) {
+    for (const [r, c] of candidateCells) {
       const sim = resolvePlacement(board, r, c, hCard, 'rival', true);
-      const before = getScores(board);
       const after = getScores(sim.nextBoard);
 
       const netGain = after.rival - before.rival;
-      let score = netGain * 14;
+      const lostOwnCard = sim.clashes.some((cl) => !cl.attackerWon);
+      const comboFlips = sim.flips.filter((f) => f.reason === 'combo').length;
+
+      let score: number;
+      if (lostOwnCard) {
+        // High-skill AI avoids losing clashes strongly; low-skill novices occasionally
+        // misjudge P/M/X defenses on close stat matchups.
+        const closestDefGap = sim.clashes.reduce(
+          (minGap, cl) => Math.min(minGap, cl.defenderVal - cl.attackerVal),
+          99
+        );
+        const noviceMisread =
+          skill < 0.4 && closestDefGap <= 2 && Math.random() < (0.4 - skill) * 0.45;
+        score = noviceMisread ? 16 : netGain * 14 - 16 * skill;
+      } else {
+        // Discount combo flips for low-skill AI so novices don't always spot chain setups
+        const effectiveGain = Math.max(
+          1,
+          netGain - comboFlips * (1 - comboWeight)
+        );
+        score = effectiveGain * 14;
+      }
 
       // Value triggering Battlefield Augments on already-placed cards
       if (sim.augments.length > 0) {
-        score += sim.augments.length * 4.5 * fighter.aiSkill;
+        score += sim.augments.length * 4.5 * skill;
       }
 
+      // Edge/open-arrow positioning scales with skill
       for (const dir of EIGHT_DIRS) {
         const nr = r + dir.dr;
         const nc = c + dir.dc;
@@ -550,19 +694,30 @@ export function chooseAiMove(
 
         if (inBounds && !board[nr][nc].blocked && !board[nr][nc].card) {
           if (hasArrow) {
-            score += 1.4 * fighter.aiSkill;
+            score += 1.4 * skill;
           } else {
-            score -= 1.2 * fighter.aiSkill;
+            score -= 1.2 * skill;
           }
         }
       }
 
-      const jitter = (1 - fighter.aiSkill) * 20 * (Math.random() - 0.45);
-      moves.push({ handIndex: i, row: r, col: c, score: score + jitter });
+      const jitter = (Math.random() - 0.5) * 2 * noiseAmp;
+      moves.push({ handIndex, row: r, col: c, score: score + jitter });
     }
   }
 
   moves.sort((a, b) => b.score - a.score);
+
+  // Soft top-K selection for early tiers so novices don't always lock onto the strict #1 line
+  if (skill < 0.5 && moves.length > 1) {
+    const slipChance = (0.5 - skill) * 0.55;
+    if (Math.random() < slipChance) {
+      const k = Math.min(moves.length, skill < 0.28 ? 4 : 3);
+      const picked = moves[1 + Math.floor(Math.random() * (k - 1))];
+      return { handIndex: picked.handIndex, row: picked.row, col: picked.col };
+    }
+  }
+
   const top = moves[0];
   return { handIndex: top.handIndex, row: top.row, col: top.col };
 }

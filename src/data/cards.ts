@@ -1833,27 +1833,65 @@ export function getCardPower(card: CardDef): number {
   return getStatsPowerScore(card.stats, card.arrows.length);
 }
 
+export interface CardRollOptions {
+  useBaseline?: boolean;
+  minStatDelta?: number;
+  maxStatDelta?: number;
+  minArrowDelta?: number;
+  maxArrowDelta?: number;
+  typeUpgradeMultiplier?: number;
+}
+
+function normalizeRollOptions(
+  options?: boolean | CardRollOptions
+): Required<CardRollOptions> {
+  if (typeof options === 'boolean') {
+    return {
+      useBaseline: options,
+      minStatDelta: -2,
+      maxStatDelta: 2,
+      minArrowDelta: -1,
+      maxArrowDelta: 1,
+      typeUpgradeMultiplier: 1,
+    };
+  }
+  return {
+    useBaseline: options?.useBaseline ?? false,
+    minStatDelta: options?.minStatDelta ?? -2,
+    maxStatDelta: options?.maxStatDelta ?? 2,
+    minArrowDelta: options?.minArrowDelta ?? -1,
+    maxArrowDelta: options?.maxArrowDelta ?? 1,
+    typeUpgradeMultiplier: options?.typeUpgradeMultiplier ?? 1,
+  };
+}
+
 /**
  * Rolls a card's Power, P.Def, and M.Def within its rarity tier range,
- * centered around the card's archetype baseline (+/-2) so every pulled/won copy has unique values.
+ * centered around the card's archetype baseline so every pulled/won copy has unique values.
  */
-export function rollCardStats(card: CardDef, useBaseline = false): TetraStats {
-  if (useBaseline) {
+export function rollCardStats(
+  card: CardDef,
+  options: boolean | CardRollOptions = false
+): TetraStats {
+  const opts = normalizeRollOptions(options);
+  if (opts.useBaseline) {
     return { ...card.stats };
   }
   const range = RARITY_STAT_RANGE[card.rarity];
   const rollOne = (baseVal: number) => {
-    const low = Math.max(range.min, baseVal - 2);
-    const high = Math.min(range.max, baseVal + 2);
+    const low = Math.max(range.min, baseVal + opts.minStatDelta);
+    const high = Math.max(low, Math.min(range.max, baseVal + opts.maxStatDelta));
     return low + Math.floor(Math.random() * (high - low + 1));
   };
 
   // Small chance for a card to roll an upgraded Flexible (X) or Assault (A) attack type!
   let rolledType: AttackType = card.stats.type;
   const typeRoll = Math.random();
-  if ((card.stats.type === 'P' || card.stats.type === 'M') && typeRoll < 0.14) {
+  const xChance = 0.14 * opts.typeUpgradeMultiplier;
+  const aChance = 0.1 * opts.typeUpgradeMultiplier;
+  if ((card.stats.type === 'P' || card.stats.type === 'M') && typeRoll < xChance) {
     rolledType = 'X';
-  } else if (card.stats.type === 'X' && typeRoll < 0.1) {
+  } else if (card.stats.type === 'X' && typeRoll < aChance) {
     rolledType = 'A';
   }
 
@@ -1869,14 +1907,18 @@ export function rollCardStats(card: CardDef, useBaseline = false): TetraStats {
  * Rolls a randomized 8-way compass arrow configuration for a card copy within its rarity tier's arrow count range.
  * Every new roll of the same card generates a distinct directional layout and arrow count!
  */
-export function rollCardArrows(card: CardDef, useBaseline = false): ArrowDir[] {
-  if (useBaseline) {
+export function rollCardArrows(
+  card: CardDef,
+  options: boolean | CardRollOptions = false
+): ArrowDir[] {
+  const opts = normalizeRollOptions(options);
+  if (opts.useBaseline) {
     return [...card.arrows];
   }
   const range = RARITY_ARROW_RANGE[card.rarity];
   const baseCount = card.arrows.length;
-  const minCount = Math.max(range.min, baseCount - 1);
-  const maxCount = Math.min(range.max, baseCount + 1);
+  const minCount = Math.max(range.min, baseCount + opts.minArrowDelta);
+  const maxCount = Math.max(minCount, Math.min(range.max, baseCount + opts.maxArrowDelta));
   const count = minCount + Math.floor(Math.random() * (maxCount - minCount + 1));
 
   // Shuffle all 8 directions with a gentle affinity for some of the card's archetype directions
@@ -1890,13 +1932,16 @@ export function rollCardArrows(card: CardDef, useBaseline = false): ArrowDir[] {
   return ALL_ARROW_DIRS.filter((d) => chosenSet.has(d));
 }
 
-export function rollCardInstance(cardId: string, useBaseline = false): RolledCardInstance {
+export function rollCardInstance(
+  cardId: string,
+  options: boolean | CardRollOptions = false
+): RolledCardInstance {
   const card = CARD_MAP[cardId] ?? CARDS[0];
   return {
     uid: `inst-${card.id}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`,
     cardId: card.id,
-    stats: rollCardStats(card, useBaseline),
-    arrows: rollCardArrows(card, useBaseline),
+    stats: rollCardStats(card, options),
+    arrows: rollCardArrows(card, options),
   };
 }
 

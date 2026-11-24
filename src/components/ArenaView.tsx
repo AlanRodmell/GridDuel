@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ArrowLeft,
+  BookOpen,
   Check,
   ChevronRight,
   Coins,
@@ -16,6 +17,8 @@ import {
   Sparkles,
   Swords,
   Trophy,
+  Volume2,
+  VolumeX,
   Wand2,
   Zap,
 } from 'lucide-react';
@@ -43,6 +46,7 @@ import {
   buildOpponentHand,
   buildPlayerHand,
   chooseAiMove,
+  chooseMatchStarter,
   createBoard,
   getScores,
   isBoardFull,
@@ -100,6 +104,8 @@ interface ArenaViewProps {
   onGoHome: () => void;
   onGoToGallery: () => void;
   onOpenRules: () => void;
+  onToggleSound?: () => void;
+  onMatchActiveChange?: (active: boolean) => void;
   onMatchThemeChange?: (theme: 'tavern' | 'duel' | 'boss') => void;
 }
 
@@ -119,6 +125,8 @@ export const ArenaView: React.FC<ArenaViewProps> = ({
   onGoHome,
   onGoToGallery,
   onOpenRules,
+  onToggleSound,
+  onMatchActiveChange,
   onMatchThemeChange,
 }) => {
   const [setupStep, setSetupStep] = useState<SetupStep>(
@@ -159,16 +167,34 @@ export const ArenaView: React.FC<ArenaViewProps> = ({
     returning: boolean;
   } | null>(null);
   const [hoverCell, setHoverCell] = useState<{ row: number; col: number } | null>(null);
+  const [scrubCardUid, setScrubCardUid] = useState<string | null>(null);
 
   const timersRef = useRef<number[]>([]);
   const boardGridRef = useRef<HTMLDivElement | null>(null);
+  const mobileHandFanRef = useRef<HTMLDivElement | null>(null);
   const dragGhostRef = useRef<HTMLDivElement | null>(null);
   const dragRafRef = useRef<number | null>(null);
   const hoverCellRef = useRef<{ row: number; col: number } | null>(null);
   const suppressHandClickUntilRef = useRef<number>(0);
+  const scrubCardUidRef = useRef<string | null>(null);
+  const playerHandRef = useRef<HandCard[]>(playerHand);
+  const canPlayerPlayRef = useRef<boolean>(false);
   const cachedCellsRef = useRef<
     { row: number; col: number; left: number; right: number; top: number; bottom: number }[]
   >([]);
+  const mobileScrubRef = useRef<{
+    pointerId: number;
+    pointerType: string;
+    startX: number;
+    startY: number;
+    startCard: HandCard;
+    startRect: { left: number; top: number; width: number; height: number };
+    fanLeft: number;
+    fanRight: number;
+    fanTop: number;
+    mode: 'pending' | 'scrubbing';
+    activeUid: string;
+  } | null>(null);
   const dragPendingRef = useRef<{
     card: HandCard;
     pointerId: number;
@@ -187,6 +213,9 @@ export const ArenaView: React.FC<ArenaViewProps> = ({
     targetY: number;
     tilt: number;
   } | null>(null);
+
+  playerHandRef.current = playerHand;
+  canPlayerPlayRef.current = phase === 'playing' && turn === 'player' && !isAnimating;
 
   const clearTimers = useCallback(() => {
     for (const t of timersRef.current) {
@@ -219,6 +248,13 @@ export const ArenaView: React.FC<ArenaViewProps> = ({
       onMatchThemeChange('duel');
     }
   }, [phase, currentFighter.isBoss, currentFighter.tierNumber, onMatchThemeChange]);
+
+  useEffect(() => {
+    onMatchActiveChange?.(phase !== 'setup');
+    return () => {
+      onMatchActiveChange?.(false);
+    };
+  }, [phase, onMatchActiveChange]);
 
   const totalConqueredFighters = useMemo(() => {
     return ALL_FIGHTERS.filter((f) => (profile.fighterWins?.[f.id] ?? 0) > 0).length;
@@ -263,7 +299,7 @@ export const ArenaView: React.FC<ArenaViewProps> = ({
       const rHand = buildOpponentHand(fighter.id);
       const freshBoard = createBoard();
       const blockedCount = freshBoard.flat().filter((c) => c.blocked).length;
-      const starter: Owner = Math.random() < 0.55 ? 'player' : 'rival';
+      const starter: Owner = chooseMatchStarter(fighter.tierNumber);
 
       setBoard(freshBoard);
       setPlayerHand(pHand);
@@ -279,7 +315,9 @@ export const ArenaView: React.FC<ArenaViewProps> = ({
       setIsAnimating(false);
       setLastBattleLog(
         `4×4 Duel vs ${fighter.name} (${blockedCount} sealed monoliths · 14 cards fill the board). ${
-          starter === 'player' ? 'Your move!' : `${fighter.name} leads.`
+          starter === 'player'
+            ? 'Your move!'
+            : `${fighter.name} leads — you hold the final move.`
         }`
       );
       setPhase('playing');
@@ -576,6 +614,11 @@ export const ArenaView: React.FC<ArenaViewProps> = ({
 
   // Clear drag state if turn or match phase ends
   useEffect(() => {
+    if (phase !== 'playing') {
+      mobileScrubRef.current = null;
+      scrubCardUidRef.current = null;
+      setScrubCardUid(null);
+    }
     if (phase !== 'playing' || turn !== 'player' || isAnimating) {
       if (dragRafRef.current !== null) {
         window.cancelAnimationFrame(dragRafRef.current);
@@ -588,7 +631,7 @@ export const ArenaView: React.FC<ArenaViewProps> = ({
     }
   }, [isAnimating, phase, turn]);
 
-  // Global pointer tracking for silky 60fps card drag & spring return
+  // Global pointer tracking for mobile press-and-slide hand scrubbing + 60fps card drag & spring return
   useEffect(() => {
     const startPhysicsLoop = () => {
       if (dragRafRef.current !== null) return;
@@ -617,7 +660,162 @@ export const ArenaView: React.FC<ArenaViewProps> = ({
       dragRafRef.current = window.requestAnimationFrame(tick);
     };
 
+    const cacheOpenDropCells = () => {
+      const cells: typeof cachedCellsRef.current = [];
+      if (boardGridRef.current) {
+        const nodes = boardGridRef.current.querySelectorAll<HTMLElement>('[data-drop-row]');
+        nodes.forEach((node) => {
+          const r = Number(node.dataset.dropRow);
+          const c = Number(node.dataset.dropCol);
+          const rect = node.getBoundingClientRect();
+          cells.push({
+            row: r,
+            col: c,
+            left: rect.left,
+            right: rect.right,
+            top: rect.top,
+            bottom: rect.bottom,
+          });
+        });
+      }
+      cachedCellsRef.current = cells;
+    };
+
+    const activateBoardDrag = (
+      card: HandCard,
+      pointerId: number,
+      pointerType: string,
+      clientX: number,
+      clientY: number,
+      originRect: { left: number; top: number; width: number; height: number }
+    ) => {
+      const ghostWidth = Math.min(Math.max(originRect.width, 96), 124);
+      const ghostHeight = (ghostWidth * 7) / 5;
+      const offsetX = ghostWidth * 0.5;
+      const offsetY = ghostHeight * 0.5;
+      const touchLiftY = pointerType === 'touch' ? 28 : 0;
+
+      suppressHandClickUntilRef.current = Date.now() + 450;
+      cacheOpenDropCells();
+
+      dragPendingRef.current = {
+        card,
+        pointerId,
+        pointerType,
+        startX: clientX,
+        startY: clientY,
+        originLeft: originRect.left,
+        originTop: originRect.top,
+        width: ghostWidth,
+        offsetX,
+        offsetY,
+        active: true,
+        curX: originRect.left,
+        curY: originRect.top,
+        targetX: clientX - offsetX,
+        targetY: clientY - offsetY - touchLiftY,
+        tilt: 0,
+      };
+
+      setSelectedHandUid(card.uid);
+      setDraggingCard({
+        card,
+        width: ghostWidth,
+        originLeft: originRect.left,
+        originTop: originRect.top,
+        returning: false,
+      });
+      sound.select();
+      startPhysicsLoop();
+    };
+
     const handlePointerMove = (e: PointerEvent) => {
+      // 1. Mobile Press-and-Slide Hand Scrubbing (with seamless slide-up-to-play handoff)
+      const s = mobileScrubRef.current;
+      if (s && e.pointerId === s.pointerId) {
+        const moveDx = e.clientX - s.startX;
+        const moveDy = e.clientY - s.startY;
+        const dist = Math.hypot(moveDx, moveDy);
+
+        if (s.mode === 'pending') {
+          if (dist < 8) return;
+
+          // Pulling straight upward toward the board starts an immediate card drag
+          if (
+            canPlayerPlayRef.current &&
+            moveDy < -10 &&
+            Math.abs(moveDy) >= Math.abs(moveDx) * 1.05
+          ) {
+            mobileScrubRef.current = null;
+            if (s.pointerType === 'touch') e.preventDefault();
+            activateBoardDrag(
+              s.startCard,
+              e.pointerId,
+              s.pointerType,
+              e.clientX,
+              e.clientY,
+              s.startRect
+            );
+            return;
+          }
+
+          // Sliding across the hand enters scrub-preview mode
+          s.mode = 'scrubbing';
+          suppressHandClickUntilRef.current = Date.now() + 450;
+        }
+
+        if (s.pointerType === 'touch') {
+          e.preventDefault();
+        }
+
+        // Slide upward out of the hand fan while scrubbing to seamlessly drag that card onto the board
+        if (canPlayerPlayRef.current && e.clientY < s.fanTop - 26) {
+          const hand = playerHandRef.current;
+          const activeCard = hand.find((c) => c.uid === s.activeUid) ?? s.startCard;
+          const slotEl = mobileHandFanRef.current?.querySelector<HTMLElement>(
+            `[data-hand-uid="${activeCard.uid}"]`
+          );
+          const slotRect = slotEl
+            ? slotEl.getBoundingClientRect()
+            : { left: e.clientX - 38, top: s.fanTop, width: 76, height: 106 };
+
+          mobileScrubRef.current = null;
+          scrubCardUidRef.current = null;
+          setScrubCardUid(null);
+          activateBoardDrag(
+            activeCard,
+            e.pointerId,
+            s.pointerType,
+            e.clientX,
+            e.clientY,
+            slotRect
+          );
+          return;
+        }
+
+        // Map pointer X across the fan width into equal, jitter-free card scrub bands
+        const hand = playerHandRef.current;
+        if (hand.length > 0) {
+          const span = Math.max(1, s.fanRight - s.fanLeft);
+          const t = Math.max(0, Math.min(0.999, (e.clientX - s.fanLeft) / span));
+          const idx = Math.floor(t * hand.length);
+          const targetCard = hand[idx];
+
+          if (targetCard && scrubCardUidRef.current !== targetCard.uid) {
+            s.activeUid = targetCard.uid;
+            scrubCardUidRef.current = targetCard.uid;
+            setScrubCardUid(targetCard.uid);
+            setSelectedHandUid(targetCard.uid);
+            sound.hover();
+            if (typeof navigator !== 'undefined' && typeof navigator.vibrate === 'function') {
+              navigator.vibrate(8);
+            }
+          }
+        }
+        return;
+      }
+
+      // 2. Active Card Drag-and-Drop Tracking
       const d = dragPendingRef.current;
       if (!d || e.pointerId !== d.pointerId) return;
 
@@ -629,34 +827,9 @@ export const ArenaView: React.FC<ArenaViewProps> = ({
         const threshold = d.pointerType === 'touch' ? 11 : 6;
         if (dist < threshold) return;
 
-        // On touch, allow horizontal scrolling in the mobile hand tray unless dragging upward/vertically
-        if (d.pointerType === 'touch' && Math.abs(moveDx) > Math.abs(moveDy) * 1.35) {
-          dragPendingRef.current = null;
-          return;
-        }
-
         d.active = true;
         suppressHandClickUntilRef.current = Date.now() + 450;
-
-        // Cache open board cell bounding rects once for zero-reflow hit testing
-        const cells: typeof cachedCellsRef.current = [];
-        if (boardGridRef.current) {
-          const nodes = boardGridRef.current.querySelectorAll<HTMLElement>('[data-drop-row]');
-          nodes.forEach((node) => {
-            const r = Number(node.dataset.dropRow);
-            const c = Number(node.dataset.dropCol);
-            const rect = node.getBoundingClientRect();
-            cells.push({
-              row: r,
-              col: c,
-              left: rect.left,
-              right: rect.right,
-              top: rect.top,
-              bottom: rect.bottom,
-            });
-          });
-        }
-        cachedCellsRef.current = cells;
+        cacheOpenDropCells();
 
         const touchLiftY = d.pointerType === 'touch' ? 28 : 0;
         d.curX = d.originLeft;
@@ -711,6 +884,17 @@ export const ArenaView: React.FC<ArenaViewProps> = ({
     };
 
     const handlePointerUp = (e: PointerEvent) => {
+      const s = mobileScrubRef.current;
+      if (s && e.pointerId === s.pointerId) {
+        if (s.mode === 'scrubbing') {
+          suppressHandClickUntilRef.current = Date.now() + 300;
+        }
+        mobileScrubRef.current = null;
+        scrubCardUidRef.current = null;
+        setScrubCardUid(null);
+        return;
+      }
+
       const d = dragPendingRef.current;
       if (!d || e.pointerId !== d.pointerId) return;
 
@@ -779,6 +963,35 @@ export const ArenaView: React.FC<ArenaViewProps> = ({
       }
     };
   }, [board, executeMove]);
+
+  const handleMobileFanPointerDown = (
+    e: React.PointerEvent<HTMLDivElement>,
+    hCard: HandCard
+  ) => {
+    if (phase !== 'playing') return;
+    if (e.pointerType === 'mouse' && e.button !== 0) return;
+    const cardRect = e.currentTarget.getBoundingClientRect();
+    const fanRect = mobileHandFanRef.current?.getBoundingClientRect() ?? cardRect;
+
+    mobileScrubRef.current = {
+      pointerId: e.pointerId,
+      pointerType: e.pointerType,
+      startX: e.clientX,
+      startY: e.clientY,
+      startCard: hCard,
+      startRect: {
+        left: cardRect.left,
+        top: cardRect.top,
+        width: cardRect.width,
+        height: cardRect.height,
+      },
+      fanLeft: fanRect.left,
+      fanRight: fanRect.right,
+      fanTop: fanRect.top,
+      mode: 'pending',
+      activeUid: hCard.uid,
+    };
+  };
 
   const handleHandCardPointerDown = (e: React.PointerEvent<HTMLDivElement>, hCard: HandCard) => {
     if (phase !== 'playing' || turn !== 'player' || isAnimating) return;
@@ -1577,15 +1790,29 @@ export const ArenaView: React.FC<ArenaViewProps> = ({
     );
   }
 
-  // ==================== ACTIVE MATCH VIEW (4x4 TABLETOP) ====================
+  // ==================== ACTIVE MATCH VIEW (4x4 TABLETOP · ZERO-SCROLL MOBILE) ====================
+  const selectedActiveAugment =
+    selectedHandCard
+      ? resolveCardAugment(selectedHandCard.cardId, selectedHandCard.augmentId)
+      : undefined;
+
+  const mobileHandCardClass =
+    playerHand.length >= 7
+      ? 'w-[70px] sm:w-[82px] -ml-[22px] sm:-ml-[16px] first:ml-0'
+      : playerHand.length === 6
+      ? 'w-[72px] sm:w-[84px] -ml-[15px] sm:-ml-[8px] first:ml-0'
+      : playerHand.length === 5
+      ? 'w-[74px] sm:w-[86px] -ml-[6px] sm:ml-0 first:ml-0'
+      : 'w-[76px] sm:w-[88px] ml-2 first:ml-0';
+
   return (
-    <div className="w-full max-w-7xl mx-auto px-2.5 sm:px-6 py-2.5 sm:py-4">
+    <div className="h-dvh lg:h-auto overflow-hidden lg:overflow-visible flex flex-col lg:block w-full max-w-7xl mx-auto px-2 sm:px-4 lg:px-6 py-1.5 lg:py-4">
       {/* Top Hero Portrait Medallions & Glowing Score Orbs */}
-      <div className="rounded-2xl bg-gradient-to-r from-[#101c35] via-[#131c31] to-[#261326] border border-slate-800/90 px-3 sm:px-4 py-2 flex items-center justify-between gap-2 shadow-lg">
+      <div className="shrink-0 rounded-xl lg:rounded-2xl bg-gradient-to-r from-[#101c35] via-[#131c31] to-[#261326] border border-slate-800/90 px-2 sm:px-3 lg:px-4 py-1.5 lg:py-2 flex items-center justify-between gap-1.5 lg:gap-2 shadow-lg">
         {/* Player Hero Medallion + Score Crystal */}
-        <div className="flex items-center gap-2.5">
+        <div className="flex items-center gap-2 shrink-0">
           <div className="relative">
-            <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-full overflow-hidden border-2 border-blue-400 shadow-[0_0_12px_rgba(59,130,246,0.5)]">
+            <div className="w-8 h-8 sm:w-9 sm:h-9 lg:w-11 lg:h-11 rounded-full overflow-hidden border-2 border-blue-400 shadow-[0_0_10px_rgba(59,130,246,0.5)]">
               {playerAvatarCard && (
                 <img
                   src={getCardThumbUrl(playerAvatarCard.image)}
@@ -1598,45 +1825,67 @@ export const ArenaView: React.FC<ArenaViewProps> = ({
                 />
               )}
             </div>
-            <span className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-gradient-to-b from-blue-400 to-blue-600 border border-blue-200 flex items-center justify-center font-mono text-xs font-bold tabular-nums text-white shadow">
+            <span className="absolute -bottom-1 -right-1 w-5 h-5 lg:w-6 lg:h-6 rounded-full bg-gradient-to-b from-blue-400 to-blue-600 border border-blue-200 flex items-center justify-center font-mono text-[11px] lg:text-xs font-bold tabular-nums text-white shadow">
               {scores.player}
             </span>
           </div>
-          <div className="hidden xs:block">
+          <div className="hidden lg:block">
             <div className="text-xs font-bold text-blue-200">You</div>
             <div className="text-[11px] text-slate-400">{activeDeck.name}</div>
           </div>
         </div>
 
         {/* Center Turn Banner & Live Clash Log */}
-        <div className="flex flex-col items-center text-center min-w-0 px-2">
+        <div className="flex flex-col items-center text-center min-w-0 flex-1 px-1">
           <div
-            className={`inline-flex items-center gap-1.5 text-xs sm:text-sm font-[var(--font-display)] font-bold tracking-wider ${
+            className={`inline-flex items-center gap-1 text-[11px] sm:text-xs lg:text-sm font-[var(--font-display)] font-bold tracking-wider truncate max-w-full ${
               turn === 'player' ? 'text-amber-300' : 'text-rose-300'
             }`}
           >
-            <Swords className="w-3.5 h-3.5 shrink-0" />
-            <span>
+            <Swords className="w-3 h-3 lg:w-3.5 lg:h-3.5 shrink-0" />
+            <span className="truncate">
               {turn === 'player'
-                ? 'YOUR TURN (4×4 ARENA)'
+                ? 'YOUR TURN'
                 : `${currentFighter.name.toUpperCase()}’S TURN`}
             </span>
           </div>
-          <p className="text-[11px] text-slate-300 truncate max-w-[220px] sm:max-w-[400px] mt-0.5">
+          <p className="text-[10px] lg:text-[11px] text-slate-300/90 truncate max-w-full lg:max-w-[400px] leading-tight mt-0.5">
             {lastBattleLog}
           </p>
         </div>
 
-        {/* Rival Hero Medallion + Score Crystal + Concede */}
-        <div className="flex items-center gap-2.5">
-          <div className="hidden sm:block text-right">
+        {/* Rival Hero Medallion + Mobile Card Pips + Score Crystal + Utility Icons */}
+        <div className="flex items-center gap-1.5 lg:gap-2.5 shrink-0">
+          {/* Mobile Mini Rival Hand Pips (replaces tall face-down card row on < lg) */}
+          <div
+            className="flex lg:hidden flex-col items-end gap-0.5 mr-0.5"
+            aria-label={`Rival has ${rivalHand.length} cards remaining`}
+          >
+            <span className="text-[9px] font-mono font-semibold text-rose-300/90 leading-none">
+              {rivalHand.length} left
+            </span>
+            <div className="flex items-center gap-[2.5px]">
+              {Array.from({ length: HAND_SIZE }).map((_, idx) => (
+                <span
+                  key={idx}
+                  className={`w-[4.5px] h-[8px] rounded-[1.5px] border transition-opacity ${
+                    idx < rivalHand.length
+                      ? 'bg-gradient-to-b from-rose-400 to-rose-700 border-rose-200/60 opacity-100'
+                      : 'bg-slate-800/60 border-slate-700/40 opacity-30'
+                  }`}
+                />
+              ))}
+            </div>
+          </div>
+
+          <div className="hidden lg:block text-right">
             <div className="text-xs font-bold text-rose-200">{currentFighter.name}</div>
             <div className="text-[11px] text-slate-400">
               Tier {currentFighter.tierNumber} · {currentFighter.title}
             </div>
           </div>
           <div className="relative">
-            <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-full overflow-hidden border-2 border-rose-500 shadow-[0_0_12px_rgba(244,63,94,0.5)]">
+            <div className="w-8 h-8 sm:w-9 sm:h-9 lg:w-11 lg:h-11 rounded-full overflow-hidden border-2 border-rose-500 shadow-[0_0_10px_rgba(244,63,94,0.5)]">
               {rivalAvatarCard && (
                 <img
                   src={getCardThumbUrl(rivalAvatarCard.image)}
@@ -1649,27 +1898,55 @@ export const ArenaView: React.FC<ArenaViewProps> = ({
                 />
               )}
             </div>
-            <span className="absolute -bottom-1 -left-1 w-6 h-6 rounded-full bg-gradient-to-b from-rose-500 to-rose-700 border border-rose-200 flex items-center justify-center font-mono text-xs font-bold tabular-nums text-white shadow">
+            <span className="absolute -bottom-1 -left-1 w-5 h-5 lg:w-6 lg:h-6 rounded-full bg-gradient-to-b from-rose-500 to-rose-700 border border-rose-200 flex items-center justify-center font-mono text-[11px] lg:text-xs font-bold tabular-nums text-white shadow">
               {scores.rival}
             </span>
           </div>
+
+          {onToggleSound && (
+            <button
+              type="button"
+              onClick={onToggleSound}
+              aria-label={profile.soundEnabled ? 'Mute sound effects' : 'Enable sound effects'}
+              className="lg:hidden w-7 h-7 flex items-center justify-center rounded-lg text-slate-400 hover:text-slate-100 hover:bg-slate-800/80 transition-colors cursor-pointer"
+            >
+              {profile.soundEnabled ? (
+                <Volume2 className="w-3.5 h-3.5" />
+              ) : (
+                <VolumeX className="w-3.5 h-3.5" />
+              )}
+            </button>
+          )}
+
+          <button
+            type="button"
+            onClick={() => {
+              sound.select();
+              onOpenRules();
+            }}
+            aria-label="Open game rules"
+            title="Game Rules"
+            className="lg:hidden w-7 h-7 flex items-center justify-center rounded-lg text-amber-300/90 hover:text-amber-200 hover:bg-slate-800/80 transition-colors cursor-pointer"
+          >
+            <BookOpen className="w-3.5 h-3.5" />
+          </button>
 
           <button
             type="button"
             onClick={handleConcede}
             aria-label="Leave match"
             title="Leave match"
-            className="min-h-[38px] min-w-[38px] flex items-center justify-center rounded-lg text-slate-400 hover:text-rose-300 hover:bg-slate-800/80 transition-colors cursor-pointer"
+            className="w-7 h-7 lg:min-h-[38px] lg:min-w-[38px] flex items-center justify-center rounded-lg text-slate-400 hover:text-rose-300 hover:bg-slate-800/80 transition-colors cursor-pointer"
           >
-            <Flag className="w-4 h-4" />
+            <Flag className="w-3.5 h-3.5 lg:w-4 lg:h-4" />
           </button>
         </div>
       </div>
 
-      {/* Responsive Tabletop: Full-Width Mobile + 3-Column Desktop */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-3 lg:gap-5 items-start lg:items-center mt-2.5">
-        {/* Rival Hand (Face-Down Ornate Backs) */}
-        <div className="lg:col-span-2 order-1">
+      {/* Responsive Tabletop: Zero-Scroll Flex Stage on Mobile + 3-Column Desktop */}
+      <div className="flex-1 min-h-0 flex flex-col lg:grid lg:grid-cols-12 gap-1.5 lg:gap-5 items-stretch lg:items-center mt-1.5 lg:mt-2.5">
+        {/* Rival Hand (Desktop Side Column — Mobile uses compact HUD pips above) */}
+        <div className="hidden lg:block lg:col-span-2 order-1">
           <div className="flex items-center justify-between mb-1.5 px-0.5">
             <span className="text-xs font-semibold text-rose-300 truncate">
               Rival ({rivalHand.length})
@@ -1683,27 +1960,24 @@ export const ArenaView: React.FC<ArenaViewProps> = ({
             </button>
           </div>
 
-          <div className="flex gap-1.5 overflow-x-auto pb-1 snap-x lg:grid lg:grid-cols-2 lg:overflow-visible lg:pb-0">
+          <div className="grid grid-cols-2 gap-1.5">
             {rivalHand.map((hCard) => (
-              <div
-                key={hCard.uid}
-                className="w-[44px] sm:w-[52px] lg:w-auto shrink-0 snap-start"
-              >
+              <div key={hCard.uid} className="w-auto">
                 <GameCard cardId={hCard.cardId} owner="rival" faceDown size="xs" />
               </div>
             ))}
           </div>
         </div>
 
-        {/* Center 5x5 Tactile Sanctuary Board */}
-        <div className="lg:col-span-7 order-2 relative flex flex-col items-center justify-center w-full">
+        {/* Center 4x4 Tactile Sanctuary Board (Preserves exact 5:7 Tarot card tiles!) */}
+        <div className="mobile-board-stage flex-1 min-h-0 lg:flex-none lg:col-span-7 order-2 relative flex flex-col items-center justify-center w-full">
           {/* Animated Floating Callout Banner */}
           {callout && (
             <div
               key={callout.id}
-              className="pointer-events-none absolute -top-2.5 z-30 animate-callout"
+              className="pointer-events-none absolute top-1 lg:-top-2.5 z-30 animate-callout"
             >
-              <div className="rounded-xl bg-gradient-to-b from-slate-900 to-slate-950 border-2 border-amber-400 px-4 py-1.5 shadow-[0_10px_28px_rgba(0,0,0,0.85)]">
+              <div className="rounded-xl bg-gradient-to-b from-slate-900 to-slate-950 border-2 border-amber-400 px-3.5 py-1 lg:px-4 lg:py-1.5 shadow-[0_10px_28px_rgba(0,0,0,0.85)]">
                 <span className="font-[var(--font-display)] text-xs sm:text-sm font-bold text-amber-200 tracking-wider">
                   {callout.text}
                 </span>
@@ -1713,8 +1987,8 @@ export const ArenaView: React.FC<ArenaViewProps> = ({
 
           {/* Animated Clash Duel Mini-Overlay */}
           {activeClash && (
-            <div className="pointer-events-none absolute bottom-3 z-30 animate-callout">
-              <div className="rounded-xl bg-slate-950/95 border border-amber-400/80 px-3.5 py-2 shadow-2xl flex items-center gap-3 text-xs">
+            <div className="pointer-events-none absolute bottom-2 lg:bottom-3 z-30 animate-callout">
+              <div className="rounded-xl bg-slate-950/95 border border-amber-400/80 px-3 py-1.5 lg:px-3.5 lg:py-2 shadow-2xl flex items-center gap-2.5 text-[11px] lg:text-xs">
                 <span className="font-semibold text-blue-300">{activeClash.attackerName}</span>
                 <span className="font-mono font-bold px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-400/40">
                   {toHexDigit(activeClash.attackerVal)}
@@ -1725,9 +1999,22 @@ export const ArenaView: React.FC<ArenaViewProps> = ({
             </div>
           )}
 
-          {/* Sculpted 4x4 Sanctuary Board Frame */}
-          <div className="w-full max-w-[490px] sm:max-w-[580px] rounded-2xl hearth-table-surface border-2 border-amber-500/35 p-2 sm:p-3 shadow-[0_24px_60px_rgba(0,0,0,0.7),inset_0_1px_0_rgba(255,255,255,0.12)]">
-            <div ref={boardGridRef} className="grid grid-cols-4 gap-2 sm:gap-2.5">
+          {/* Floating Mobile Augment Ribbon (never shifts board height) */}
+          {selectedActiveAugment && !activeClash && (
+            <div className="pointer-events-none lg:hidden absolute bottom-1 inset-x-1 z-20 flex justify-center">
+              <div className="max-w-full rounded-lg bg-[#191130]/95 border border-violet-400/55 px-2.5 py-1 text-[10px] text-violet-100 flex items-center gap-1.5 shadow-lg">
+                <Wand2 className="w-3 h-3 text-violet-300 shrink-0" />
+                <span className="truncate">
+                  <strong className="text-violet-200">{selectedActiveAugment.name}:</strong>{' '}
+                  {selectedActiveAugment.shortTag}
+                </span>
+              </div>
+            </div>
+          )}
+
+          {/* Sculpted 4x4 Sanctuary Board Frame (5:7 Tarot tiles auto-fit 100dvh on mobile) */}
+          <div className="mobile-board-fit lg:w-full lg:max-w-[580px] rounded-xl lg:rounded-2xl hearth-table-surface border-2 border-amber-500/35 p-1.5 sm:p-2 lg:p-3 shadow-[0_24px_60px_rgba(0,0,0,0.7),inset_0_1px_0_rgba(255,255,255,0.12)]">
+            <div ref={boardGridRef} className="grid grid-cols-4 gap-1.5 sm:gap-2 lg:gap-2.5">
               {board.map((row, rIdx) =>
                 row.map((cell, cIdx) => {
                   const key = `${rIdx}-${cIdx}`;
@@ -1866,20 +2153,20 @@ export const ArenaView: React.FC<ArenaViewProps> = ({
           </div>
         </div>
 
-        {/* Player Hand — Interactive 7-Card Tray */}
-        <div className="lg:col-span-3 order-3 w-full">
-          <div className="flex items-center justify-between gap-2 mb-1 px-0.5">
-            <div className="flex items-center gap-2 shrink-0">
-              <span className="text-xs font-semibold text-blue-300">
-                Your Hand ({playerHand.length})
+        {/* Player Hand — Zero-Scroll 7-Card Fan on Mobile + 2-Column Grid on Desktop */}
+        <div className="shrink-0 lg:col-span-3 order-3 w-full pb-safe lg:pb-0">
+          <div className="flex items-center justify-between gap-2 mb-0.5 lg:mb-1 px-0.5 min-h-[20px]">
+            <div className="flex items-center gap-1.5 shrink-0">
+              <span className="text-[11px] lg:text-xs font-semibold text-blue-300">
+                Hand ({playerHand.length})
               </span>
               <span className="lg:hidden text-[10px] text-slate-400">
-                · Hold any card to zoom
+                · Slide to inspect
               </span>
             </div>
             {selectedCardDef && selectedHandCard && (
-              <div className="flex flex-wrap items-center justify-end gap-1.5 text-xs text-slate-200">
-                <span className="font-semibold">{selectedCardDef.name}</span>
+              <div className="flex items-center justify-end gap-1.5 text-[11px] lg:text-xs text-slate-200 min-w-0">
+                <span className="font-semibold truncate">{selectedCardDef.name}</span>
                 <span className="font-mono font-bold tabular-nums text-amber-300 shrink-0">
                   {formatTetraCode(selectedHandCard.stats)}
                 </span>
@@ -1890,24 +2177,73 @@ export const ArenaView: React.FC<ArenaViewProps> = ({
             )}
           </div>
 
-          {/* Selected Card Augment Banner (Visible on both mobile & desktop when an Augment card is selected) */}
-          {(() => {
-            const selectedAug =
-              selectedHandCard &&
-              resolveCardAugment(selectedHandCard.cardId, selectedHandCard.augmentId);
-            if (!selectedAug) return null;
-            return (
-              <div className="mb-2 rounded-xl bg-violet-950/60 border border-violet-400/50 px-2.5 py-1.5 text-[11px] text-violet-100 flex items-start gap-1.5 shadow">
-                <Wand2 className="w-3.5 h-3.5 text-violet-300 shrink-0 mt-0.5" />
-                <div>
-                  <strong className="text-violet-200">{selectedAug.name}:</strong>{' '}
-                  <span>{selectedAug.description}</span>
-                </div>
+          {/* Desktop Selected Card Augment Banner (Mobile floats this over the board edge) */}
+          {selectedActiveAugment && (
+            <div className="hidden lg:flex mb-2 rounded-xl bg-violet-950/60 border border-violet-400/50 px-2.5 py-1.5 text-[11px] text-violet-100 items-start gap-1.5 shadow">
+              <Wand2 className="w-3.5 h-3.5 text-violet-300 shrink-0 mt-0.5" />
+              <div>
+                <strong className="text-violet-200">{selectedActiveAugment.name}:</strong>{' '}
+                <span>{selectedActiveAugment.description}</span>
               </div>
-            );
-          })()}
+            </div>
+          )}
 
-          <div className="flex gap-2 overflow-x-auto pt-2.5 pb-2 px-1 snap-x lg:grid lg:grid-cols-2 lg:overflow-visible lg:pt-1 lg:px-0">
+          {/* Mobile Zero-Scroll 7-Card Overlapping Fan (press & slide to scrub and pop cards bigger) */}
+          <div
+            ref={mobileHandFanRef}
+            className="flex lg:hidden items-end justify-center pt-4 pb-1.5 px-1 touch-none select-none"
+          >
+            {playerHand.map((hCard) => {
+              const isSelected = hCard.uid === selectedHandUid;
+              const isScrubbed = hCard.uid === scrubCardUid;
+              const isBeingDragged = draggingCard?.card.uid === hCard.uid;
+              const activeHighlight =
+                (isScrubbed || (isSelected && turn === 'player')) && !isBeingDragged;
+              return (
+                <div
+                  key={hCard.uid}
+                  data-hand-uid={hCard.uid}
+                  onPointerDown={(e) => handleMobileFanPointerDown(e, hCard)}
+                  className={`relative shrink-0 transition-transform duration-150 ${mobileHandCardClass} ${
+                    isScrubbed ? 'z-40' : activeHighlight ? 'z-30' : 'z-10'
+                  } ${
+                    phase === 'playing' && turn === 'player' && !isAnimating
+                      ? 'cursor-grab active:cursor-grabbing'
+                      : 'cursor-pointer'
+                  } ${
+                    isBeingDragged
+                      ? 'opacity-25 scale-95'
+                      : isScrubbed
+                      ? '-translate-y-4 scale-[1.16]'
+                      : activeHighlight
+                      ? '-translate-y-2.5 scale-[1.1]'
+                      : scrubCardUid
+                      ? 'opacity-65'
+                      : ''
+                  }`}
+                >
+                  <GameCard
+                    cardId={hCard.cardId}
+                    stats={hCard.stats}
+                    arrows={hCard.arrows}
+                    augmentId={hCard.augmentId}
+                    owner="player"
+                    size="sm"
+                    showName={false}
+                    selected={activeHighlight}
+                    onClick={() => {
+                      if (Date.now() < suppressHandClickUntilRef.current) return;
+                      sound.select();
+                      setSelectedHandUid(hCard.uid);
+                    }}
+                  />
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Desktop 2-Column Hand Grid */}
+          <div className="hidden lg:grid lg:grid-cols-2 gap-2 pt-1">
             {playerHand.map((hCard) => {
               const isSelected = hCard.uid === selectedHandUid;
               const isBeingDragged = draggingCard?.card.uid === hCard.uid;
@@ -1915,7 +2251,7 @@ export const ArenaView: React.FC<ArenaViewProps> = ({
                 <div
                   key={hCard.uid}
                   onPointerDown={(e) => handleHandCardPointerDown(e, hCard)}
-                  className={`w-[92px] sm:w-[100px] lg:w-auto shrink-0 snap-start transition-opacity duration-150 ${
+                  className={`w-auto transition-opacity duration-150 ${
                     phase === 'playing' && turn === 'player' && !isAnimating
                       ? 'cursor-grab active:cursor-grabbing'
                       : ''
@@ -1964,6 +2300,94 @@ export const ArenaView: React.FC<ArenaViewProps> = ({
           )}
         </div>
       </div>
+
+      {/* Mobile Press-and-Slide Enlarged Card Preview Overlay */}
+      {(() => {
+        if (!scrubCardUid || draggingCard) return null;
+        const scrubbedCard = playerHand.find((c) => c.uid === scrubCardUid);
+        if (!scrubbedCard) return null;
+        const scrubbedDef = CARD_MAP[scrubbedCard.cardId];
+        const scrubbedAug = resolveCardAugment(scrubbedCard.cardId, scrubbedCard.augmentId);
+        const typeLabel =
+          scrubbedCard.stats.type === 'P'
+            ? 'Physical'
+            : scrubbedCard.stats.type === 'M'
+            ? 'Magical'
+            : scrubbedCard.stats.type === 'X'
+            ? 'Flexible'
+            : 'Assault';
+        return (
+          <div className="lg:hidden pointer-events-none fixed inset-x-0 bottom-[134px] z-[80] flex flex-col items-center px-3">
+            <div
+              key={scrubbedCard.uid}
+              className="animate-scrub-pop flex flex-col items-center w-full max-w-[290px]"
+            >
+              <div className="w-[172px] sm:w-[196px] rounded-2xl shadow-[0_26px_64px_rgba(0,0,0,0.9),0_0_32px_rgba(251,191,36,0.35)]">
+                <GameCard
+                  cardId={scrubbedCard.cardId}
+                  stats={scrubbedCard.stats}
+                  arrows={scrubbedCard.arrows}
+                  augmentId={scrubbedCard.augmentId}
+                  owner="player"
+                  size="lg"
+                  showName
+                  selected
+                  disableLongPress
+                />
+              </div>
+
+              <div className="mt-2 w-full rounded-xl bg-[#0a1020]/96 border border-amber-400/50 px-3 py-2 shadow-2xl text-center space-y-1">
+                <div className="flex items-center justify-center gap-2 text-xs">
+                  <span className="font-[var(--font-display)] font-bold text-white truncate">
+                    {scrubbedDef?.name ?? 'Card'}
+                  </span>
+                  <span className="font-mono font-bold text-amber-300 shrink-0">
+                    {formatTetraCode(scrubbedCard.stats)}
+                  </span>
+                  <span className="text-sky-300 font-mono shrink-0">
+                    {scrubbedCard.arrows.length}▲
+                  </span>
+                </div>
+
+                <div className="text-[11px] text-slate-300 font-mono">
+                  Pwr {toHexDigit(scrubbedCard.stats.power)} · {typeLabel} · P.Def{' '}
+                  {toHexDigit(scrubbedCard.stats.pDef)} · M.Def{' '}
+                  {toHexDigit(scrubbedCard.stats.mDef)}
+                </div>
+
+                {scrubbedAug && (
+                  <div className="rounded-lg bg-violet-950/80 border border-violet-400/45 px-2 py-1 text-[10px] text-violet-100 flex items-center justify-center gap-1.5">
+                    <Wand2 className="w-3 h-3 text-violet-300 shrink-0" />
+                    <span className="truncate">
+                      <strong className="text-violet-200">{scrubbedAug.name}:</strong>{' '}
+                      {scrubbedAug.shortTag}
+                    </span>
+                  </div>
+                )}
+
+                <div className="flex items-center justify-center gap-1.5 pt-0.5">
+                  {playerHand.map((c) => (
+                    <span
+                      key={c.uid}
+                      className={`h-1.5 rounded-full transition-all ${
+                        c.uid === scrubbedCard.uid
+                          ? 'w-4 bg-amber-300'
+                          : 'w-1.5 bg-slate-600'
+                      }`}
+                    />
+                  ))}
+                </div>
+
+                <div className="text-[10px] text-amber-200/85 font-medium">
+                  {turn === 'player' && !isAnimating
+                    ? 'Slide up onto board to play · Release to select'
+                    : 'Slide across hand to inspect · Release to close'}
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
 
       {/* Floating 60fps Dragged Card Ghost with Velocity Tilt & Live Attack Arrow Glow */}
       {draggingCard && (
