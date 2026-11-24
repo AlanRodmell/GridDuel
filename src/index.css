@@ -7,22 +7,222 @@
   --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
 }
 
+:root {
+  --oak-void: #0d0a08;
+  --oak-deep: #140f0b;
+  --oak-plank: #1b140f;
+  --iron-dark: #191512;
+  --iron-mid: #251f1a;
+  --basalt-well: #100d0a;
+  --brass-bright: #e0af5a;
+  --brass-mid: #b38033;
+  --brass-dim: #6e5025;
+  --iron-edge: #3e3328;
+  --parchment-ink: #efe3cd;
+  --parchment-body: #cbbba0;
+  --parchment-muted: #8f7e67;
+  --grain-svg: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120' viewBox='0 0 120 120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.82' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='120' height='120' filter='url(%23n)' opacity='0.055'/%3E%3C/svg%3E");
+}
+
 @layer base {
   html {
     font-family: var(--font-sans);
-    background-color: #090e1a;
-    color: #f1f5f9;
+    background-color: var(--oak-void);
+    color: var(--parchment-ink);
     -webkit-tap-highlight-color: transparent;
   }
 
   body {
     min-height: 100dvh;
     overflow-x: hidden;
-    background-color: #090e1a;
+    background-color: var(--oak-void);
     background-image:
-      radial-gradient(ellipse 85% 55% at 50% 0%, rgba(45, 78, 145, 0.28), transparent 65%),
-      radial-gradient(ellipse 65% 45% at 50% 100%, rgba(217, 149, 43, 0.14), transparent 65%);
+      radial-gradient(ellipse 80% 52% at 52% 0%, rgba(186, 118, 42, 0.14), transparent 64%),
+      radial-gradient(ellipse 70% 48% at 50% 100%, rgba(120, 56, 22, 0.12), transparent 65%),
+      radial-gradient(circle at 18% 35%, rgba(56, 38, 22, 0.24), transparent 55%),
+      var(--grain-svg);
   }
+}
+
+/* ============================================================================
+   WARLORD'S CAMPAIGN TABLE + CARVED BASALT SURFACE PRIMITIVES
+   ============================================================================ */
+
+/* Weathered Dark Oak & Wrought-Iron Navigation Rail */
+.war-rail {
+  background-color: #130e0a;
+  background-image:
+    repeating-linear-gradient(
+      90deg,
+      rgba(255, 224, 178, 0.018) 0px,
+      rgba(255, 224, 178, 0.018) 2px,
+      rgba(0, 0, 0, 0.14) 2px,
+      rgba(0, 0, 0, 0.14) 11px
+    ),
+    linear-gradient(180deg, #1a130e 0%, #120d09 55%, #0e0a07 100%),
+    var(--grain-svg);
+  border-color: #3f3124;
+  box-shadow:
+    inset -1px 0 0 rgba(224, 175, 90, 0.12),
+    4px 0 24px rgba(0, 0, 0, 0.65);
+}
+
+/* Campaign Table Stage Background (warm oak planks + candlelit vignette) */
+.campaign-stage {
+  background-color: #0f0b08;
+  background-image:
+    radial-gradient(ellipse 75% 58% at 50% 16%, rgba(199, 132, 48, 0.13), transparent 66%),
+    radial-gradient(ellipse 65% 45% at 50% 95%, rgba(108, 46, 18, 0.11), transparent 68%),
+    repeating-linear-gradient(
+      180deg,
+      rgba(255, 220, 170, 0.012) 0px,
+      rgba(255, 220, 170, 0.012) 1px,
+      transparent 1px,
+      transparent 44px
+    ),
+    var(--grain-svg);
+}
+
+/* Hammered Iron & Carved Basalt Panel */
+.iron-panel {
+  background-color: #18130f;
+  background-image:
+    linear-gradient(180deg, rgba(48, 38, 29, 0.45) 0%, rgba(22, 17, 13, 0.92) 100%),
+    var(--grain-svg);
+  border: 1px solid #413427;
+  box-shadow:
+    inset 0 1px 0 rgba(242, 209, 150, 0.11),
+    inset 0 -2px 0 rgba(0, 0, 0, 0.68),
+    0 12px 30px rgba(0, 0, 0, 0.56);
+}
+
+/* Emphasized Brass-Trimmed Reliquary / Spotlight Panel */
+.brass-panel {
+  background-color: #1a140f;
+  background-image:
+    radial-gradient(ellipse 90% 45% at 50% 0%, rgba(214, 154, 62, 0.13), transparent 70%),
+    linear-gradient(180deg, rgba(54, 41, 29, 0.48) 0%, rgba(20, 15, 11, 0.96) 100%),
+    var(--grain-svg);
+  border: 1px solid #6b502c;
+  box-shadow:
+    inset 0 1px 0 rgba(248, 218, 154, 0.2),
+    inset 0 0 0 1px rgba(15, 11, 8, 0.72),
+    inset 0 -2px 0 rgba(0, 0, 0, 0.75),
+    0 16px 36px rgba(0, 0, 0, 0.65);
+}
+
+/* Deeply Carved Basalt / Recessed Leather Well */
+.basalt-recess {
+  background-color: #100c09;
+  background-image:
+    linear-gradient(180deg, rgba(7, 5, 4, 0.75) 0%, rgba(20, 16, 12, 0.55) 100%),
+    var(--grain-svg);
+  border: 1px solid #2e241b;
+  box-shadow:
+    inset 0 3px 10px rgba(0, 0, 0, 0.8),
+    inset 0 -1px 0 rgba(235, 200, 145, 0.06);
+}
+
+/* Four Corner Brass Rivets (pure CSS, zero extra DOM nodes) */
+.riveted-frame {
+  position: relative;
+}
+.riveted-frame::before {
+  content: "";
+  pointer-events: none;
+  position: absolute;
+  inset: 5px;
+  background-image:
+    radial-gradient(circle at 3px 3px, #c69648 0, #6d4d20 2.2px, transparent 2.8px),
+    radial-gradient(circle at calc(100% - 3px) 3px, #c69648 0, #6d4d20 2.2px, transparent 2.8px),
+    radial-gradient(circle at 3px calc(100% - 3px), #c69648 0, #6d4d20 2.2px, transparent 2.8px),
+    radial-gradient(circle at calc(100% - 3px) calc(100% - 3px), #c69648 0, #6d4d20 2.2px, transparent 2.8px);
+  opacity: 0.78;
+}
+
+/* Stamped Antique Brass Primary CTA */
+.brass-btn {
+  background: linear-gradient(180deg, #e5b762 0%, #c08833 52%, #92611c 100%);
+  color: #181007;
+  border: 1px solid #f0ca7d;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 244, 214, 0.65),
+    inset 0 -2px 0 rgba(74, 42, 8, 0.75),
+    0 6px 18px rgba(0, 0, 0, 0.55),
+    0 0 18px rgba(204, 138, 42, 0.22);
+  font-family: var(--font-display);
+  letter-spacing: 0.04em;
+  text-shadow: 0 1px 0 rgba(255, 232, 182, 0.4);
+  transition: filter 150ms ease, transform 120ms ease, box-shadow 150ms ease;
+}
+.brass-btn:hover:not(:disabled) {
+  filter: brightness(1.08);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 246, 222, 0.8),
+    inset 0 -2px 0 rgba(74, 42, 8, 0.78),
+    0 8px 22px rgba(0, 0, 0, 0.62),
+    0 0 24px rgba(224, 165, 68, 0.34);
+}
+.brass-btn:active:not(:disabled) {
+  transform: translateY(1px);
+  filter: brightness(0.97);
+}
+.brass-btn:disabled {
+  opacity: 0.45;
+  filter: grayscale(0.5);
+  cursor: not-allowed;
+}
+
+/* Hammered Iron Secondary Button */
+.iron-btn {
+  background: linear-gradient(180deg, #2a221c 0%, #1d1713 55%, #15100d 100%);
+  color: #e9dcc4;
+  border: 1px solid #4c3d2e;
+  box-shadow:
+    inset 0 1px 0 rgba(242, 212, 162, 0.12),
+    inset 0 -2px 0 rgba(0, 0, 0, 0.7),
+    0 4px 12px rgba(0, 0, 0, 0.45);
+  transition: border-color 150ms ease, color 150ms ease, background 150ms ease;
+}
+.iron-btn:hover:not(:disabled) {
+  border-color: #9e7538;
+  color: #fbe6ba;
+  background: linear-gradient(180deg, #332920 0%, #241c16 55%, #1a140f 100%);
+}
+.iron-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+/* Wax / Crimson Danger or Retreat Button */
+.crimson-btn {
+  background: linear-gradient(180deg, #5e1d1d 0%, #421313 60%, #2d0c0c 100%);
+  color: #f8d7d0;
+  border: 1px solid #8a3636;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 198, 190, 0.18),
+    inset 0 -2px 0 rgba(0, 0, 0, 0.72),
+    0 4px 12px rgba(0, 0, 0, 0.48);
+  transition: border-color 150ms ease, filter 150ms ease;
+}
+.crimson-btn:hover:not(:disabled) {
+  filter: brightness(1.12);
+  border-color: #c25151;
+}
+
+/* Stamped Brass Plaque (Gold / Score badges) */
+.brass-plaque {
+  background: linear-gradient(180deg, #251c13 0%, #17110c 100%);
+  border: 1px solid #6e5229;
+  box-shadow:
+    inset 0 1px 0 rgba(245, 208, 134, 0.18),
+    inset 0 -2px 4px rgba(0, 0, 0, 0.65);
+}
+
+/* Engraved Hairline Brass Divider */
+.ornate-divider {
+  height: 1px;
+  background: linear-gradient(90deg, transparent 0%, rgba(168, 124, 58, 0.55) 20%, rgba(224, 175, 90, 0.78) 50%, rgba(168, 124, 58, 0.55) 80%, transparent 100%);
 }
 
 /* Hearthstone-style tactile 3D card slam, flip, & foil shimmer animations */
@@ -119,21 +319,22 @@
   animation: arrowPulse 1.4s ease-in-out infinite;
 }
 
-/* Tactile Carved Tabletop Surface */
+/* Tactile Carved Basalt & Tarnished Brass Tabletop Surface */
 .hearth-table-surface {
   background:
-    radial-gradient(circle at 50% 45%, rgba(30, 46, 78, 0.92) 0%, rgba(13, 21, 38, 0.98) 78%),
-    linear-gradient(135deg, #1b2845 0%, #0d1527 100%);
+    radial-gradient(circle at 50% 45%, rgba(44, 34, 24, 0.94) 0%, rgba(18, 14, 10, 0.99) 80%),
+    linear-gradient(135deg, #271e16 0%, #120d0a 100%);
   box-shadow:
-    inset 0 2px 18px rgba(0, 0, 0, 0.75),
-    inset 0 0 0 2px rgba(245, 158, 11, 0.22),
-    0 24px 60px rgba(0, 0, 0, 0.65);
+    inset 0 2px 18px rgba(0, 0, 0, 0.84),
+    inset 0 0 0 2px rgba(176, 128, 56, 0.36),
+    inset 0 0 0 5px rgba(14, 10, 8, 0.88),
+    0 24px 60px rgba(0, 0, 0, 0.78);
 }
 
 .hearth-tile-socket {
   box-shadow:
-    inset 0 3px 8px rgba(0, 0, 0, 0.75),
-    inset 0 -1px 0 rgba(255, 255, 255, 0.06);
+    inset 0 3px 8px rgba(0, 0, 0, 0.8),
+    inset 0 -1px 0 rgba(235, 200, 145, 0.08);
 }
 
 @keyframes previewPop {
@@ -187,7 +388,7 @@
 
 .drag-card-ghost {
   will-change: transform;
-  filter: drop-shadow(0 22px 26px rgba(0, 0, 0, 0.75));
+  filter: drop-shadow(0 22px 26px rgba(0, 0, 0, 0.78));
 }
 
 /* Universal zero-scroll board stage: keeps authentic 5:7 Tarot board proportions filling 100% of available height & width */
@@ -201,23 +402,24 @@
   width: min(100cqw, calc(100cqh * 5 / 7));
 }
 
-/* Subtle desktop scrollbars inside panels */
+/* Weathered iron & antique brass desktop scrollbars */
 ::-webkit-scrollbar {
   width: 8px;
   height: 8px;
 }
 
 ::-webkit-scrollbar-track {
-  background: rgba(9, 14, 27, 0.55);
+  background: rgba(15, 11, 8, 0.75);
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(71, 85, 105, 0.55);
-  border-radius: 9999px;
+  background: rgba(88, 69, 48, 0.7);
+  border-radius: 2px;
+  border: 1px solid rgba(28, 21, 15, 0.9);
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(245, 158, 11, 0.55);
+  background: rgba(196, 144, 62, 0.75);
 }
 
 @media (prefers-reduced-motion: reduce) {

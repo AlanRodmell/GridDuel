@@ -1292,17 +1292,17 @@ export const ArenaView: React.FC<ArenaViewProps> = ({
           setupStep === 'deck' ? 'max-w-none' : 'max-w-6xl'
         } mx-auto px-4 sm:px-6 lg:px-8 py-5 sm:py-6 space-y-5 sm:space-y-6`}
       >
-        {/* Clean Minimal Breadcrumb & Back Bar */}
+        {/* Rugged Forged-Iron Breadcrumb & Back Bar */}
         <div className="flex flex-wrap items-center justify-between gap-3">
           <button
             type="button"
             onClick={handleStepBack}
-            className="inline-flex items-center gap-1.5 min-h-[38px] px-3 py-1.5 rounded-xl bg-[#10182a] hover:bg-slate-800 border border-slate-800 text-xs sm:text-sm font-medium text-slate-300 hover:text-white transition-colors cursor-pointer"
+            className="iron-btn inline-flex items-center gap-1.5 min-h-[38px] px-3.5 py-1.5 rounded-[3px] font-[var(--font-display)] text-xs sm:text-sm font-semibold tracking-wide cursor-pointer"
           >
-            <ArrowLeft className="w-4 h-4" />
+            <ArrowLeft className="w-4 h-4 text-[#d8a64c]" />
             <span>
               {setupStep === 'mode'
-                ? 'Home'
+                ? 'Campaign'
                 : setupStep === 'details'
                 ? 'Choose Mode'
                 : 'Change Opponent'}
@@ -1324,19 +1324,19 @@ export const ArenaView: React.FC<ArenaViewProps> = ({
                       sound.select();
                       setSetupStep(step.id);
                     }}
-                    className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium transition-colors ${
+                    className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-[3px] font-[var(--font-display)] text-xs tracking-wide transition-colors ${
                       isCurrent
-                        ? 'bg-amber-500/20 border border-amber-400/50 text-amber-200 font-semibold'
+                        ? 'brass-plaque text-[#f5d593] font-bold'
                         : isCompleted
-                        ? 'bg-slate-900 border border-slate-700 text-slate-200 hover:text-amber-200 cursor-pointer'
-                        : 'text-slate-500 border border-transparent cursor-default'
+                        ? 'iron-btn text-[#d9c9ae] hover:text-[#f5d593] cursor-pointer'
+                        : 'text-[#6e5f4c] border border-transparent cursor-default'
                     }`}
                   >
                     <span className="font-mono text-[11px]">{step.num}.</span>
                     <span>{step.label}</span>
                   </button>
                   {idx < stepOrder.length - 1 && (
-                    <ChevronRight className="w-3.5 h-3.5 text-slate-600 shrink-0" />
+                    <ChevronRight className="w-3.5 h-3.5 text-[#66543f] shrink-0" />
                   )}
                 </React.Fragment>
               );
@@ -1350,10 +1350,11 @@ export const ArenaView: React.FC<ArenaViewProps> = ({
         {setupStep === 'mode' && (
           <div className="space-y-6">
             <div className="text-center space-y-2 max-w-xl mx-auto">
-              <h1 className="font-[var(--font-display)] text-2xl sm:text-3xl font-bold text-slate-100 tracking-wide">
+              <h1 className="font-[var(--font-display)] text-2xl sm:text-3xl font-bold text-[#f3dfb6] tracking-[0.08em]">
                 Choose Battle Mode
               </h1>
-              <p className="text-sm text-slate-400">
+              <div className="ornate-divider max-w-[200px] mx-auto" />
+              <p className="font-[var(--font-serif)] text-base sm:text-lg text-[#bfa98b]">
                 Climb the ranked 10-Tier Arena ladder or jump straight into a one-off exhibition
                 against a random opponent.
               </p>
@@ -1368,30 +1369,30 @@ export const ArenaView: React.FC<ArenaViewProps> = ({
                   setGameMode('arena');
                   setSetupStep('details');
                 }}
-                className="group rounded-3xl bg-gradient-to-b from-[#1a2542] via-[#11192e] to-[#0b1120] border border-amber-400/40 hover:border-amber-300 p-6 text-left flex flex-col justify-between gap-6 shadow-[0_18px_42px_rgba(0,0,0,0.45)] transition-transform duration-200 hover:-translate-y-1 cursor-pointer"
+                className="group brass-panel riveted-frame rounded-[4px] hover:border-[#b38338] p-6 text-left flex flex-col justify-between gap-6 transition-transform duration-200 hover:-translate-y-1 cursor-pointer"
               >
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
-                    <div className="w-12 h-12 rounded-2xl bg-amber-500/15 border border-amber-400/45 flex items-center justify-center text-amber-300">
+                    <div className="w-12 h-12 rounded-[3px] brass-plaque flex items-center justify-center text-[#eab95d]">
                       <Trophy className="w-6 h-6" />
                     </div>
-                    <span className="px-2.5 py-1 rounded-full bg-amber-950/90 border border-amber-400/40 font-mono text-xs font-bold text-amber-200">
+                    <span className="px-2.5 py-1 rounded-[2px] brass-plaque font-mono text-xs font-bold text-[#f0c76e]">
                       {totalConqueredFighters}/{ALL_FIGHTERS.length} Conquered
                     </span>
                   </div>
 
                   <div className="space-y-2">
-                    <h2 className="font-[var(--font-display)] text-xl font-bold text-amber-100 group-hover:text-amber-200 transition-colors">
+                    <h2 className="font-[var(--font-display)] text-xl font-bold tracking-wide text-[#f6dfb0] group-hover:text-[#fde9be] transition-colors">
                       Championship Arena
                     </h2>
-                    <p className="text-sm text-slate-300 leading-relaxed">
+                    <p className="font-[var(--font-serif)] text-base text-[#cbb89a] leading-relaxed">
                       Progress through 10 themed sanctuaries on an open 4×4 biome grid, defeat tier
                       bosses, and unlock Mythic drops.
                     </p>
                   </div>
                 </div>
 
-                <div className="flex items-center justify-between pt-4 border-t border-slate-800/80 text-sm font-semibold text-amber-300">
+                <div className="flex items-center justify-between pt-4 border-t border-[#4b3a26]/70 font-[var(--font-display)] text-xs uppercase tracking-wider font-bold text-[#e9ba62]">
                   <span>Select Tier &amp; Challenger</span>
                   <ChevronRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
                 </div>
@@ -1406,30 +1407,30 @@ export const ArenaView: React.FC<ArenaViewProps> = ({
                   rollRandomFighter();
                   setSetupStep('details');
                 }}
-                className="group rounded-3xl bg-gradient-to-b from-[#132541] via-[#0e1a31] to-[#0a1120] border border-sky-400/40 hover:border-sky-300 p-6 text-left flex flex-col justify-between gap-6 shadow-[0_18px_42px_rgba(0,0,0,0.45)] transition-transform duration-200 hover:-translate-y-1 cursor-pointer"
+                className="group iron-panel riveted-frame rounded-[4px] hover:border-[#9e7538] p-6 text-left flex flex-col justify-between gap-6 transition-transform duration-200 hover:-translate-y-1 cursor-pointer"
               >
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
-                    <div className="w-12 h-12 rounded-2xl bg-sky-500/15 border border-sky-400/45 flex items-center justify-center text-sky-300">
+                    <div className="w-12 h-12 rounded-[3px] brass-plaque flex items-center justify-center text-[#d8a752]">
                       <Dices className="w-6 h-6" />
                     </div>
-                    <span className="px-2.5 py-1 rounded-full bg-sky-950/90 border border-sky-400/40 font-mono text-xs font-bold text-sky-200">
-                      4×4 Quick Duel
+                    <span className="px-2.5 py-1 rounded-[2px] basalt-recess font-mono text-xs font-bold text-[#dfcca9]">
+                      4×4 Skirmish
                     </span>
                   </div>
 
                   <div className="space-y-2">
-                    <h2 className="font-[var(--font-display)] text-xl font-bold text-sky-100 group-hover:text-sky-200 transition-colors">
+                    <h2 className="font-[var(--font-display)] text-xl font-bold tracking-wide text-[#f2e2c4] group-hover:text-[#f8e1b0] transition-colors">
                       Quick Random Duel
                     </h2>
-                    <p className="text-sm text-slate-300 leading-relaxed">
+                    <p className="font-[var(--font-serif)] text-base text-[#cbb89a] leading-relaxed">
                       Draw a surprise opponent from your unlocked ladder tiers for a brisk 4×4 duel
                       with Gold &amp; Spoil rewards.
                     </p>
                   </div>
                 </div>
 
-                <div className="flex items-center justify-between pt-4 border-t border-slate-800/80 text-sm font-semibold text-sky-300">
+                <div className="flex items-center justify-between pt-4 border-t border-[#3c3024]/80 font-[var(--font-display)] text-xs uppercase tracking-wider font-bold text-[#d8b068]">
                   <span>Roll Random Opponent</span>
                   <ChevronRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
                 </div>
@@ -1445,22 +1446,22 @@ export const ArenaView: React.FC<ArenaViewProps> = ({
           <div className="max-w-5xl mx-auto space-y-4">
             <div className="flex flex-wrap items-end justify-between gap-3">
               <div>
-                <h1 className="font-[var(--font-display)] text-2xl sm:text-3xl font-bold text-slate-100 tracking-wide">
+                <h1 className="font-[var(--font-display)] text-2xl sm:text-3xl font-bold text-[#f3dfb6] tracking-[0.06em]">
                   Championship Arena
                 </h1>
-                <p className="text-sm text-slate-400 mt-0.5">
-                  Choose a tier and challenger tab, then head into Deck Build.
+                <p className="font-[var(--font-serif)] text-base text-[#b7a285] mt-0.5">
+                  Choose a tier and challenger tab, then muster your warband.
                 </p>
               </div>
-              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-[#10182a] border border-slate-800 text-xs">
-                <Crown className="w-4 h-4 text-amber-400" />
-                <span className="font-mono font-bold text-amber-300">
+              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-[3px] brass-plaque text-xs">
+                <Crown className="w-4 h-4 text-[#e2b053]" />
+                <span className="font-mono font-bold text-[#f0c76e]">
                   {totalConqueredFighters}/{ALL_FIGHTERS.length} Conquered
                 </span>
               </div>
             </div>
 
-            {/* Compact 10-Tier Strip */}
+            {/* Compact 10-Tier Carved Stone Strip */}
             <div className="grid grid-cols-5 sm:grid-cols-10 gap-1.5">
               {LADDER_TIERS.map((tier) => {
                 const unlocked = isTierUnlocked(tier.tierNumber, profile.fighterWins ?? {});
@@ -1473,12 +1474,12 @@ export const ArenaView: React.FC<ArenaViewProps> = ({
                     key={tier.tierNumber}
                     type="button"
                     onClick={() => handleSelectTier(tier.tierNumber)}
-                    className={`rounded-xl px-2 py-2 text-left border transition-colors cursor-pointer ${
+                    className={`rounded-[3px] px-2 py-2 text-left border transition-colors cursor-pointer ${
                       isSelected
-                        ? 'bg-[#1c2948] border-amber-400 text-amber-200 shadow-[0_0_12px_rgba(251,191,36,0.18)]'
+                        ? 'brass-plaque border-[#d9a44b] text-[#f8de9f] shadow-[0_0_14px_rgba(208,148,52,0.22)]'
                         : unlocked
-                        ? 'bg-[#10182a] border-slate-800 text-slate-200 hover:border-slate-700'
-                        : 'bg-[#0b101c] border-slate-900 text-slate-500 opacity-65'
+                        ? 'iron-panel text-[#d9c8ac] hover:border-[#7a5d34]'
+                        : 'basalt-recess text-[#685a49] opacity-65'
                     }`}
                   >
                     <div className="flex items-center justify-between gap-1">
@@ -1486,11 +1487,11 @@ export const ArenaView: React.FC<ArenaViewProps> = ({
                         T{tier.tierNumber}
                       </span>
                       {!unlocked ? (
-                        <Lock className="w-3 h-3 text-slate-500" />
+                        <Lock className="w-3 h-3 text-[#685a49]" />
                       ) : isCleared ? (
-                        <Crown className="w-3 h-3 text-amber-400" />
+                        <Crown className="w-3 h-3 text-[#e5b55a]" />
                       ) : (
-                        <span className="font-mono text-[10px] text-slate-400">
+                        <span className="font-mono text-[10px] text-[#9b896f]">
                           {prog.defeated}/{prog.total}
                         </span>
                       )}
@@ -1500,28 +1501,30 @@ export const ArenaView: React.FC<ArenaViewProps> = ({
               })}
             </div>
 
-            {/* Single Unified Tabbed Challenger Showcase */}
-            <div className="rounded-3xl bg-gradient-to-b from-[#17233f] via-[#11192e] to-[#0b1120] border border-amber-500/35 overflow-hidden shadow-[0_22px_50px_rgba(0,0,0,0.5)]">
+            {/* Single Unified Tabbed Challenger Dossier */}
+            <div className="brass-panel riveted-frame rounded-[4px] overflow-hidden">
               {/* Region Header Bar */}
-              <div className="px-5 sm:px-6 pt-5 pb-4 border-b border-slate-800/80 flex flex-wrap items-center justify-between gap-2">
+              <div className="px-5 sm:px-6 pt-5 pb-4 border-b border-[#4b3a26]/80 flex flex-wrap items-center justify-between gap-2">
                 <div>
-                  <h2 className="font-[var(--font-display)] text-lg sm:text-xl font-bold text-amber-100 leading-tight">
+                  <h2 className="font-[var(--font-display)] text-lg sm:text-xl font-bold text-[#f4dcb0] leading-tight tracking-wide">
                     {currentTier.name}
                   </h2>
-                  <p className="text-xs text-slate-400 mt-0.5">{currentTier.regionSubtitle}</p>
+                  <p className="font-[var(--font-serif)] italic text-sm text-[#baa587] mt-0.5">
+                    {currentTier.regionSubtitle}
+                  </p>
                 </div>
                 <span
-                  className={`px-2.5 py-1 rounded-lg bg-[#0b1120] border border-slate-800 text-xs font-semibold ${currentTier.accentColor}`}
+                  className={`px-2.5 py-1 rounded-[2px] basalt-recess font-mono text-xs font-semibold ${currentTier.accentColor}`}
                 >
                   {currentTier.cardRangeLabel}
                 </span>
               </div>
 
-              {/* Challenger Tabs Bar */}
+              {/* Notched Iron & Leather Challenger Tabs Bar */}
               <div
                 role="tablist"
                 aria-label="Tier challengers"
-                className="flex items-stretch gap-1.5 px-4 sm:px-6 py-3 bg-[#0c1324]/80 border-b border-slate-800/80 overflow-x-auto"
+                className="flex items-stretch gap-1.5 px-4 sm:px-6 py-3 bg-[#110d0a]/90 border-b border-[#3f3123] overflow-x-auto"
               >
                 {currentTier.fighters.map((fighter) => {
                   const active = fighter.id === currentFighter.id;
@@ -1536,20 +1539,20 @@ export const ArenaView: React.FC<ArenaViewProps> = ({
                       role="tab"
                       aria-selected={active}
                       onClick={() => handleSelectFighter(fighter.id)}
-                      className={`flex-1 min-w-[122px] rounded-xl px-2.5 py-2 border flex items-center gap-2 text-left transition-all cursor-pointer ${
+                      className={`flex-1 min-w-[126px] rounded-[3px] px-2.5 py-2 border flex items-center gap-2 text-left transition-all cursor-pointer ${
                         active
-                          ? 'bg-[#1c2b4f] border-amber-400 text-amber-100 shadow-[0_4px_14px_rgba(251,191,36,0.2)]'
-                          : 'bg-[#0f172a]/80 border-slate-800 text-slate-300 hover:border-slate-700 hover:text-white'
+                          ? 'bg-gradient-to-b from-[#302316] to-[#1e160f] border-[#cf9a42] border-b-2 border-b-[#f0c76e] text-[#fae3b2] shadow-[0_4px_14px_rgba(0,0,0,0.5)]'
+                          : 'bg-[#17120e] border-[#362a20] text-[#b7a386] hover:border-[#664e2e] hover:text-[#efe3cd]'
                       }`}
                     >
                       <div className="relative shrink-0">
                         <div
-                          className={`w-8 h-8 rounded-lg overflow-hidden border ${
+                          className={`w-8 h-8 rounded-[2px] overflow-hidden border ${
                             isConquered
-                              ? 'border-emerald-400'
+                              ? 'border-emerald-500'
                               : active
-                              ? 'border-amber-300'
-                              : 'border-slate-700'
+                              ? 'border-[#e5b55a]'
+                              : 'border-[#4a3a2a]'
                           }`}
                         >
                           {avatar && (
@@ -1565,7 +1568,7 @@ export const ArenaView: React.FC<ArenaViewProps> = ({
                           )}
                         </div>
                         {isConquered && (
-                          <span className="absolute -top-1 -right-1 w-3.5 h-3.5 rounded-full bg-emerald-500 text-slate-950 flex items-center justify-center border border-emerald-200">
+                          <span className="absolute -top-1 -right-1 w-3.5 h-3.5 rounded-[2px] bg-emerald-600 text-[#0d0a08] flex items-center justify-center border border-emerald-200">
                             <Check className="w-2.5 h-2.5 stroke-[3]" />
                           </span>
                         )}
@@ -1577,16 +1580,16 @@ export const ArenaView: React.FC<ArenaViewProps> = ({
                             {fighter.name}
                           </span>
                           {fighter.isBoss && (
-                            <Crown className="w-3 h-3 text-amber-300 shrink-0" />
+                            <Crown className="w-3 h-3 text-[#e8ba5d] shrink-0" />
                           )}
                         </div>
-                        <div className="text-[10px] font-mono text-slate-400">
+                        <div className="text-[10px] font-mono text-[#968369]">
                           {isConquered ? (
-                            <span className="text-emerald-300">{winsCount}W</span>
+                            <span className="text-emerald-400">{winsCount}W</span>
                           ) : (
                             <span>#{fighter.orderInTier}</span>
                           )}{' '}
-                          · <span className="text-amber-300">+{fighter.winGold}g</span>
+                          · <span className="text-[#e7b960]">+{fighter.winGold}g</span>
                         </div>
                       </div>
                     </button>
@@ -1597,7 +1600,7 @@ export const ArenaView: React.FC<ArenaViewProps> = ({
               {/* Active Challenger Details Body */}
               <div className="p-5 sm:p-6 space-y-5">
                 {!currentTierUnlocked && (
-                  <div className="rounded-xl bg-amber-950/35 border border-amber-500/40 px-4 py-3 flex flex-wrap items-center justify-between gap-3 text-xs text-amber-200">
+                  <div className="rounded-[3px] bg-[#2a1a10]/85 border border-[#8e5c26] px-4 py-3 flex flex-wrap items-center justify-between gap-3 text-xs text-[#f2cfa0]">
                     <span>
                       Defeat{' '}
                       <strong>
@@ -1612,7 +1615,7 @@ export const ArenaView: React.FC<ArenaViewProps> = ({
                     <button
                       type="button"
                       onClick={() => handleSelectTier(currentTier.tierNumber - 1)}
-                      className="px-3 py-1 rounded-lg bg-amber-500 text-slate-950 font-bold shrink-0 cursor-pointer"
+                      className="brass-btn px-3 py-1 rounded-[2px] text-xs font-bold shrink-0 cursor-pointer"
                     >
                       Go to Tier {currentTier.tierNumber - 1}
                     </button>
@@ -1621,7 +1624,7 @@ export const ArenaView: React.FC<ArenaViewProps> = ({
 
                 {/* Challenger Spotlight */}
                 <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 text-center sm:text-left">
-                  <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl overflow-hidden border-2 border-amber-400 shrink-0 shadow-lg">
+                  <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-[3px] overflow-hidden border-2 border-[#b98739] shrink-0 shadow-[0_8px_22px_rgba(0,0,0,0.7)]">
                     {rivalAvatarCard && (
                       <img
                         src={getCardThumbUrl(rivalAvatarCard.image)}
@@ -1636,39 +1639,41 @@ export const ArenaView: React.FC<ArenaViewProps> = ({
                   </div>
                   <div className="flex-1 min-w-0 space-y-1.5">
                     <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2 text-[11px]">
-                      <span className="font-semibold uppercase tracking-wider text-amber-300">
+                      <span className="font-[var(--font-display)] font-semibold uppercase tracking-widest text-[#e2b053]">
                         Challenger #{currentFighter.orderInTier}
                       </span>
                       {currentFighter.isBoss && (
-                        <span className="px-2 py-0.5 rounded bg-amber-950 border border-amber-400/50 font-bold uppercase text-amber-200">
+                        <span className="px-2 py-0.5 rounded-[2px] brass-plaque font-[var(--font-display)] font-bold uppercase text-[#f4d084]">
                           Tier Boss
                         </span>
                       )}
                       {(profile.fighterWins?.[currentFighter.id] ?? 0) > 0 && (
-                        <span className="px-2 py-0.5 rounded bg-emerald-950/90 border border-emerald-400/45 font-mono font-bold text-emerald-300">
+                        <span className="px-2 py-0.5 rounded-[2px] bg-emerald-950/90 border border-emerald-500/45 font-mono font-bold text-emerald-300">
                           ✓ Defeated ({profile.fighterWins?.[currentFighter.id]}W)
                         </span>
                       )}
                     </div>
-                    <h3 className="font-[var(--font-display)] text-2xl sm:text-3xl font-bold text-white leading-tight">
+                    <h3 className="font-[var(--font-display)] text-2xl sm:text-3xl font-bold text-[#f7e7c7] leading-tight tracking-wide">
                       {currentFighter.name}
                     </h3>
-                    <p className="text-sm text-slate-300">
+                    <p className="font-[var(--font-serif)] text-base text-[#cbb89a]">
                       {currentFighter.title}{' '}
-                      <span className="text-slate-500">·</span>{' '}
-                      <span className="text-amber-200 font-medium">{currentFighter.specialty}</span>
+                      <span className="text-[#6d5b46]">·</span>{' '}
+                      <span className="text-[#ebc77e] italic font-semibold">{currentFighter.specialty}</span>
                     </p>
                   </div>
                 </div>
 
-                {/* Clean Unified Match Specs Grid */}
+                {/* Carved Basalt Match Specs Ledger */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 text-xs">
-                  <div className="rounded-xl bg-[#0b1120] border border-slate-800 px-3.5 py-2.5 flex items-center justify-between gap-2">
-                    <span className="text-slate-400">Victory Payout</span>
-                    <span className="font-mono font-bold text-amber-300">
+                  <div className="basalt-recess rounded-[3px] px-3.5 py-2.5 flex items-center justify-between gap-2">
+                    <span className="font-[var(--font-display)] uppercase tracking-wider text-[11px] text-[#9b886e]">
+                      Victory Payout
+                    </span>
+                    <span className="font-mono font-bold text-[#f0c76e]">
                       +{currentFighter.winGold}g
                       {(profile.fighterWins?.[currentFighter.id] ?? 0) === 0 && (
-                        <span className="text-emerald-300">
+                        <span className="text-emerald-400">
                           {' '}
                           (+{currentFighter.firstWinBonusGold}g 1st)
                         </span>
@@ -1676,17 +1681,21 @@ export const ArenaView: React.FC<ArenaViewProps> = ({
                     </span>
                   </div>
 
-                  <div className="rounded-xl bg-[#0b1120] border border-slate-800 px-3.5 py-2.5 flex items-center justify-between gap-2">
-                    <span className="text-slate-400">Spoils Card Pool</span>
-                    <span className="font-mono font-semibold text-slate-200">
+                  <div className="basalt-recess rounded-[3px] px-3.5 py-2.5 flex items-center justify-between gap-2">
+                    <span className="font-[var(--font-display)] uppercase tracking-wider text-[11px] text-[#9b886e]">
+                      Spoils Card Pool
+                    </span>
+                    <span className="font-mono font-semibold text-[#e8d9be]">
                       #{String(currentFighter.minCardNumber).padStart(2, '0')}–#
                       {String(currentFighter.maxCardNumber).padStart(2, '0')}
                     </span>
                   </div>
 
-                  <div className="rounded-xl bg-[#0b1120] border border-slate-800 px-3.5 py-2.5 flex items-center justify-between gap-2">
-                    <span className="text-slate-400 shrink-0">Signature Cards</span>
-                    <span className="text-slate-200 font-medium text-right truncate">
+                  <div className="basalt-recess rounded-[3px] px-3.5 py-2.5 flex items-center justify-between gap-2">
+                    <span className="font-[var(--font-display)] uppercase tracking-wider text-[11px] text-[#9b886e] shrink-0">
+                      Signature Cards
+                    </span>
+                    <span className="text-[#e8d9be] font-medium text-right truncate">
                       {currentFighter.signatureCardIds
                         .map((id) => CARD_MAP[id]?.name)
                         .filter(Boolean)
@@ -1694,8 +1703,10 @@ export const ArenaView: React.FC<ArenaViewProps> = ({
                     </span>
                   </div>
 
-                  <div className="rounded-xl bg-[#0b1120] border border-slate-800 px-3.5 py-2.5 flex items-center justify-between gap-2">
-                    <span className="text-slate-400 shrink-0">Arena Biomes</span>
+                  <div className="basalt-recess rounded-[3px] px-3.5 py-2.5 flex items-center justify-between gap-2">
+                    <span className="font-[var(--font-display)] uppercase tracking-wider text-[11px] text-[#9b886e] shrink-0">
+                      Arena Biomes
+                    </span>
                     <div className="flex flex-wrap items-center justify-end gap-1">
                       {getFighterBiomes(currentFighter.id).map((b) => (
                         <BiomePill key={b} biome={b} compact />
@@ -1704,9 +1715,11 @@ export const ArenaView: React.FC<ArenaViewProps> = ({
                   </div>
 
                   {(currentFighter.mythicDropChance ?? 0) > 0 && (
-                    <div className="sm:col-span-2 rounded-xl bg-amber-950/30 border border-amber-400/40 px-3.5 py-2.5 flex items-center justify-between gap-2">
-                      <span className="text-amber-200/90 font-medium">Mythic Bonus Drop</span>
-                      <span className="font-mono font-bold text-amber-200">
+                    <div className="sm:col-span-2 rounded-[3px] brass-plaque px-3.5 py-2.5 flex items-center justify-between gap-2">
+                      <span className="font-[var(--font-display)] uppercase tracking-wider text-[11px] text-[#e9c479] font-semibold">
+                        Mythic Bonus Drop
+                      </span>
+                      <span className="font-mono font-bold text-[#f6d58b]">
                         ★ {Math.round((currentFighter.mythicDropChance ?? 0) * 100)}% Chance on Win
                       </span>
                     </div>
@@ -1722,10 +1735,10 @@ export const ArenaView: React.FC<ArenaViewProps> = ({
                       sound.select();
                       setSetupStep('deck');
                     }}
-                    className={`w-full min-h-[52px] rounded-xl font-[var(--font-display)] font-bold text-sm sm:text-base tracking-wide flex items-center justify-center gap-2 transition-transform ${
+                    className={`w-full min-h-[52px] rounded-[3px] font-bold text-sm sm:text-base flex items-center justify-center gap-2 ${
                       currentTierUnlocked
-                        ? 'bg-gradient-to-b from-amber-300 via-amber-400 to-amber-500 hover:from-amber-200 hover:to-amber-400 active:scale-[0.98] text-slate-950 shadow-[0_8px_22px_rgba(245,158,11,0.35)] cursor-pointer'
-                        : 'bg-slate-800 text-slate-500 cursor-not-allowed'
+                        ? 'brass-btn cursor-pointer'
+                        : 'basalt-recess text-[#6e5f4c] font-[var(--font-display)] cursor-not-allowed'
                     }`}
                   >
                     {currentTierUnlocked ? (
@@ -1741,7 +1754,7 @@ export const ArenaView: React.FC<ArenaViewProps> = ({
                     )}
                   </button>
 
-                  <div className="text-[11px] text-slate-400 text-center">
+                  <div className="font-[var(--font-serif)] text-sm text-[#a69277] text-center">
                     {currentTier.tierNumber < 10
                       ? `Tier Progress: ${currentTierProg.defeated}/${currentTier.requiredWinsToUnlockNext} wins to unlock Tier ${
                           currentTier.tierNumber + 1
@@ -1760,28 +1773,28 @@ export const ArenaView: React.FC<ArenaViewProps> = ({
         {setupStep === 'details' && gameMode === 'quick' && (
           <div className="max-w-2xl mx-auto space-y-5">
             <div className="text-center space-y-1.5">
-              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-sky-950/90 border border-sky-400/40 text-sky-200 text-xs font-semibold">
-                <Dices className="w-3.5 h-3.5" />
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-[2px] brass-plaque text-[#e9c479] font-[var(--font-display)] uppercase tracking-[0.16em] text-[11px] font-semibold">
+                <Dices className="w-3.5 h-3.5 text-[#d8a243]" />
                 <span>Quick Random Duel</span>
               </div>
-              <h1 className="font-[var(--font-display)] text-2xl sm:text-3xl font-bold text-slate-100">
+              <h1 className="font-[var(--font-display)] text-2xl sm:text-3xl font-bold text-[#f3dfb6] tracking-wide">
                 Your Random Challenger
               </h1>
             </div>
 
-            <div className="rounded-3xl bg-gradient-to-b from-[#162442] via-[#10182d] to-[#0b1120] border border-sky-400/40 p-6 sm:p-7 space-y-6 shadow-[0_22px_50px_rgba(0,0,0,0.5)]">
+            <div className="brass-panel riveted-frame rounded-[4px] p-6 sm:p-7 space-y-6">
               {/* Ladder-Locked Pool Info + Re-roll */}
               <div className="flex flex-wrap items-center justify-between gap-3">
-                <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-[#0a101d] border border-slate-800 text-xs">
-                  <Lock className="w-3.5 h-3.5 text-sky-400 shrink-0" />
-                  <span className="text-slate-300">
+                <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-[3px] basalt-recess text-xs">
+                  <Lock className="w-3.5 h-3.5 text-[#d8a64c] shrink-0" />
+                  <span className="text-[#cbb89a]">
                     Pool:{' '}
-                    <strong className="text-sky-200">
+                    <strong className="font-mono text-[#f0c76e]">
                       {unlockedLadderTiers.length === 1
                         ? 'Tier 1'
                         : `Tiers 1–${unlockedLadderTiers[unlockedLadderTiers.length - 1]?.tierNumber ?? 1}`}
                     </strong>{' '}
-                    <span className="text-slate-500">({unlockedFighters.length} rivals)</span>
+                    <span className="text-[#88765f]">({unlockedFighters.length} rivals)</span>
                   </span>
                 </div>
 
@@ -1791,16 +1804,16 @@ export const ArenaView: React.FC<ArenaViewProps> = ({
                     sound.select();
                     rollRandomFighter(currentFighter.id);
                   }}
-                  className="inline-flex items-center gap-1.5 min-h-[36px] px-3.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xs font-semibold text-sky-200 transition-colors cursor-pointer"
+                  className="iron-btn inline-flex items-center gap-1.5 min-h-[36px] px-3.5 py-1.5 rounded-[3px] font-[var(--font-display)] text-xs font-semibold tracking-wide cursor-pointer"
                 >
-                  <Dices className="w-3.5 h-3.5" />
+                  <Dices className="w-3.5 h-3.5 text-[#e2b053]" />
                   <span>Re-roll Opponent</span>
                 </button>
               </div>
 
               {/* Rolled Opponent Spotlight */}
               <div className="flex flex-col sm:flex-row items-center sm:items-start gap-5 text-center sm:text-left">
-                <div className="w-24 h-24 rounded-2xl overflow-hidden border-2 border-sky-400 shadow-lg shrink-0">
+                <div className="w-24 h-24 rounded-[3px] overflow-hidden border-2 border-[#b98739] shadow-[0_8px_22px_rgba(0,0,0,0.7)] shrink-0">
                   {rivalAvatarCard && (
                     <img
                       src={getCardThumbUrl(rivalAvatarCard.image)}
@@ -1816,45 +1829,53 @@ export const ArenaView: React.FC<ArenaViewProps> = ({
 
                 <div className="space-y-2 flex-1 min-w-0">
                   <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2 text-xs">
-                    <span className="px-2 py-0.5 rounded bg-sky-950 border border-sky-400/40 font-mono font-bold text-sky-200">
+                    <span className="px-2 py-0.5 rounded-[2px] brass-plaque font-mono font-bold text-[#e9c479]">
                       Tier {currentFighter.tierNumber} · {currentTier.name}
                     </span>
                     {currentFighter.isBoss && (
-                      <span className="px-2 py-0.5 rounded bg-amber-950 border border-amber-400/50 font-bold text-amber-200">
+                      <span className="px-2 py-0.5 rounded-[2px] bg-[#3b2210] border border-[#c88c38] font-[var(--font-display)] font-bold text-[#f7d894]">
                         Tier Boss
                       </span>
                     )}
                   </div>
-                  <h2 className="font-[var(--font-display)] text-2xl font-bold text-white">
+                  <h2 className="font-[var(--font-display)] text-2xl font-bold text-[#f7e7c7] tracking-wide">
                     {currentFighter.name}
                   </h2>
-                  <p className="text-sm text-slate-300">
-                    {currentFighter.title} — <span className="text-amber-200">{currentFighter.specialty}</span>
+                  <p className="font-[var(--font-serif)] text-base text-[#cbb89a]">
+                    {currentFighter.title} — <span className="text-[#ebc77e] italic">{currentFighter.specialty}</span>
                   </p>
                 </div>
               </div>
 
               {/* Match Specs */}
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 text-center text-xs">
-                <div className="rounded-xl bg-[#0b1120] border border-slate-800 p-3">
-                  <div className="text-slate-400">Board</div>
-                  <div className="font-mono font-bold text-slate-100 mt-0.5">4×4 Open</div>
+                <div className="basalt-recess rounded-[3px] p-3">
+                  <div className="font-[var(--font-display)] uppercase tracking-wider text-[10px] text-[#9b886e]">
+                    Board
+                  </div>
+                  <div className="font-mono font-bold text-[#efe3cd] mt-0.5">4×4 Open</div>
                 </div>
-                <div className="rounded-xl bg-[#0b1120] border border-slate-800 p-3">
-                  <div className="text-slate-400">Hands</div>
-                  <div className="font-mono font-bold text-slate-100 mt-0.5">
+                <div className="basalt-recess rounded-[3px] p-3">
+                  <div className="font-[var(--font-display)] uppercase tracking-wider text-[10px] text-[#9b886e]">
+                    Hands
+                  </div>
+                  <div className="font-mono font-bold text-[#efe3cd] mt-0.5">
                     {HAND_SIZE} Cards Each
                   </div>
                 </div>
-                <div className="rounded-xl bg-[#0b1120] border border-slate-800 p-3">
-                  <div className="text-slate-400">Victory Purse</div>
-                  <div className="font-mono font-bold text-amber-300 mt-0.5">
+                <div className="basalt-recess rounded-[3px] p-3">
+                  <div className="font-[var(--font-display)] uppercase tracking-wider text-[10px] text-[#9b886e]">
+                    Victory Purse
+                  </div>
+                  <div className="font-mono font-bold text-[#f0c76e] mt-0.5">
                     +{currentFighter.winGold}g
                   </div>
                 </div>
-                <div className="rounded-xl bg-[#0b1120] border border-slate-800 p-3">
-                  <div className="text-slate-400">Spoils Pool</div>
-                  <div className="font-mono font-bold text-sky-300 mt-0.5">
+                <div className="basalt-recess rounded-[3px] p-3">
+                  <div className="font-[var(--font-display)] uppercase tracking-wider text-[10px] text-[#9b886e]">
+                    Spoils Pool
+                  </div>
+                  <div className="font-mono font-bold text-[#e5cfa4] mt-0.5">
                     #{String(currentFighter.minCardNumber).padStart(2, '0')}–#
                     {String(currentFighter.maxCardNumber).padStart(2, '0')}
                   </div>
@@ -1862,8 +1883,8 @@ export const ArenaView: React.FC<ArenaViewProps> = ({
               </div>
 
               {/* Arena Biome Forecast */}
-              <div className="rounded-xl bg-[#0b1120] border border-slate-800 px-3.5 py-2.5 flex flex-wrap items-center justify-between gap-2 text-xs">
-                <span className="text-slate-400 font-medium">
+              <div className="basalt-recess rounded-[3px] px-3.5 py-2.5 flex flex-wrap items-center justify-between gap-2 text-xs">
+                <span className="font-[var(--font-display)] uppercase tracking-wider text-[11px] text-[#9b886e]">
                   Arena Biomes (4 tiles spawned)
                 </span>
                 <div className="flex flex-wrap items-center gap-1.5">
@@ -1879,7 +1900,7 @@ export const ArenaView: React.FC<ArenaViewProps> = ({
                   sound.select();
                   setSetupStep('deck');
                 }}
-                className="w-full min-h-[52px] rounded-xl bg-gradient-to-b from-amber-300 via-amber-400 to-amber-500 hover:from-amber-200 hover:to-amber-400 active:scale-[0.98] text-slate-950 font-[var(--font-display)] font-bold text-base tracking-wide shadow-[0_10px_26px_rgba(245,158,11,0.35)] border border-amber-200/70 flex items-center justify-center gap-2 transition-transform cursor-pointer"
+                className="brass-btn w-full min-h-[52px] rounded-[3px] font-bold text-base flex items-center justify-center gap-2 cursor-pointer"
               >
                 <span>Confirm Match · Build Deck</span>
                 <ChevronRight className="w-4 h-4" />
@@ -1930,12 +1951,12 @@ export const ArenaView: React.FC<ArenaViewProps> = ({
 
   return (
     <div className="h-full w-full overflow-hidden flex flex-col px-2.5 sm:px-4 lg:px-5 py-2 lg:py-3 gap-2 lg:gap-3">
-      {/* Top Hero Portrait Medallions & Glowing Score Orbs */}
-      <div className="shrink-0 rounded-xl lg:rounded-2xl bg-gradient-to-r from-[#101c35] via-[#131c31] to-[#261326] border border-slate-800/90 px-2.5 sm:px-4 py-1.5 lg:py-2 flex items-center justify-between gap-2 shadow-lg">
-        {/* Player Hero Medallion + Score Crystal */}
-        <div className="flex items-center gap-2 shrink-0">
+      {/* Forged-Iron Hero Portrait Medallions & Turn Banner */}
+      <div className="shrink-0 iron-panel riveted-frame rounded-[4px] px-3 sm:px-4 py-1.5 lg:py-2 flex items-center justify-between gap-2">
+        {/* Player Hero Medallion + Score Seal */}
+        <div className="flex items-center gap-2.5 shrink-0">
           <div className="relative">
-            <div className="w-8 h-8 sm:w-9 sm:h-9 lg:w-11 lg:h-11 rounded-full overflow-hidden border-2 border-blue-400 shadow-[0_0_10px_rgba(59,130,246,0.5)]">
+            <div className="w-8 h-8 sm:w-9 sm:h-9 lg:w-11 lg:h-11 rounded-[3px] overflow-hidden border-2 border-[#4d84c4] shadow-[0_0_12px_rgba(59,130,246,0.35)]">
               {playerAvatarCard && (
                 <img
                   src={getCardThumbUrl(playerAvatarCard.image)}
@@ -1948,21 +1969,23 @@ export const ArenaView: React.FC<ArenaViewProps> = ({
                 />
               )}
             </div>
-            <span className="absolute -bottom-1 -right-1 w-5 h-5 lg:w-6 lg:h-6 rounded-full bg-gradient-to-b from-blue-400 to-blue-600 border border-blue-200 flex items-center justify-center font-mono text-[11px] lg:text-xs font-bold tabular-nums text-white shadow">
+            <span className="absolute -bottom-1 -right-1 w-5 h-5 lg:w-6 lg:h-6 rounded-[2px] bg-gradient-to-b from-[#3b72b5] to-[#1e3d66] border border-[#96c4f5] flex items-center justify-center font-mono text-[11px] lg:text-xs font-bold tabular-nums text-white shadow">
               {scores.player}
             </span>
           </div>
           <div className="hidden lg:block">
-            <div className="text-xs font-bold text-blue-200">You</div>
-            <div className="text-[11px] text-slate-400">{activeDeck.name}</div>
+            <div className="font-[var(--font-display)] text-xs font-bold tracking-wider text-[#bcd9f7]">
+              You
+            </div>
+            <div className="text-[11px] text-[#9b896f]">{activeDeck.name}</div>
           </div>
         </div>
 
-        {/* Center Turn Banner & Live Clash Log */}
+        {/* Center Forged Turn Banner & Live Clash Log */}
         <div className="flex flex-col items-center text-center min-w-0 flex-1 px-1">
           <div
-            className={`inline-flex items-center gap-1 text-[11px] sm:text-xs lg:text-sm font-[var(--font-display)] font-bold tracking-wider truncate max-w-full ${
-              turn === 'player' ? 'text-amber-300' : 'text-rose-300'
+            className={`inline-flex items-center gap-1.5 text-[11px] sm:text-xs lg:text-sm font-[var(--font-display)] font-bold tracking-[0.12em] truncate max-w-full ${
+              turn === 'player' ? 'text-[#f2cc7b]' : 'text-[#eb8686]'
             }`}
           >
             <Swords className="w-3 h-3 lg:w-3.5 lg:h-3.5 shrink-0" />
@@ -1972,14 +1995,14 @@ export const ArenaView: React.FC<ArenaViewProps> = ({
                 : `${currentFighter.name.toUpperCase()}’S TURN`}
             </span>
           </div>
-          <p className="text-[10px] lg:text-[11px] text-slate-300/90 truncate max-w-full lg:max-w-[400px] leading-tight mt-0.5">
+          <p className="font-[var(--font-serif)] text-xs lg:text-[13px] text-[#cbb89a] truncate max-w-full lg:max-w-[440px] leading-tight mt-0.5">
             {lastBattleLog}
           </p>
         </div>
 
-        {/* Rival Hero Medallion + Mobile Card Pips + Score Crystal + Utility Icons */}
+        {/* Rival Hero Medallion + Mobile Card Pips + Score Seal + Utility Icons */}
         <div className="flex items-center gap-1.5 lg:gap-2.5 shrink-0">
-          {/* Mobile Mini Rival Hand Pips (replaces tall face-down card row on < lg) */}
+          {/* Mobile Mini Rival Hand Pips */}
           <div
             className="flex lg:hidden flex-col items-end gap-0.5 mr-0.5"
             aria-label={`Rival has ${rivalHand.length} cards remaining`}
@@ -1991,10 +2014,10 @@ export const ArenaView: React.FC<ArenaViewProps> = ({
               {Array.from({ length: HAND_SIZE }).map((_, idx) => (
                 <span
                   key={idx}
-                  className={`w-[4.5px] h-[8px] rounded-[1.5px] border transition-opacity ${
+                  className={`w-[4.5px] h-[8px] rounded-[1px] border transition-opacity ${
                     idx < rivalHand.length
-                      ? 'bg-gradient-to-b from-rose-400 to-rose-700 border-rose-200/60 opacity-100'
-                      : 'bg-slate-800/60 border-slate-700/40 opacity-30'
+                      ? 'bg-gradient-to-b from-rose-500 to-rose-800 border-rose-300/60 opacity-100'
+                      : 'bg-[#211913] border-[#3d3024] opacity-35'
                   }`}
                 />
               ))}
@@ -2002,13 +2025,15 @@ export const ArenaView: React.FC<ArenaViewProps> = ({
           </div>
 
           <div className="hidden lg:block text-right">
-            <div className="text-xs font-bold text-rose-200">{currentFighter.name}</div>
-            <div className="text-[11px] text-slate-400">
+            <div className="font-[var(--font-display)] text-xs font-bold tracking-wider text-[#f1b4b4]">
+              {currentFighter.name}
+            </div>
+            <div className="text-[11px] text-[#9b896f]">
               Tier {currentFighter.tierNumber} · {currentFighter.title}
             </div>
           </div>
           <div className="relative">
-            <div className="w-8 h-8 sm:w-9 sm:h-9 lg:w-11 lg:h-11 rounded-full overflow-hidden border-2 border-rose-500 shadow-[0_0_10px_rgba(244,63,94,0.5)]">
+            <div className="w-8 h-8 sm:w-9 sm:h-9 lg:w-11 lg:h-11 rounded-[3px] overflow-hidden border-2 border-[#b84646] shadow-[0_0_12px_rgba(220,38,38,0.35)]">
               {rivalAvatarCard && (
                 <img
                   src={getCardThumbUrl(rivalAvatarCard.image)}
@@ -2021,7 +2046,7 @@ export const ArenaView: React.FC<ArenaViewProps> = ({
                 />
               )}
             </div>
-            <span className="absolute -bottom-1 -left-1 w-5 h-5 lg:w-6 lg:h-6 rounded-full bg-gradient-to-b from-rose-500 to-rose-700 border border-rose-200 flex items-center justify-center font-mono text-[11px] lg:text-xs font-bold tabular-nums text-white shadow">
+            <span className="absolute -bottom-1 -left-1 w-5 h-5 lg:w-6 lg:h-6 rounded-[2px] bg-gradient-to-b from-[#b53a3a] to-[#691c1c] border border-[#f5a3a3] flex items-center justify-center font-mono text-[11px] lg:text-xs font-bold tabular-nums text-white shadow">
               {scores.rival}
             </span>
           </div>
@@ -2031,7 +2056,7 @@ export const ArenaView: React.FC<ArenaViewProps> = ({
               type="button"
               onClick={onToggleSound}
               aria-label={profile.soundEnabled ? 'Mute sound effects' : 'Enable sound effects'}
-              className="lg:hidden w-7 h-7 flex items-center justify-center rounded-lg text-slate-400 hover:text-slate-100 hover:bg-slate-800/80 transition-colors cursor-pointer"
+              className="lg:hidden w-7 h-7 flex items-center justify-center rounded-[3px] text-[#a59277] hover:text-[#efe3cd] hover:bg-[#271e16] transition-colors cursor-pointer"
             >
               {profile.soundEnabled ? (
                 <Volume2 className="w-3.5 h-3.5" />
@@ -2048,8 +2073,8 @@ export const ArenaView: React.FC<ArenaViewProps> = ({
               onOpenRules();
             }}
             aria-label="Open game rules"
-            title="Game Rules"
-            className="lg:hidden w-7 h-7 flex items-center justify-center rounded-lg text-amber-300/90 hover:text-amber-200 hover:bg-slate-800/80 transition-colors cursor-pointer"
+            title="Field Codex"
+            className="lg:hidden w-7 h-7 flex items-center justify-center rounded-[3px] text-[#e2b053] hover:text-[#f5d593] hover:bg-[#271e16] transition-colors cursor-pointer"
           >
             <BookOpen className="w-3.5 h-3.5" />
           </button>
@@ -2058,8 +2083,8 @@ export const ArenaView: React.FC<ArenaViewProps> = ({
             type="button"
             onClick={handleConcede}
             aria-label="Leave match"
-            title="Leave match"
-            className="w-7 h-7 lg:min-h-[38px] lg:min-w-[38px] flex items-center justify-center rounded-lg text-slate-400 hover:text-rose-300 hover:bg-slate-800/80 transition-colors cursor-pointer"
+            title="Retreat from match"
+            className="w-7 h-7 lg:min-h-[38px] lg:min-w-[38px] flex items-center justify-center rounded-[3px] iron-btn text-[#b8a58a] hover:text-rose-300 cursor-pointer"
           >
             <Flag className="w-3.5 h-3.5 lg:w-4 lg:h-4" />
           </button>
@@ -2068,22 +2093,24 @@ export const ArenaView: React.FC<ArenaViewProps> = ({
 
       {/* Full-Height Desktop 3-Column Tabletop (Zero Scroll) + Mobile Flex Stage */}
       <div className="flex-1 min-h-0 flex flex-col lg:grid lg:grid-cols-[268px_minmax(0,1fr)_356px] xl:grid-cols-[308px_minmax(0,1fr)_420px] 2xl:grid-cols-[340px_minmax(0,1fr)_480px] gap-2 lg:gap-4 items-stretch">
-        {/* LEFT COMMAND PANEL (Desktop): Rival Hand + Active Biomes + Scrolling Battle Log */}
+        {/* LEFT COMMAND PANEL (Desktop): Rival Hand + Active Biomes + Field Ledger */}
         <aside className="hidden lg:flex flex-col gap-3 min-h-0 h-full overflow-hidden order-1">
           {/* Rival Hand Fan */}
-          <div className="shrink-0 rounded-2xl bg-[#0c1324]/95 border border-slate-800/90 p-3 space-y-2.5">
+          <div className="shrink-0 iron-panel rounded-[4px] p-3 space-y-2.5">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-semibold uppercase tracking-wider text-rose-300 truncate">
+              <span className="font-[var(--font-display)] text-xs font-bold uppercase tracking-wider text-[#e99f9f] truncate">
                 {currentFighter.name}’s Hand
               </span>
-              <span className="font-mono text-xs font-bold text-rose-200 bg-rose-950/80 border border-rose-500/40 px-2 py-0.5 rounded-md">
+              <span className="font-mono text-xs font-bold text-[#f5c0c0] bg-[#361616] border border-[#7c3434] px-2 py-0.5 rounded-[2px]">
                 {rivalHand.length}/{HAND_SIZE}
               </span>
             </div>
 
-            <div className="flex items-center justify-center pt-1 pb-0.5 min-h-[78px]">
+            <div className="basalt-recess rounded-[3px] flex items-center justify-center py-2 min-h-[82px]">
               {rivalHand.length === 0 ? (
-                <span className="text-xs text-slate-500">All rival cards played</span>
+                <span className="font-[var(--font-serif)] italic text-sm text-[#7f6d58]">
+                  All rival cards played
+                </span>
               ) : (
                 rivalHand.map((hCard, idx) => (
                   <div
@@ -2100,12 +2127,12 @@ export const ArenaView: React.FC<ArenaViewProps> = ({
 
           {/* Active Biomes Field Breakdown */}
           {activeBoardBiomes.length > 0 && (
-            <div className="shrink-0 rounded-2xl bg-[#0c1324]/95 border border-slate-800/90 p-3 space-y-2">
+            <div className="shrink-0 iron-panel rounded-[4px] p-3 space-y-2">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-semibold uppercase tracking-wider text-amber-300/90">
+                <span className="font-[var(--font-display)] text-xs font-bold uppercase tracking-wider text-[#e9be69]">
                   Active Field Biomes
                 </span>
-                <span className="text-[10px] font-mono text-slate-400">4 tiles</span>
+                <span className="text-[10px] font-mono text-[#99866d]">4 tiles</span>
               </div>
               <div className="space-y-1.5">
                 {activeBoardBiomes.map(([biome, count]) => {
@@ -2113,18 +2140,20 @@ export const ArenaView: React.FC<ArenaViewProps> = ({
                   return (
                     <div
                       key={biome}
-                      className="rounded-xl bg-[#080e1b] border border-slate-800/80 px-2.5 py-2 space-y-0.5 text-[11px]"
+                      className="basalt-recess rounded-[3px] px-2.5 py-2 space-y-0.5 text-[11px]"
                     >
                       <div className="flex items-center justify-between gap-2">
                         <span className="inline-flex items-center gap-1.5 font-semibold">
                           <span
-                            className={`w-4 h-4 rounded-full border flex items-center justify-center shrink-0 ${meta.badgeClass}`}
+                            className={`w-4 h-4 rounded-[2px] border flex items-center justify-center shrink-0 ${meta.badgeClass}`}
                           >
                             <BiomeIcon biome={biome} className="w-2.5 h-2.5" />
                           </span>
-                          <span className={meta.accentTextClass}>{meta.name}</span>
+                          <span className={`font-[var(--font-display)] ${meta.accentTextClass}`}>
+                            {meta.name}
+                          </span>
                         </span>
-                        <span className="font-mono text-[10px] text-slate-400">×{count}</span>
+                        <span className="font-mono text-[10px] text-[#9c896e]">×{count}</span>
                       </div>
                       <div className="text-[10.5px] text-emerald-300/95 leading-snug">
                         ▲ {meta.favorsSummary}
@@ -2139,24 +2168,24 @@ export const ArenaView: React.FC<ArenaViewProps> = ({
             </div>
           )}
 
-          {/* Live Scrolling Combat Log */}
-          <div className="flex-1 min-h-0 rounded-2xl bg-[#0c1324]/95 border border-slate-800/90 p-3 flex flex-col gap-2 overflow-hidden">
+          {/* Live Scrolling Field Combat Ledger */}
+          <div className="flex-1 min-h-0 iron-panel rounded-[4px] p-3 flex flex-col gap-2 overflow-hidden">
             <div className="shrink-0 flex items-center justify-between">
-              <span className="text-xs font-semibold uppercase tracking-wider text-slate-300">
-                Battle Log
+              <span className="font-[var(--font-display)] text-xs font-bold uppercase tracking-wider text-[#dfd0b6]">
+                Battle Chronicle
               </span>
-              <span className="text-[10px] font-mono text-slate-500">
-                Click any board card to zoom
+              <span className="text-[10px] font-mono text-[#8b7962]">
+                Click tile to inspect
               </span>
             </div>
             <div className="flex-1 min-h-0 overflow-y-auto space-y-1.5 pr-1">
               {battleHistory.map((entry, idx) => (
                 <div
                   key={`${idx}-${entry.slice(0, 18)}`}
-                  className={`rounded-lg px-2.5 py-1.5 text-[11px] leading-snug border ${
+                  className={`rounded-[3px] px-2.5 py-1.5 font-[var(--font-serif)] text-[13px] leading-snug border ${
                     idx === 0
-                      ? 'bg-amber-500/10 border-amber-400/35 text-amber-100 font-medium'
-                      : 'bg-[#080e1b]/80 border-slate-800/70 text-slate-400'
+                      ? 'brass-plaque text-[#f6dfb0] font-semibold'
+                      : 'basalt-recess text-[#b3a086]'
                   }`}
                 >
                   {entry}
@@ -2166,7 +2195,7 @@ export const ArenaView: React.FC<ArenaViewProps> = ({
           </div>
         </aside>
 
-        {/* CENTER FULL-HEIGHT 4x4 AERIAL BATTLEFIELD (Scales cleanly to fill monitor height!) */}
+        {/* CENTER FULL-HEIGHT 4x4 AERIAL BATTLEFIELD (Carved Basalt & Brass Frame) */}
         <div className="mobile-board-stage desktop-board-stage flex-1 min-h-0 h-full order-2 relative flex items-center justify-center w-full">
           {/* Animated Floating Callout Banner */}
           {callout && (
@@ -2174,8 +2203,8 @@ export const ArenaView: React.FC<ArenaViewProps> = ({
               key={callout.id}
               className="pointer-events-none absolute top-2 z-30 animate-callout"
             >
-              <div className="rounded-xl bg-gradient-to-b from-slate-900 to-slate-950 border-2 border-amber-400 px-4 py-1.5 shadow-[0_10px_28px_rgba(0,0,0,0.85)]">
-                <span className="font-[var(--font-display)] text-xs sm:text-sm font-bold text-amber-200 tracking-wider">
+              <div className="brass-panel rounded-[3px] border-2 border-[#e0ae53] px-4 py-1.5 shadow-[0_12px_30px_rgba(0,0,0,0.9)]">
+                <span className="font-[var(--font-display)] text-xs sm:text-sm font-bold text-[#fae1a7] tracking-[0.1em]">
                   {callout.text}
                 </span>
               </div>
@@ -2185,21 +2214,25 @@ export const ArenaView: React.FC<ArenaViewProps> = ({
           {/* Animated Clash Duel Mini-Overlay */}
           {activeClash && (
             <div className="pointer-events-none absolute bottom-3 z-30 animate-callout">
-              <div className="rounded-xl bg-slate-950/95 border border-amber-400/80 px-3.5 py-2 shadow-2xl flex items-center gap-2.5 text-xs">
-                <span className="font-semibold text-blue-300">{activeClash.attackerName}</span>
-                <span className="font-mono font-bold px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-400/40">
+              <div className="brass-panel rounded-[3px] border border-[#d8a243] px-3.5 py-2 shadow-2xl flex items-center gap-2.5 text-xs">
+                <span className="font-[var(--font-display)] font-bold text-[#9bc6f5]">
+                  {activeClash.attackerName}
+                </span>
+                <span className="font-mono font-bold px-1.5 py-0.5 rounded-[2px] brass-plaque text-[#f5d284]">
                   {toHexDigit(activeClash.attackerVal)}
                   {activeClash.attackType} vs {toHexDigit(activeClash.defenderVal)}
                 </span>
-                <span className="font-semibold text-rose-300">{activeClash.defenderName}</span>
+                <span className="font-[var(--font-display)] font-bold text-[#f2a0a0]">
+                  {activeClash.defenderName}
+                </span>
               </div>
             </div>
           )}
 
-          {/* Floating Mobile Augment Ribbon (never shifts board height) */}
+          {/* Floating Mobile Augment Ribbon */}
           {selectedActiveAugment && !activeClash && (
             <div className="pointer-events-none lg:hidden absolute bottom-1 inset-x-1 z-20 flex justify-center">
-              <div className="max-w-full rounded-lg bg-[#191130]/95 border border-violet-400/55 px-2.5 py-1 text-[10px] text-violet-100 flex items-center gap-1.5 shadow-lg">
+              <div className="max-w-full rounded-[3px] bg-[#211626]/95 border border-violet-400/55 px-2.5 py-1 text-[10px] text-violet-100 flex items-center gap-1.5 shadow-lg">
                 <Wand2 className="w-3 h-3 text-violet-300 shrink-0" />
                 <span className="truncate">
                   <strong className="text-violet-200">{selectedActiveAugment.name}:</strong>{' '}
@@ -2209,8 +2242,8 @@ export const ArenaView: React.FC<ArenaViewProps> = ({
             </div>
           )}
 
-          {/* Continuous Blended Open 4x4 Aerial Battlefield Canvas (Auto-fits 100% of stage height & width!) */}
-          <div className="relative mobile-board-fit desktop-board-fit rounded-xl lg:rounded-2xl border-2 border-amber-500/35 p-1.5 sm:p-2 lg:p-3 overflow-hidden bg-[#0a0f18] shadow-[0_24px_60px_rgba(0,0,0,0.75),inset_0_1px_0_rgba(255,255,255,0.1)]">
+          {/* Continuous Blended Open 4x4 Aerial Battlefield Canvas in Carved Basalt Frame */}
+          <div className="relative mobile-board-fit desktop-board-fit rounded-[5px] border-2 border-[#7b5b2f] p-1.5 sm:p-2 lg:p-3 overflow-hidden bg-[#120e0a] shadow-[0_26px_64px_rgba(0,0,0,0.85),inset_0_0_0_2px_rgba(14,10,7,0.9),inset_0_0_0_3px_rgba(218,168,84,0.28)]">
             {/* Unbroken Weathered Stone Battlefield Floor Beneath All 16 Squares */}
             <div
               aria-hidden="true"
@@ -2224,7 +2257,7 @@ export const ArenaView: React.FC<ArenaViewProps> = ({
             {/* Soft Moody Vignette Unifying the Whole Map */}
             <div
               aria-hidden="true"
-              className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_90%_90%_at_50%_50%,rgba(6,10,18,0.08)_0%,rgba(6,10,18,0.52)_100%)]"
+              className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_90%_90%_at_50%_50%,rgba(12,9,6,0.08)_0%,rgba(10,7,5,0.56)_100%)]"
             />
 
             <div ref={boardGridRef} className="relative z-10 grid grid-cols-4 gap-1.5 sm:gap-2">
@@ -2292,7 +2325,7 @@ export const ArenaView: React.FC<ArenaViewProps> = ({
                         {biomeMeta && (
                           <span
                             aria-label={`${biomeMeta.name} tile`}
-                            className={`pointer-events-none absolute -top-1 -left-1 z-30 w-4 h-4 sm:w-5 sm:h-5 rounded-full border flex items-center justify-center shadow-md ${biomeMeta.badgeClass}`}
+                            className={`pointer-events-none absolute -top-1 -left-1 z-30 w-4 h-4 sm:w-5 sm:h-5 rounded-[2px] border flex items-center justify-center shadow-md ${biomeMeta.badgeClass}`}
                           >
                             <BiomeIcon biome={biomeMeta.id} className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
                           </span>
@@ -2354,14 +2387,14 @@ export const ArenaView: React.FC<ArenaViewProps> = ({
                           ? `${biomeMeta.name} tile at row ${rIdx + 1}, column ${cIdx + 1}`
                           : `Stone ground tile at row ${rIdx + 1}, column ${cIdx + 1}`
                       }
-                      className={`group relative aspect-[5/7] rounded-lg border transition-all duration-150 overflow-hidden bg-transparent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 ${
+                      className={`group relative aspect-[5/7] rounded-[4px] border transition-all duration-150 overflow-hidden bg-transparent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 ${
                         isDropTarget
-                          ? 'border-amber-300 ring-2 ring-amber-300/80 shadow-[0_0_24px_rgba(251,191,36,0.45)] scale-[1.03] cursor-pointer z-20'
+                          ? 'border-[#f3c569] ring-2 ring-[#e5b353]/80 shadow-[0_0_24px_rgba(235,176,68,0.45)] scale-[1.03] cursor-pointer z-20'
                           : isDragActive && canPlaceHere
-                          ? 'border-amber-300/40 bg-amber-400/[0.04]'
+                          ? 'border-[#d6a348]/45 bg-amber-500/[0.05]'
                           : canPlaceHere
-                          ? 'border-white/[0.11] hover:border-amber-300/70 cursor-pointer active:scale-[0.97]'
-                          : 'border-white/[0.07] cursor-default'
+                          ? 'border-[#e8d5b3]/[0.15] hover:border-[#e5b55a]/75 cursor-pointer active:scale-[0.97]'
+                          : 'border-[#e8d5b3]/[0.08] cursor-default'
                       }`}
                     >
                       {/* Feathered Top-Down Biome Feature Blended Directly Into the Stone Battlefield */}
@@ -2392,11 +2425,11 @@ export const ArenaView: React.FC<ArenaViewProps> = ({
                       )}
 
                       {/* Subtle Carved Tactical Socket Depth */}
-                      <div className="pointer-events-none absolute inset-0 rounded-lg shadow-[inset_0_1px_8px_rgba(0,0,0,0.42)]" />
+                      <div className="pointer-events-none absolute inset-0 rounded-[4px] shadow-[inset_0_1px_8px_rgba(0,0,0,0.48)]" />
 
                       {/* Subtle Drop Glow Only When Actively Targeting */}
                       {isDropTarget && (
-                        <div className="pointer-events-none absolute inset-0 bg-amber-300/15 shadow-[inset_0_0_18px_rgba(251,191,36,0.45)]" />
+                        <div className="pointer-events-none absolute inset-0 bg-amber-400/15 shadow-[inset_0_0_18px_rgba(240,185,78,0.45)]" />
                       )}
                     </button>
                   );
@@ -2406,16 +2439,16 @@ export const ArenaView: React.FC<ArenaViewProps> = ({
           </div>
         </div>
 
-        {/* RIGHT COMMAND PANEL: Live Selected Card Inspector + Spacious Desktop Hand Grid */}
+        {/* RIGHT COMMAND PANEL: Live Selected Card Dossier + Spacious Desktop Hand Tray */}
         <aside className="shrink-0 lg:shrink lg:min-h-0 lg:h-full lg:flex lg:flex-col lg:gap-2.5 order-3 w-full pb-safe lg:pb-0">
-          {/* Desktop Permanent Selected Card Inspector */}
+          {/* Desktop Permanent Selected Card Dossier */}
           {selectedCardDef && selectedHandCard && (
-            <div className="hidden lg:block shrink-0 rounded-2xl bg-[#0c1324]/95 border border-amber-500/30 p-3.5 text-xs space-y-2 shadow-md">
+            <div className="hidden lg:block shrink-0 brass-panel rounded-[4px] p-3.5 text-xs space-y-2">
               <div className="flex items-center justify-between gap-2">
-                <span className="font-[var(--font-display)] text-sm font-bold text-amber-100 truncate">
+                <span className="font-[var(--font-display)] text-sm font-bold tracking-wide text-[#f6dfb0] truncate">
                   {selectedCardDef.name}
                 </span>
-                <span className="font-mono text-sm font-bold text-amber-300 shrink-0">
+                <span className="font-mono text-sm font-bold text-[#f0c76e] shrink-0">
                   {formatTetraCode(selectedHandCard.stats)}
                 </span>
               </div>
@@ -2425,12 +2458,12 @@ export const ArenaView: React.FC<ArenaViewProps> = ({
                   tribe={selectedCardDef.tribe}
                   compact
                 />
-                <span className="flex items-center gap-1 text-slate-300 font-mono text-[11px]">
-                  <Compass className="w-3.5 h-3.5 text-amber-300" />
+                <span className="flex items-center gap-1 text-[#cbb89a] font-mono text-[11px]">
+                  <Compass className="w-3.5 h-3.5 text-[#e2b053]" />
                   {selectedHandCard.arrows.length} arrows
                 </span>
               </div>
-              <div className="text-[11px] font-mono text-slate-400">
+              <div className="text-[11px] font-mono text-[#a79479]">
                 ATK {toHexDigit(selectedHandCard.stats.power)} · Type {selectedHandCard.stats.type}{' '}
                 · P.DEF {toHexDigit(selectedHandCard.stats.pDef)} · M.DEF{' '}
                 {toHexDigit(selectedHandCard.stats.mDef)}
@@ -2443,14 +2476,14 @@ export const ArenaView: React.FC<ArenaViewProps> = ({
                   .filter((ev): ev is NonNullable<typeof ev> => Boolean(ev && ev.hasEffect));
                 if (matchups.length === 0) return null;
                 return (
-                  <div className="flex flex-wrap items-center gap-1.5 pt-1 border-t border-slate-800/80">
+                  <div className="flex flex-wrap items-center gap-1.5 pt-1.5 border-t border-[#4b3a26]/70">
                     {matchups.map((m) => (
                       <span
                         key={m.biome}
-                        className={`inline-flex items-center gap-1 rounded-md border px-2 py-0.5 font-mono text-[10.5px] font-semibold ${
+                        className={`inline-flex items-center gap-1 rounded-[2px] border px-2 py-0.5 font-mono text-[10.5px] font-semibold ${
                           m.isPositive
-                            ? 'bg-emerald-950/85 border-emerald-400/50 text-emerald-200'
-                            : 'bg-rose-950/80 border-rose-400/45 text-rose-200'
+                            ? 'bg-emerald-950/85 border-emerald-500/50 text-emerald-200'
+                            : 'bg-rose-950/80 border-rose-500/45 text-rose-200'
                         }`}
                       >
                         <BiomeIcon biome={m.biome} className="w-3 h-3 shrink-0" />
@@ -2464,7 +2497,7 @@ export const ArenaView: React.FC<ArenaViewProps> = ({
               })()}
 
               {selectedActiveAugment && (
-                <div className="rounded-xl bg-violet-950/60 border border-violet-400/50 px-2.5 py-1.5 text-[11px] text-violet-100 flex items-start gap-1.5">
+                <div className="rounded-[3px] bg-[#24162b]/80 border border-violet-400/50 px-2.5 py-1.5 text-[11px] text-violet-100 flex items-start gap-1.5">
                   <Wand2 className="w-3.5 h-3.5 text-violet-300 shrink-0 mt-0.5" />
                   <div>
                     <strong className="text-violet-200">{selectedActiveAugment.name}:</strong>{' '}
@@ -2478,20 +2511,22 @@ export const ArenaView: React.FC<ArenaViewProps> = ({
           {/* Hand Header */}
           <div className="flex items-center justify-between gap-2 mb-0.5 lg:mb-0 px-1 shrink-0 min-h-[20px]">
             <div className="flex items-center gap-1.5 shrink-0">
-              <span className="text-[11px] lg:text-xs font-semibold uppercase tracking-wider text-blue-300">
+              <span className="font-[var(--font-display)] text-[11px] lg:text-xs font-bold uppercase tracking-wider text-[#b7d6f5]">
                 Your Hand ({playerHand.length})
               </span>
-              <span className="lg:hidden text-[10px] text-slate-400">
+              <span className="lg:hidden text-[10px] text-[#9b896f]">
                 · Slide to inspect
               </span>
             </div>
-            <span className="hidden lg:inline text-[11px] text-slate-400">
+            <span className="hidden lg:inline font-[var(--font-serif)] italic text-xs text-[#9b896f]">
               Drag or click card → tile
             </span>
             {selectedCardDef && selectedHandCard && (
-              <div className="flex lg:hidden items-center justify-end gap-1.5 text-[11px] text-slate-200 min-w-0">
-                <span className="font-semibold truncate">{selectedCardDef.name}</span>
-                <span className="font-mono font-bold tabular-nums text-amber-300 shrink-0">
+              <div className="flex lg:hidden items-center justify-end gap-1.5 text-[11px] text-[#efe3cd] min-w-0">
+                <span className="font-[var(--font-display)] font-semibold truncate">
+                  {selectedCardDef.name}
+                </span>
+                <span className="font-mono font-bold tabular-nums text-[#f0c76e] shrink-0">
                   {formatTetraCode(selectedHandCard.stats)}
                 </span>
               </div>
@@ -2552,8 +2587,8 @@ export const ArenaView: React.FC<ArenaViewProps> = ({
             })}
           </div>
 
-          {/* Desktop Full-Height Scrollable Hand Panel (2 cols on lg/xl, 3 cols on 2xl) */}
-          <div className="hidden lg:block flex-1 min-h-0 overflow-y-auto rounded-2xl bg-[#0c1324]/90 border border-slate-800/90 p-2.5">
+          {/* Desktop Full-Height Scrollable Recessed Hand Tray */}
+          <div className="hidden lg:block flex-1 min-h-0 overflow-y-auto basalt-recess rounded-[4px] p-2.5">
             <div className="grid grid-cols-2 2xl:grid-cols-3 gap-2.5">
               {playerHand.map((hCard) => {
                 const isSelected = hCard.uid === selectedHandUid;
@@ -2607,11 +2642,11 @@ export const ArenaView: React.FC<ArenaViewProps> = ({
                 top: `${hoveredBiomeTile.y}px`,
                 transform: 'translate(-50%, -100%)',
               }}
-              className="pointer-events-none fixed z-[200] w-max max-w-[260px] rounded-xl bg-slate-950/96 border border-slate-700/90 px-3 py-2 text-xs shadow-[0_14px_34px_rgba(0,0,0,0.85)] space-y-1"
+              className="pointer-events-none fixed z-[200] w-max max-w-[260px] brass-panel rounded-[3px] px-3 py-2 text-xs shadow-[0_14px_34px_rgba(0,0,0,0.9)] space-y-1"
             >
               <div className="flex items-center gap-1.5 font-semibold">
                 <span
-                  className={`w-5 h-5 rounded-full border flex items-center justify-center shrink-0 ${b.badgeClass}`}
+                  className={`w-5 h-5 rounded-[2px] border flex items-center justify-center shrink-0 ${b.badgeClass}`}
                 >
                   <BiomeIcon biome={b.id} className="w-3 h-3" />
                 </span>
@@ -2627,7 +2662,7 @@ export const ArenaView: React.FC<ArenaViewProps> = ({
               </div>
               {p && p.hasEffect && (
                 <div
-                  className={`pt-1 mt-1 border-t border-slate-800 font-mono text-[11px] font-bold ${
+                  className={`pt-1 mt-1 border-t border-[#4b3a26]/80 font-mono text-[11px] font-bold ${
                     p.isPositive ? 'text-emerald-200' : 'text-rose-200'
                   }`}
                 >
@@ -2660,7 +2695,7 @@ export const ArenaView: React.FC<ArenaViewProps> = ({
               key={scrubbedCard.uid}
               className="animate-scrub-pop flex flex-col items-center w-full max-w-[290px]"
             >
-              <div className="w-[172px] sm:w-[196px] rounded-2xl shadow-[0_26px_64px_rgba(0,0,0,0.9),0_0_32px_rgba(251,191,36,0.35)]">
+              <div className="w-[172px] sm:w-[196px] rounded-[4px] shadow-[0_26px_64px_rgba(0,0,0,0.92),0_0_32px_rgba(224,165,68,0.35)]">
                 <GameCard
                   cardId={scrubbedCard.cardId}
                   stats={scrubbedCard.stats}
@@ -2674,12 +2709,12 @@ export const ArenaView: React.FC<ArenaViewProps> = ({
                 />
               </div>
 
-              <div className="mt-2 w-full rounded-xl bg-[#0a1020]/96 border border-amber-400/50 px-3 py-2 shadow-2xl text-center space-y-1">
+              <div className="mt-2 w-full brass-panel rounded-[3px] px-3 py-2 shadow-2xl text-center space-y-1">
                 <div className="flex items-center justify-center gap-2 text-xs">
-                  <span className="font-[var(--font-display)] font-bold text-white truncate">
+                  <span className="font-[var(--font-display)] font-bold text-[#f6e3be] truncate">
                     {scrubbedDef?.name ?? 'Card'}
                   </span>
-                  <span className="font-mono font-bold text-amber-300 shrink-0">
+                  <span className="font-mono font-bold text-[#f0c76e] shrink-0">
                     {formatTetraCode(scrubbedCard.stats)}
                   </span>
                 </div>
@@ -2694,14 +2729,14 @@ export const ArenaView: React.FC<ArenaViewProps> = ({
                   </div>
                 )}
 
-                <div className="text-[11px] text-slate-300 font-mono">
+                <div className="text-[11px] text-[#cbb89a] font-mono">
                   Pwr {toHexDigit(scrubbedCard.stats.power)} · {typeLabel} · P.Def{' '}
                   {toHexDigit(scrubbedCard.stats.pDef)} · M.Def{' '}
                   {toHexDigit(scrubbedCard.stats.mDef)}
                 </div>
 
                 {scrubbedAug && (
-                  <div className="rounded-lg bg-violet-950/80 border border-violet-400/45 px-2 py-1 text-[10px] text-violet-100 flex items-center justify-center gap-1.5">
+                  <div className="rounded-[2px] bg-[#24162b]/85 border border-violet-400/45 px-2 py-1 text-[10px] text-violet-100 flex items-center justify-center gap-1.5">
                     <Wand2 className="w-3 h-3 text-violet-300 shrink-0" />
                     <span className="truncate">
                       <strong className="text-violet-200">{scrubbedAug.name}:</strong>{' '}
@@ -2714,16 +2749,16 @@ export const ArenaView: React.FC<ArenaViewProps> = ({
                   {playerHand.map((c) => (
                     <span
                       key={c.uid}
-                      className={`h-1.5 rounded-full transition-all ${
+                      className={`h-1.5 rounded-[1px] transition-all ${
                         c.uid === scrubbedCard.uid
-                          ? 'w-4 bg-amber-300'
-                          : 'w-1.5 bg-slate-600'
+                          ? 'w-4 bg-[#e5b55a]'
+                          : 'w-1.5 bg-[#534332]'
                       }`}
                     />
                   ))}
                 </div>
 
-                <div className="text-[10px] text-amber-200/85 font-medium">
+                <div className="text-[10px] text-[#e7c47a] font-medium">
                   {turn === 'player' && !isAnimating
                     ? 'Slide up onto board to play · Release to select'
                     : 'Slide across hand to inspect · Release to close'}
@@ -2769,27 +2804,27 @@ export const ArenaView: React.FC<ArenaViewProps> = ({
         </div>
       )}
 
-      {/* ==================== MATCH FINISHED / SPACIOUS SPOILS MODAL ==================== */}
+      {/* ==================== MATCH FINISHED / CARVED RELIQUARY SPOILS MODAL ==================== */}
       {phase === 'finished' && summary && (
         <div
-          className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-[#04070f]/90 p-0 sm:p-5"
+          className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-[#060403]/90 p-0 sm:p-5"
           role="dialog"
           aria-modal="true"
           aria-labelledby="match-result-title"
         >
-          <div className="w-full max-w-5xl lg:max-w-6xl max-h-[94dvh] flex flex-col rounded-t-3xl sm:rounded-3xl bg-gradient-to-b from-[#16223c] via-[#11192d] to-[#0b1120] border border-amber-400/45 shadow-[0_30px_80px_rgba(0,0,0,0.85)] overflow-hidden">
-            <div className="sm:hidden w-10 h-1 rounded-full bg-slate-600 mx-auto mt-2.5" />
+          <div className="w-full max-w-5xl lg:max-w-6xl max-h-[94dvh] flex flex-col rounded-t-[6px] sm:rounded-[5px] brass-panel riveted-frame shadow-[0_32px_90px_rgba(0,0,0,0.92)] overflow-hidden">
+            <div className="sm:hidden w-10 h-1 rounded-full bg-[#6d573e] mx-auto mt-2.5" />
 
             {/* Spacious Result Header */}
-            <div className="px-6 py-5 border-b border-slate-800/90 flex flex-wrap items-center justify-between gap-4">
+            <div className="px-6 py-5 border-b border-[#4c3b27]/85 flex flex-wrap items-center justify-between gap-4">
               <div className="flex items-center gap-3.5">
                 <div
-                  className={`w-12 h-12 rounded-2xl border flex items-center justify-center shrink-0 ${
+                  className={`w-12 h-12 rounded-[3px] border flex items-center justify-center shrink-0 ${
                     summary.winner === 'player'
-                      ? 'bg-amber-500/15 border-amber-400/50 text-amber-300'
+                      ? 'brass-plaque text-[#f0c76e]'
                       : summary.winner === 'draw'
-                      ? 'bg-slate-800 border-slate-600 text-slate-300'
-                      : 'bg-rose-950/80 border-rose-500/50 text-rose-300'
+                      ? 'iron-panel text-[#cbb89a]'
+                      : 'bg-[#361515] border-[#8c3636] text-rose-300'
                   }`}
                 >
                   <Trophy className="w-6 h-6" />
@@ -2797,7 +2832,7 @@ export const ArenaView: React.FC<ArenaViewProps> = ({
                 <div>
                   <h2
                     id="match-result-title"
-                    className="font-[var(--font-display)] text-2xl sm:text-3xl font-bold text-slate-100"
+                    className="font-[var(--font-display)] text-2xl sm:text-3xl font-bold text-[#f6e1b5] tracking-wide"
                   >
                     {summary.isPerfect
                       ? `Perfect Victory! (${summary.playerScore}–0)`
@@ -2808,11 +2843,11 @@ export const ArenaView: React.FC<ArenaViewProps> = ({
                       : `Defeated by ${currentFighter.name}`}
                   </h2>
                   <div className="flex flex-wrap items-center gap-2 mt-0.5 text-xs">
-                    <span className="text-slate-400">
+                    <span className="font-[var(--font-serif)] text-sm text-[#b39e81]">
                       {gameMode === 'quick' ? 'Quick Random Duel' : `Tier ${currentFighter.tierNumber} Championship`}
                     </span>
                     {summary.isFirstVictory && (
-                      <span className="inline-flex items-center gap-1 font-semibold text-emerald-300">
+                      <span className="inline-flex items-center gap-1 font-semibold text-emerald-400">
                         <Sparkles className="w-3.5 h-3.5" />
                         <span>First-Time Conquest!</span>
                       </span>
@@ -2821,14 +2856,14 @@ export const ArenaView: React.FC<ArenaViewProps> = ({
                 </div>
               </div>
 
-              <div className="flex items-center gap-4">
-                <div className="px-4 py-2 rounded-2xl bg-[#0a101e] border border-slate-800 font-mono text-2xl font-bold tabular-nums">
-                  <span className="text-blue-400">{summary.playerScore}</span>
-                  <span className="text-slate-600 mx-2">–</span>
+              <div className="flex items-center gap-3">
+                <div className="px-4 py-2 rounded-[3px] basalt-recess font-mono text-2xl font-bold tabular-nums">
+                  <span className="text-[#78aef0]">{summary.playerScore}</span>
+                  <span className="text-[#5e4d3a] mx-2">–</span>
                   <span className="text-rose-400">{summary.rivalScore}</span>
                 </div>
-                <div className="px-4 py-2 rounded-2xl bg-amber-950/40 border border-amber-400/40 font-mono text-lg font-bold tabular-nums text-amber-300 flex items-center gap-1.5">
-                  <Coins className="w-5 h-5" />
+                <div className="px-4 py-2 rounded-[3px] brass-plaque font-mono text-lg font-bold tabular-nums text-[#f0c76e] flex items-center gap-1.5">
+                  <Coins className="w-5 h-5 text-[#dca342]" />
                   <span>+{summary.totalGold + summary.spoilBonusGold}g</span>
                 </div>
               </div>
@@ -2836,34 +2871,34 @@ export const ArenaView: React.FC<ArenaViewProps> = ({
 
             {/* Scrollable Body */}
             <div className="overflow-y-auto px-6 py-5 space-y-6">
-              {/* Compact Gold Breakdown Pills */}
+              {/* Compact Gold Breakdown Plaques */}
               <div className="flex flex-wrap items-center gap-2 text-xs">
-                <span className="px-3 py-1.5 rounded-xl bg-[#0b111e] border border-slate-800 text-slate-300">
+                <span className="px-3 py-1.5 rounded-[3px] basalt-recess text-[#cbb89a]">
                   Match Purse:{' '}
-                  <strong className="font-mono text-amber-300">+{summary.baseGold}g</strong>
+                  <strong className="font-mono text-[#f0c76e]">+{summary.baseGold}g</strong>
                 </span>
                 {summary.firstWinBonus > 0 && (
-                  <span className="px-3 py-1.5 rounded-xl bg-emerald-950/50 border border-emerald-500/40 text-emerald-200">
+                  <span className="px-3 py-1.5 rounded-[3px] bg-emerald-950/60 border border-emerald-500/45 text-emerald-200">
                     First Win:{' '}
                     <strong className="font-mono">+{summary.firstWinBonus}g</strong>
                   </span>
                 )}
                 {summary.dominanceBonus > 0 && (
-                  <span className="px-3 py-1.5 rounded-xl bg-[#0b111e] border border-slate-800 text-slate-300">
+                  <span className="px-3 py-1.5 rounded-[3px] basalt-recess text-[#cbb89a]">
                     {summary.isPerfect ? 'Perfect Bonus' : 'Dominance'}:{' '}
-                    <strong className="font-mono text-amber-300">+{summary.dominanceBonus}g</strong>
+                    <strong className="font-mono text-[#f0c76e]">+{summary.dominanceBonus}g</strong>
                   </span>
                 )}
                 {summary.comboBonus > 0 && (
-                  <span className="px-3 py-1.5 rounded-xl bg-[#0b111e] border border-slate-800 text-slate-300">
+                  <span className="px-3 py-1.5 rounded-[3px] basalt-recess text-[#cbb89a]">
                     Combos:{' '}
-                    <strong className="font-mono text-amber-300">+{summary.comboBonus}g</strong>
+                    <strong className="font-mono text-[#f0c76e]">+{summary.comboBonus}g</strong>
                   </span>
                 )}
                 {summary.spoilBonusGold > 0 && (
-                  <span className="px-3 py-1.5 rounded-xl bg-[#0b111e] border border-slate-800 text-slate-300">
+                  <span className="px-3 py-1.5 rounded-[3px] basalt-recess text-[#cbb89a]">
                     5/5 Auto-Sell:{' '}
-                    <strong className="font-mono text-amber-300">+{summary.spoilBonusGold}g</strong>
+                    <strong className="font-mono text-[#f0c76e]">+{summary.spoilBonusGold}g</strong>
                   </span>
                 )}
               </div>
@@ -2872,8 +2907,8 @@ export const ArenaView: React.FC<ArenaViewProps> = ({
               {summary.winner === 'player' && (
                 <div className="space-y-4">
                   {summary.bonusMythicDrop && (
-                    <div className="rounded-xl bg-gradient-to-r from-amber-950/70 via-amber-900/40 to-amber-950/70 border border-amber-400/75 px-4 py-3 flex items-center gap-2.5 text-xs sm:text-sm text-amber-200 shadow-lg">
-                      <Crown className="w-5 h-5 text-amber-300 shrink-0" />
+                    <div className="rounded-[3px] brass-plaque border-[#d9a243] px-4 py-3 flex items-center gap-2.5 text-xs sm:text-sm text-[#f7dca2] shadow-lg">
+                      <Crown className="w-5 h-5 text-[#eab859] shrink-0" />
                       <span>
                         <strong>Mythic RNG Drop Triggered!</strong>{' '}
                         {CARD_MAP[summary.bonusMythicDrop.cardId]?.name} (
@@ -2883,13 +2918,13 @@ export const ArenaView: React.FC<ArenaViewProps> = ({
                   )}
 
                   <div className="flex flex-wrap items-baseline justify-between gap-2">
-                    <h3 className="font-[var(--font-display)] text-base sm:text-lg font-bold text-amber-200">
+                    <h3 className="font-[var(--font-display)] text-base sm:text-lg font-bold text-[#f3d492] tracking-wide">
                       {summary.spoilClaimedUid
                         ? 'Rolled Spoil Claimed'
                         : `Claim 1 Rolled Card from ${currentFighter.name}’s Hand`}
                     </h3>
                     {!summary.spoilClaimedUid && (
-                      <span className="text-xs text-slate-400">
+                      <span className="font-[var(--font-serif)] italic text-sm text-[#b39e81]">
                         Click any card below to claim its rolled stats &amp; arrows
                       </span>
                     )}
@@ -2914,14 +2949,14 @@ export const ArenaView: React.FC<ArenaViewProps> = ({
                       return (
                         <div
                           key={sCard.uid}
-                          className={`rounded-2xl p-3 border flex flex-col gap-2.5 transition-colors ${
+                          className={`rounded-[4px] p-3 border flex flex-col gap-2.5 transition-colors ${
                             isClaimed
-                              ? 'bg-emerald-950/35 border-emerald-400/75'
+                              ? 'bg-emerald-950/35 border-emerald-500/75'
                               : isBonusMythic && !summary.spoilClaimedUid
-                              ? 'bg-amber-950/30 border-amber-400/70'
+                              ? 'brass-plaque border-[#dca342]'
                               : isUpgradeHighlight
-                              ? 'bg-emerald-950/20 border-emerald-500/45'
-                              : 'bg-[#0b1120] border-slate-800/90'
+                              ? 'bg-emerald-950/25 border-emerald-500/50'
+                              : 'basalt-recess'
                           } ${lockedOut ? 'opacity-45' : ''}`}
                         >
                           <GameCard
@@ -2943,7 +2978,7 @@ export const ArenaView: React.FC<ArenaViewProps> = ({
 
                           {/* Full, Un-Squashed Card Name & Library Comparison Readout */}
                           <div className="space-y-1.5 text-center px-0.5">
-                            <div className="font-[var(--font-display)] text-sm font-bold text-slate-100 leading-snug">
+                            <div className="font-[var(--font-display)] text-sm font-bold text-[#f3e5cb] leading-snug">
                               {cardDef?.name ?? 'Card'}
                             </div>
                             <div className="flex items-center justify-center gap-1.5 text-xs">
@@ -2954,8 +2989,8 @@ export const ArenaView: React.FC<ArenaViewProps> = ({
                                   {cardDef.rarity}
                                 </span>
                               )}
-                              <span className="text-slate-600">·</span>
-                              <span className="font-mono font-bold text-amber-200">
+                              <span className="text-[#5e4d3a]">·</span>
+                              <span className="font-mono font-bold text-[#f0c76e]">
                                 {formatTetraCode(sCard.stats)}
                               </span>
                             </div>
@@ -2963,7 +2998,7 @@ export const ArenaView: React.FC<ArenaViewProps> = ({
                               <div className="flex justify-center">
                                 <span
                                   title={comparison.tooltip}
-                                  className={`inline-flex items-center rounded-md border px-2 py-0.5 font-mono text-[11px] font-semibold leading-tight cursor-help ${comparison.badgeClass}`}
+                                  className={`inline-flex items-center rounded-[2px] border px-2 py-0.5 font-mono text-[11px] font-semibold leading-tight cursor-help ${comparison.badgeClass}`}
                                 >
                                   {comparison.badgeText}
                                 </span>
@@ -2972,12 +3007,12 @@ export const ArenaView: React.FC<ArenaViewProps> = ({
                             <div
                               className={`text-xs font-semibold ${
                                 isClaimed
-                                  ? 'text-emerald-300'
+                                  ? 'text-emerald-400'
                                   : isBonusMythic
-                                  ? 'text-amber-300'
+                                  ? 'text-[#f0c76e]'
                                   : ownedCopies === 0
-                                  ? 'text-emerald-300'
-                                  : 'text-slate-400'
+                                  ? 'text-emerald-400'
+                                  : 'text-[#9e8a70]'
                               }`}
                             >
                               {isClaimed
@@ -2999,7 +3034,7 @@ export const ArenaView: React.FC<ArenaViewProps> = ({
                   </div>
 
                   {summary.spoilClaimedCardId && (
-                    <div className="rounded-xl bg-emerald-950/50 border border-emerald-500/40 px-4 py-2.5 text-xs sm:text-sm text-emerald-200 font-medium">
+                    <div className="rounded-[3px] bg-emerald-950/55 border border-emerald-500/45 px-4 py-2.5 text-xs sm:text-sm text-emerald-200 font-medium">
                       {CARD_MAP[summary.spoilClaimedCardId]?.name}{' '}
                       {summary.spoilWasOverflow
                         ? `was already at ${MAX_COPIES_PER_CARD}/${MAX_COPIES_PER_CARD} copies and auto-sold for +${summary.spoilBonusGold}g!`
@@ -3012,8 +3047,8 @@ export const ArenaView: React.FC<ArenaViewProps> = ({
               )}
             </div>
 
-            {/* Clean Footer Actions */}
-            <div className="px-6 py-4 border-t border-slate-800 bg-[#0c1322] flex flex-wrap items-center justify-between gap-2.5">
+            {/* Forged Footer Actions */}
+            <div className="px-6 py-4 border-t border-[#4b3a26]/85 bg-[#120d0a] flex flex-wrap items-center justify-between gap-2.5">
               <div className="flex items-center gap-2">
                 <button
                   type="button"
@@ -3021,10 +3056,10 @@ export const ArenaView: React.FC<ArenaViewProps> = ({
                     sound.select();
                     onGoHome();
                   }}
-                  className="min-h-[44px] px-4 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-700 text-slate-200 font-medium text-xs sm:text-sm flex items-center gap-1.5 transition-colors cursor-pointer"
+                  className="iron-btn min-h-[44px] px-4 rounded-[3px] font-[var(--font-display)] font-semibold text-xs sm:text-sm flex items-center gap-1.5 cursor-pointer"
                 >
-                  <Home className="w-4 h-4" />
-                  <span>Home</span>
+                  <Home className="w-4 h-4 text-[#d8a64c]" />
+                  <span>Campaign</span>
                 </button>
                 <button
                   type="button"
@@ -3033,7 +3068,7 @@ export const ArenaView: React.FC<ArenaViewProps> = ({
                     setPhase('setup');
                     setSetupStep('details');
                   }}
-                  className="min-h-[44px] px-4 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-medium text-xs sm:text-sm transition-colors cursor-pointer"
+                  className="iron-btn min-h-[44px] px-4 rounded-[3px] font-[var(--font-display)] font-semibold text-xs sm:text-sm cursor-pointer"
                 >
                   {gameMode === 'quick' ? 'Opponent Setup' : 'Arena Ladder'}
                 </button>
@@ -3043,7 +3078,7 @@ export const ArenaView: React.FC<ArenaViewProps> = ({
                 <button
                   type="button"
                   onClick={startMatch}
-                  className="min-h-[44px] px-5 rounded-xl bg-slate-800 hover:bg-slate-700 text-amber-300 font-semibold text-xs sm:text-sm flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+                  className="iron-btn min-h-[44px] px-5 rounded-[3px] font-[var(--font-display)] text-[#f0c76e] font-semibold text-xs sm:text-sm flex items-center justify-center gap-1.5 cursor-pointer"
                 >
                   <RefreshCw className="w-4 h-4" />
                   <span>Rematch</span>
@@ -3056,7 +3091,7 @@ export const ArenaView: React.FC<ArenaViewProps> = ({
                       const next = rollRandomFighter(currentFighter.id);
                       startMatchWithFighter(next.id);
                     }}
-                    className="min-h-[44px] px-5 rounded-xl bg-gradient-to-b from-amber-300 via-amber-400 to-amber-500 hover:from-amber-200 hover:to-amber-400 text-slate-950 font-bold text-xs sm:text-sm flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+                    className="brass-btn min-h-[44px] px-5 rounded-[3px] font-bold text-xs sm:text-sm flex items-center justify-center gap-1.5 cursor-pointer"
                   >
                     <Dices className="w-4 h-4" />
                     <span>New Random Match</span>
@@ -3066,7 +3101,7 @@ export const ArenaView: React.FC<ArenaViewProps> = ({
                     <button
                       type="button"
                       onClick={() => startMatchWithFighter(nextChallengeFighter.id)}
-                      className="min-h-[44px] px-5 rounded-xl bg-gradient-to-b from-amber-300 via-amber-400 to-amber-500 hover:from-amber-200 hover:to-amber-400 text-slate-950 font-bold text-xs sm:text-sm flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+                      className="brass-btn min-h-[44px] px-5 rounded-[3px] font-bold text-xs sm:text-sm flex items-center justify-center gap-1.5 cursor-pointer"
                     >
                       <span>Next: {nextChallengeFighter.name}</span>
                       <ChevronRight className="w-4 h-4" />

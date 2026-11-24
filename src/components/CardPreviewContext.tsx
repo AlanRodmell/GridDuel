@@ -82,7 +82,7 @@ export const CardPreviewProvider: React.FC<{ children: React.ReactNode }> = ({
           aria-label={`Card preview: ${card.name}`}
           onClick={handleBackdropClick}
           onContextMenu={(e) => e.preventDefault()}
-          className="fixed inset-0 z-[100] flex items-center justify-center bg-[#050811]/90 p-4 select-none"
+          className="fixed inset-0 z-[100] flex items-center justify-center bg-[#060403]/92 p-4 select-none"
         >
           <div
             onClick={(e) => e.stopPropagation()}
@@ -92,18 +92,18 @@ export const CardPreviewProvider: React.FC<{ children: React.ReactNode }> = ({
             <div className="w-full flex items-center justify-between gap-2 px-1">
               <div className="flex items-center gap-1.5">
                 <span
-                  className={`px-2 py-0.5 rounded-md border text-[10px] font-bold uppercase tracking-wider ${theme.badgeClass}`}
+                  className={`px-2 py-0.5 rounded-[2px] border text-[10px] font-[var(--font-display)] font-bold uppercase tracking-wider ${theme.badgeClass}`}
                 >
                   {theme.tierLabel}
                 </span>
                 <CardTraitPills element={card.element} tribe={card.tribe} compact />
                 {preview.owner === 'player' && (
-                  <span className="px-2 py-0.5 rounded-md bg-blue-950/90 border border-blue-400/60 text-[10px] font-bold uppercase tracking-wider text-blue-200">
+                  <span className="px-2 py-0.5 rounded-[2px] bg-[#162944] border border-[#4d84c4] text-[10px] font-[var(--font-display)] font-bold uppercase tracking-wider text-[#bcd9f7]">
                     Your Card
                   </span>
                 )}
                 {preview.owner === 'rival' && (
-                  <span className="px-2 py-0.5 rounded-md bg-rose-950/90 border border-rose-400/60 text-[10px] font-bold uppercase tracking-wider text-rose-200">
+                  <span className="px-2 py-0.5 rounded-[2px] bg-[#3a1616] border border-[#a83e3e] text-[10px] font-[var(--font-display)] font-bold uppercase tracking-wider text-[#f3b6b6]">
                     Rival Card
                   </span>
                 )}
@@ -113,7 +113,7 @@ export const CardPreviewProvider: React.FC<{ children: React.ReactNode }> = ({
                 type="button"
                 onClick={closePreview}
                 aria-label="Close card preview"
-                className="w-8 h-8 rounded-full bg-slate-900/90 hover:bg-slate-800 border border-slate-700/90 text-slate-300 hover:text-white flex items-center justify-center transition-colors cursor-pointer"
+                className="iron-btn w-8 h-8 rounded-[3px] flex items-center justify-center cursor-pointer"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -139,9 +139,9 @@ export const CardPreviewProvider: React.FC<{ children: React.ReactNode }> = ({
             {/* Active Biome Tile Banner (when inspecting a card on a biome tile) */}
             {terrainMeta && (
               <div
-                className={`w-full max-w-[388px] rounded-xl border px-3 py-2 flex items-center justify-between gap-2 text-xs ${terrainMeta.badgeClass}`}
+                className={`w-full max-w-[388px] rounded-[3px] border px-3 py-2 flex items-center justify-between gap-2 text-xs ${terrainMeta.badgeClass}`}
               >
-                <span className="inline-flex items-center gap-1.5 font-semibold">
+                <span className="inline-flex items-center gap-1.5 font-[var(--font-display)] font-semibold">
                   <BiomeIcon biome={terrainMeta.id} className="w-3.5 h-3.5 shrink-0" />
                   <span>{terrainMeta.name}</span>
                 </span>
@@ -154,14 +154,14 @@ export const CardPreviewProvider: React.FC<{ children: React.ReactNode }> = ({
             {/* Active Board Modification Banner (Terrain + Augments) */}
             {hasBoardMod && baseStats && (
               <div
-                className={`w-full max-w-[388px] rounded-xl border px-3 py-2 flex items-center justify-between gap-2 text-xs ${
+                className={`w-full max-w-[388px] rounded-[3px] border px-3 py-2 flex items-center justify-between gap-2 text-xs ${
                   netModDelta < 0
-                    ? 'bg-rose-950/70 border-rose-400/50'
-                    : 'bg-emerald-950/70 border-emerald-400/50'
+                    ? 'bg-rose-950/75 border-rose-500/50'
+                    : 'bg-emerald-950/75 border-emerald-500/50'
                 }`}
               >
                 <span
-                  className={`inline-flex items-center gap-1.5 font-semibold ${
+                  className={`inline-flex items-center gap-1.5 font-[var(--font-display)] font-semibold ${
                     netModDelta < 0 ? 'text-rose-200' : 'text-emerald-200'
                   }`}
                 >
@@ -174,7 +174,7 @@ export const CardPreviewProvider: React.FC<{ children: React.ReactNode }> = ({
                       : 'Board Augmented'}
                   </span>
                 </span>
-                <span className="font-mono font-bold tabular-nums text-slate-200">
+                <span className="font-mono font-bold tabular-nums text-[#efe3cd]">
                   {formatTetraCode(baseStats)} →{' '}
                   <span className={netModDelta < 0 ? 'text-rose-300' : 'text-emerald-300'}>
                     {formatTetraCode(stats)}
@@ -183,12 +183,12 @@ export const CardPreviewProvider: React.FC<{ children: React.ReactNode }> = ({
               </div>
             )}
 
-            {/* Compact Decimal & Compass Readout Pill */}
+            {/* Compact Decimal & Compass Readout Plaque */}
             <div
               style={{ borderColor: theme.hairline }}
-              className="w-full max-w-[388px] rounded-xl bg-[#0b101d]/90 border px-3.5 py-2.5 flex items-center justify-between gap-2 text-xs"
+              className="w-full max-w-[388px] rounded-[3px] brass-panel px-3.5 py-2.5 flex items-center justify-between gap-2 text-xs"
             >
-              <span className="font-mono tabular-nums text-slate-300">
+              <span className="font-mono tabular-nums text-[#dfd0b6]">
                 ATK {stats.power} · {stats.type} · P.DEF {stats.pDef} · M.DEF {stats.mDef}
               </span>
               <span

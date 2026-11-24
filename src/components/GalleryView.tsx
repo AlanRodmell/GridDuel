@@ -287,24 +287,24 @@ export const GalleryView: React.FC<GalleryViewProps> = ({
     <div className="w-full px-4 sm:px-6 lg:px-8 py-5 lg:py-7 space-y-6">
       {/* Floating Action Toast */}
       {feedbackToast && (
-        <div className="fixed bottom-20 md:bottom-8 right-4 z-50 rounded-xl bg-slate-900/95 border border-amber-400/70 px-4 py-2.5 text-xs font-semibold text-amber-200 shadow-2xl flex items-center gap-2">
-          <Coins className="w-4 h-4 text-amber-400 shrink-0" />
+        <div className="fixed bottom-20 md:bottom-8 right-4 z-50 rounded-[3px] brass-panel px-4 py-2.5 text-xs font-semibold text-[#f5d593] shadow-2xl flex items-center gap-2">
+          <Coins className="w-4 h-4 text-[#e2b053] shrink-0" />
           <span>{feedbackToast}</span>
         </div>
       )}
 
-      {/* Header + 90-Card Tier Breakdown + Bulk Sell Extras Button */}
+      {/* Header + Tier Breakdown + Bulk Sell Extras Button */}
       <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-4">
         <div>
-          <h1 className="font-[var(--font-display)] text-2xl sm:text-3xl font-bold text-slate-100 tracking-wide">
+          <h1 className="font-[var(--font-display)] text-2xl sm:text-3xl font-bold text-[#f3dfb6] tracking-[0.06em]">
             {totalCards}-Card Compendium &amp; Rolled Vault
           </h1>
-          <div className="flex flex-wrap items-center gap-2 text-xs sm:text-sm text-slate-400 mt-1">
-            <span className="font-mono tabular-nums text-amber-300 font-semibold">
+          <div className="flex flex-wrap items-center gap-2 text-xs sm:text-sm text-[#a69277] mt-1">
+            <span className="font-mono tabular-nums text-[#f0c76e] font-semibold">
               {ownedUniqueCount} / {totalCards} Types ({pct}%)
             </span>
             <span aria-hidden="true">·</span>
-            <span className="font-mono tabular-nums text-slate-300">
+            <span className="font-mono tabular-nums text-[#d6c5a9]">
               {totalOwnedCopies} Total Rolled Copies (Max {MAX_COPIES_PER_CARD} per card)
             </span>
           </div>
@@ -324,10 +324,10 @@ export const GalleryView: React.FC<GalleryViewProps> = ({
                   );
                 }
               }}
-              className="min-h-[42px] px-3.5 py-2 rounded-xl bg-gradient-to-r from-amber-500/20 to-amber-600/10 hover:from-amber-500/30 hover:to-amber-500/20 border border-amber-400/50 text-amber-200 text-xs font-semibold flex items-center gap-2 transition-all cursor-pointer shadow-md"
+              className="brass-plaque hover:border-[#e2b053] min-h-[42px] px-3.5 py-2 rounded-[3px] text-[#f5d593] font-[var(--font-display)] text-xs font-semibold flex items-center gap-2 transition-all cursor-pointer"
               title="Sell lower-rolled duplicate copies while keeping your best roll and all equipped hand cards"
             >
-              <Coins className="w-4 h-4 text-amber-300 shrink-0" />
+              <Coins className="w-4 h-4 text-[#e2b053] shrink-0" />
               <span>
                 Sell {sellableExtrasSummary.count} Extra Cop
                 {sellableExtrasSummary.count === 1 ? 'y' : 'ies'} (+
@@ -338,7 +338,7 @@ export const GalleryView: React.FC<GalleryViewProps> = ({
         </div>
       </div>
 
-      {/* Interactive Rarity Tier Progress Strip with Stat & Arrow Roll Ranges */}
+      {/* Interactive Rarity Tier Progress Plaques */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
         {(['common', 'rare', 'epic', 'mythic'] as Rarity[]).map((r) => {
           const st = rarityStats[r];
@@ -354,25 +354,25 @@ export const GalleryView: React.FC<GalleryViewProps> = ({
                 sound.select();
                 setRarityFilter(isSelected ? 'all' : r);
               }}
-              className={`rounded-xl p-3 text-left border transition-all cursor-pointer ${
+              className={`rounded-[4px] p-3 text-left border transition-all cursor-pointer ${
                 isSelected
-                  ? 'bg-[#192540] border-amber-400/80 shadow-[0_0_12px_rgba(251,191,36,0.2)]'
-                  : 'bg-[#10182a] border-slate-800/90 hover:border-slate-700'
+                  ? 'brass-panel border-[#d9a44b]'
+                  : 'iron-panel hover:border-[#6e522b]'
               }`}
             >
               <div className="flex items-center justify-between text-xs">
-                <span className={`font-semibold capitalize ${RARITY_TEXT_COLOR[r]}`}>
+                <span className={`font-[var(--font-display)] font-bold capitalize ${RARITY_TEXT_COLOR[r]}`}>
                   {r}
                 </span>
-                <span className="font-mono tabular-nums text-slate-300">
+                <span className="font-mono tabular-nums text-[#dfd0b6]">
                   {st.owned}/{st.total}
                 </span>
               </div>
-              <div className="text-[11px] font-mono text-slate-400 mt-0.5">
-                Stats <strong className="text-slate-200">{rollRange.label}</strong> · Arrows{' '}
-                <strong className="text-amber-300">{arrowRange.label}</strong>
+              <div className="text-[11px] font-mono text-[#9b896f] mt-0.5">
+                Stats <strong className="text-[#ebe0ca]">{rollRange.label}</strong> · Arrows{' '}
+                <strong className="text-[#f0c76e]">{arrowRange.label}</strong>
               </div>
-              <div className="mt-1.5 h-1.5 rounded-full bg-slate-800 overflow-hidden">
+              <div className="mt-1.5 h-1.5 rounded-[1px] bg-[#0d0a08] border border-[#2f251c] overflow-hidden">
                 <div
                   className={`h-full ${RARITY_BAR_COLOR[r]} transition-all duration-300`}
                   style={{ width: `${tierPct}%` }}
@@ -384,7 +384,7 @@ export const GalleryView: React.FC<GalleryViewProps> = ({
       </div>
 
       {/* Saved Decks Shelf & Active Deck Showcase */}
-      <section className="rounded-2xl bg-gradient-to-b from-[#152038] to-[#0e1526] border border-amber-500/30 p-4 sm:p-5 space-y-5 shadow-[0_14px_34px_rgba(0,0,0,0.45)]">
+      <section className="brass-panel riveted-frame rounded-[4px] p-4 sm:p-5 space-y-5">
         <DeckShelf
           decks={profile.decks}
           activeDeckIndex={profile.activeDeckIndex}
@@ -403,38 +403,38 @@ export const GalleryView: React.FC<GalleryViewProps> = ({
           }}
         />
 
-        <div className="pt-4 border-t border-slate-800/90 flex flex-col md:flex-row md:items-center justify-between gap-3">
-          <div className="text-sm font-[var(--font-display)] font-bold text-slate-100">
-            Active Deck: <span className="text-amber-200">{activeDeck.name}</span>{' '}
-            <span className="font-mono text-xs text-slate-400">
+        <div className="pt-4 border-t border-[#4b3a26]/80 flex flex-col md:flex-row md:items-center justify-between gap-3">
+          <div className="text-sm font-[var(--font-display)] font-bold text-[#f3dfb6] tracking-wide">
+            Active Warband: <span className="text-[#f5d593]">{activeDeck.name}</span>{' '}
+            <span className="font-mono text-xs text-[#a69277]">
               ({activeDeckInstances.length}/{DECK_CAPACITY})
             </span>
           </div>
 
           {/* One-Tap Smart Auto-Builders */}
           <div className="flex flex-wrap items-center gap-2">
-            <span className="text-xs text-slate-400 flex items-center gap-1">
-              <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+            <span className="font-[var(--font-display)] text-xs text-[#a69277] flex items-center gap-1">
+              <Sparkles className="w-3.5 h-3.5 text-[#e2b053]" />
               Auto-Forge {DECK_CAPACITY}-Card Deck:
             </span>
             <button
               type="button"
               onClick={() => onAutoBuildDeck('power')}
-              className="min-h-[36px] px-3 py-1 rounded-lg bg-slate-800/90 hover:bg-slate-700 border border-slate-700 text-slate-200 text-xs font-medium transition-colors whitespace-nowrap cursor-pointer"
+              className="iron-btn min-h-[36px] px-3 py-1 rounded-[3px] font-[var(--font-display)] text-xs whitespace-nowrap cursor-pointer"
             >
               Highest Rolled Stats
             </button>
             <button
               type="button"
               onClick={() => onAutoBuildDeck('arrows')}
-              className="min-h-[36px] px-3 py-1 rounded-lg bg-slate-800/90 hover:bg-slate-700 border border-slate-700 text-slate-200 text-xs font-medium transition-colors whitespace-nowrap cursor-pointer"
+              className="iron-btn min-h-[36px] px-3 py-1 rounded-[3px] font-[var(--font-display)] text-xs whitespace-nowrap cursor-pointer"
             >
               8-Way Arrows
             </button>
             <button
               type="button"
               onClick={() => onAutoBuildDeck('augments')}
-              className="min-h-[36px] px-3 py-1 rounded-lg bg-violet-950/70 hover:bg-violet-900/80 border border-violet-500/40 text-violet-200 text-xs font-medium flex items-center gap-1 transition-colors whitespace-nowrap cursor-pointer"
+              className="min-h-[36px] px-3 py-1 rounded-[3px] bg-[#24162b] hover:bg-[#311d3a] border border-violet-500/45 text-violet-200 font-[var(--font-display)] text-xs flex items-center gap-1 transition-colors whitespace-nowrap cursor-pointer"
             >
               <Wand2 className="w-3 h-3" />
               <span>Augment Synergy</span>
@@ -442,20 +442,17 @@ export const GalleryView: React.FC<GalleryViewProps> = ({
             <button
               type="button"
               onClick={() => onAutoBuildDeck('assault')}
-              className="min-h-[36px] px-3 py-1 rounded-lg bg-slate-800/90 hover:bg-slate-700 border border-slate-700 text-slate-200 text-xs font-medium transition-colors whitespace-nowrap cursor-pointer"
+              className="iron-btn min-h-[36px] px-3 py-1 rounded-[3px] font-[var(--font-display)] text-xs whitespace-nowrap cursor-pointer"
             >
               X &amp; A Specialists
             </button>
           </div>
         </div>
 
-        {/* Large Cards for Maximum Visibility (4-Col Grid on Desktop) */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-7 gap-3 sm:gap-4">
+        {/* Active Deck Showcase Grid */}
+        <div className="basalt-recess rounded-[4px] p-3 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-7 gap-3 sm:gap-4">
           {activeDeckInstances.map((inst) => (
-            <div
-              key={inst.uid}
-              className="space-y-1.5"
-            >
+            <div key={inst.uid} className="space-y-1.5">
               <GameCard
                 cardId={inst.cardId}
                 stats={inst.stats}
@@ -470,11 +467,11 @@ export const GalleryView: React.FC<GalleryViewProps> = ({
                   setSelectedCopyUid(inst.uid);
                 }}
               />
-              <div className="flex items-center justify-between px-1 text-[11px] font-mono text-slate-300">
-                <span className="text-amber-200 font-semibold">
+              <div className="flex items-center justify-between px-1 text-[11px] font-mono text-[#cbb89a]">
+                <span className="text-[#f0c76e] font-semibold">
                   {formatTetraCode(inst.stats)}
                 </span>
-                <span className="text-amber-300">{inst.arrows.length}▲</span>
+                <span className="text-[#e6b85c]">{inst.arrows.length}▲</span>
               </div>
             </div>
           ))}
@@ -484,7 +481,7 @@ export const GalleryView: React.FC<GalleryViewProps> = ({
       {/* Interactive Filter & Search Controls */}
       <div className="flex flex-wrap items-center justify-between gap-2.5">
         <div className="flex flex-wrap items-center gap-2">
-          <div className="inline-flex items-center gap-1 p-1 rounded-xl bg-[#10182a] border border-slate-800 overflow-x-auto max-w-full">
+          <div className="inline-flex items-center gap-1 p-1 rounded-[3px] basalt-recess overflow-x-auto max-w-full">
             {(['all', 'owned', 'duplicates', 'augments', 'locked'] as OwnershipFilter[]).map((key) => (
               <button
                 key={key}
@@ -493,10 +490,10 @@ export const GalleryView: React.FC<GalleryViewProps> = ({
                   sound.select();
                   setOwnershipFilter(key);
                 }}
-                className={`min-h-[36px] px-3 py-1 rounded-lg text-xs font-medium capitalize transition-colors whitespace-nowrap cursor-pointer ${
+                className={`min-h-[36px] px-3 py-1 rounded-[2px] font-[var(--font-display)] text-xs capitalize transition-colors whitespace-nowrap cursor-pointer ${
                   ownershipFilter === key
-                    ? 'bg-amber-500 text-slate-950 font-semibold'
-                    : 'text-slate-400 hover:text-slate-100'
+                    ? 'brass-btn font-bold'
+                    : 'text-[#a69277] hover:text-[#f0e4cc]'
                 }`}
               >
                 {key === 'duplicates'
@@ -508,7 +505,7 @@ export const GalleryView: React.FC<GalleryViewProps> = ({
             ))}
           </div>
 
-          <div className="inline-flex items-center gap-1 p-1 rounded-xl bg-[#10182a] border border-slate-800 overflow-x-auto max-w-full">
+          <div className="inline-flex items-center gap-1 p-1 rounded-[3px] basalt-recess overflow-x-auto max-w-full">
             {(['all', 'common', 'rare', 'epic', 'mythic'] as RarityFilter[]).map((key) => (
               <button
                 key={key}
@@ -517,10 +514,10 @@ export const GalleryView: React.FC<GalleryViewProps> = ({
                   sound.select();
                   setRarityFilter(key);
                 }}
-                className={`min-h-[36px] px-3 py-1 rounded-lg text-xs font-medium capitalize transition-colors whitespace-nowrap shrink-0 cursor-pointer ${
+                className={`min-h-[36px] px-3 py-1 rounded-[2px] font-[var(--font-display)] text-xs capitalize transition-colors whitespace-nowrap shrink-0 cursor-pointer ${
                   rarityFilter === key
-                    ? 'bg-slate-700 text-white font-semibold'
-                    : 'text-slate-400 hover:text-slate-100'
+                    ? 'brass-plaque text-[#f5d593] font-bold'
+                    : 'text-[#a69277] hover:text-[#f0e4cc]'
                 }`}
               >
                 {key}
@@ -528,7 +525,7 @@ export const GalleryView: React.FC<GalleryViewProps> = ({
             ))}
           </div>
 
-          <div className="inline-flex items-center gap-1 p-1 rounded-xl bg-[#10182a] border border-slate-800 overflow-x-auto max-w-full">
+          <div className="inline-flex items-center gap-1 p-1 rounded-[3px] basalt-recess overflow-x-auto max-w-full">
             {(['all', 'P', 'M', 'X', 'A'] as TypeFilter[]).map((key) => (
               <button
                 key={key}
@@ -537,10 +534,10 @@ export const GalleryView: React.FC<GalleryViewProps> = ({
                   sound.select();
                   setTypeFilter(key);
                 }}
-                className={`min-h-[36px] px-3 py-1 rounded-lg text-xs font-medium transition-colors whitespace-nowrap shrink-0 cursor-pointer ${
+                className={`min-h-[36px] px-3 py-1 rounded-[2px] font-[var(--font-display)] text-xs transition-colors whitespace-nowrap shrink-0 cursor-pointer ${
                   typeFilter === key
-                    ? 'bg-slate-700 text-white font-semibold'
-                    : 'text-slate-400 hover:text-slate-100'
+                    ? 'brass-plaque text-[#f5d593] font-bold'
+                    : 'text-[#a69277] hover:text-[#f0e4cc]'
                 }`}
               >
                 {key === 'all' ? 'All Types' : `Type ${key}`}
@@ -555,7 +552,7 @@ export const GalleryView: React.FC<GalleryViewProps> = ({
               sound.select();
               setElementFilter(e.target.value as 'all' | CardElement);
             }}
-            className="min-h-[38px] px-2.5 py-1 rounded-xl bg-[#10182a] border border-slate-800 hover:border-amber-400/50 text-xs font-medium text-slate-200 focus:outline-none focus:border-amber-400 cursor-pointer"
+            className="min-h-[38px] px-2.5 py-1 rounded-[3px] basalt-recess hover:border-[#8e6732] text-xs font-medium text-[#e5d6bc] focus:outline-none focus:border-[#d4a046] cursor-pointer"
           >
             <option value="all">All Elements</option>
             {ALL_ELEMENTS.map((el) => (
@@ -572,7 +569,7 @@ export const GalleryView: React.FC<GalleryViewProps> = ({
               sound.select();
               setTribeFilter(e.target.value as 'all' | CardTribe);
             }}
-            className="min-h-[38px] px-2.5 py-1 rounded-xl bg-[#10182a] border border-slate-800 hover:border-amber-400/50 text-xs font-medium text-slate-200 focus:outline-none focus:border-amber-400 cursor-pointer"
+            className="min-h-[38px] px-2.5 py-1 rounded-[3px] basalt-recess hover:border-[#8e6732] text-xs font-medium text-[#e5d6bc] focus:outline-none focus:border-[#d4a046] cursor-pointer"
           >
             <option value="all">All Tribes</option>
             {ALL_TRIBES.map((tr) => (
@@ -585,24 +582,26 @@ export const GalleryView: React.FC<GalleryViewProps> = ({
 
         {/* Search by Name, Number, or Augment */}
         <div className="relative w-full sm:w-56">
-          <Search className="w-3.5 h-3.5 text-slate-500 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+          <Search className="w-3.5 h-3.5 text-[#8c785f] absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
           <input
             type="search"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder={`Find card, #01–#${totalCards}, or augment...`}
             aria-label="Search cards by name, number, or augment"
-            className="w-full min-h-[38px] pl-8 pr-3 py-1.5 rounded-xl bg-[#10182a] border border-slate-800 text-xs text-slate-100 placeholder:text-slate-500 focus:outline-none focus:border-amber-400"
+            className="w-full min-h-[38px] pl-8 pr-3 py-1.5 rounded-[3px] basalt-recess text-xs text-[#efe3cd] placeholder:text-[#7d6c56] focus:outline-none focus:border-[#c89640]"
           />
         </div>
       </div>
 
-      {/* 90-Card Gallery Grid — 2 Large Cards Per Row on Mobile, 5 on Desktop */}
+      {/* Compendium Card Grid */}
       {filteredCards.length === 0 ? (
-        <div className="rounded-2xl bg-[#10182a] border border-slate-800 p-10 text-center space-y-2">
-          <p className="text-sm font-medium text-slate-200">No cards match this filter.</p>
-          <p className="text-xs text-slate-400">
-            Try clearing a filter or visit the Shop to unlock new cards.
+        <div className="iron-panel rounded-[4px] p-10 text-center space-y-2">
+          <p className="font-[var(--font-display)] text-sm font-semibold text-[#f0c76e]">
+            No cards match this filter.
+          </p>
+          <p className="font-[var(--font-serif)] text-sm text-[#a69277]">
+            Try clearing a filter or visit the Vault &amp; Forge to unlock new cards.
           </p>
         </div>
       ) : (
@@ -627,19 +626,19 @@ export const GalleryView: React.FC<GalleryViewProps> = ({
                     setInspectedId(card.id);
                     setSelectedCopyUid(null);
                   }}
-                  className="card-grid-item group relative aspect-[5/7] rounded-xl border border-dashed border-slate-700/80 bg-[#0d1424] hover:border-amber-500/45 flex flex-col items-center justify-center p-3 text-center transition-transform duration-150 hover:-translate-y-1 cursor-pointer"
+                  className="card-grid-item group relative aspect-[5/7] rounded-[4px] border border-dashed border-[#4a3b2c] bg-[#120e0b] hover:border-[#b98739] flex flex-col items-center justify-center p-3 text-center transition-transform duration-150 hover:-translate-y-1 cursor-pointer"
                 >
-                  <Lock className="w-6 h-6 text-slate-600 group-hover:text-amber-400/75 transition-colors mb-1.5" />
-                  <span className="font-mono text-xs text-slate-400 tabular-nums font-semibold">
+                  <Lock className="w-6 h-6 text-[#685744] group-hover:text-[#d8a243] transition-colors mb-1.5" />
+                  <span className="font-mono text-xs text-[#a69277] tabular-nums font-semibold">
                     #{String(card.number).padStart(2, '0')}
                   </span>
                   <span
-                    className={`text-xs font-medium mt-0.5 ${RARITY_TEXT_COLOR[card.rarity]} opacity-80`}
+                    className={`text-xs font-medium mt-0.5 ${RARITY_TEXT_COLOR[card.rarity]} opacity-85`}
                   >
                     {RARITY_LABEL[card.rarity]} · Roll {RARITY_STAT_RANGE[card.rarity].label}
                   </span>
                   {card.augment && (
-                    <span className="mt-1 inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-violet-950/80 border border-violet-500/40 text-[10px] font-mono text-violet-200">
+                    <span className="mt-1 inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-[2px] bg-violet-950/80 border border-violet-500/40 text-[10px] font-mono text-violet-200">
                       <Wand2 className="w-2.5 h-2.5 text-violet-300" />
                       <span>{card.augment.badgeLabel}</span>
                     </span>
@@ -667,12 +666,12 @@ export const GalleryView: React.FC<GalleryViewProps> = ({
                   />
                   {/* Copy Count Badge (1/5 to 5/5) */}
                   <span
-                    className={`pointer-events-none absolute top-2.5 left-2.5 z-20 px-1.5 py-0.5 rounded-md font-mono text-[10px] font-bold tabular-nums border shadow ${
+                    className={`pointer-events-none absolute top-2.5 left-2.5 z-20 px-1.5 py-0.5 rounded-[2px] font-mono text-[10px] font-bold tabular-nums border shadow ${
                       count >= MAX_COPIES_PER_CARD
-                        ? 'bg-amber-500 text-slate-950 border-amber-200'
+                        ? 'bg-[#e2b053] text-[#170f06] border-[#f8df9d]'
                         : count > 1
-                        ? 'bg-slate-900/90 text-amber-300 border-amber-400/50'
-                        : 'bg-slate-900/85 text-slate-300 border-slate-700'
+                        ? 'brass-plaque text-[#f0c76e]'
+                        : 'bg-[#16110d]/90 text-[#cbb89a] border-[#4b3a29]'
                     }`}
                   >
                     {count}/{MAX_COPIES_PER_CARD}
@@ -680,18 +679,18 @@ export const GalleryView: React.FC<GalleryViewProps> = ({
                   {inDeck && (
                     <span
                       title={`In ${activeDeck.name}`}
-                      className="pointer-events-none absolute top-2.5 right-2.5 z-20 px-1.5 h-5 rounded-full bg-amber-400 text-slate-950 font-mono text-[10px] font-bold flex items-center justify-center gap-0.5 shadow"
+                      className="pointer-events-none absolute top-2.5 right-2.5 z-20 px-1.5 h-5 rounded-[2px] bg-[#e2b053] text-[#170f06] border border-[#f8df9d] font-mono text-[10px] font-bold flex items-center justify-center gap-0.5 shadow"
                     >
                       <Check className="w-3 h-3 stroke-[3]" />
                       {equippedCountForType > 1 && <span>×{equippedCountForType}</span>}
                     </span>
                   )}
                 </div>
-                <div className="flex items-center justify-between px-0.5 text-xs text-slate-400">
+                <div className="flex items-center justify-between px-0.5 text-xs text-[#9b896f]">
                   <span className={RARITY_TEXT_COLOR[card.rarity]}>
                     #{String(card.number).padStart(2, '0')} · {RARITY_LABEL[card.rarity]}
                   </span>
-                  <span className="font-mono tabular-nums text-slate-200">
+                  <span className="font-mono tabular-nums text-[#e5d6bc]">
                     {bestCopy ? formatTetraCode(bestCopy.stats) : formatTetraCode(card.stats)} ·{' '}
                     {bestCopy ? bestCopy.arrows.length : card.arrows.length}▲
                   </span>
@@ -702,32 +701,32 @@ export const GalleryView: React.FC<GalleryViewProps> = ({
         </div>
       )}
 
-      {/* Card Inspector & Rolled Copy Vault Modal — Wide 2-Column Showcase */}
+      {/* Card Inspector & Rolled Copy Vault Modal — Carved Reliquary Showcase */}
       {inspectedCard && (
         <div
-          className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-[#04070f]/88 p-0 sm:p-5"
+          className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-[#060403]/90 p-0 sm:p-5"
           role="dialog"
           aria-modal="true"
           aria-labelledby="inspector-title"
           onClick={() => setInspectedId(null)}
         >
           <div
-            className="w-full max-w-4xl max-h-[94dvh] flex flex-col rounded-t-3xl sm:rounded-3xl bg-[#11192c] border border-amber-400/35 shadow-[0_30px_80px_rgba(0,0,0,0.9)] overflow-hidden"
+            className="w-full max-w-4xl max-h-[94dvh] flex flex-col rounded-t-[6px] sm:rounded-[5px] brass-panel riveted-frame shadow-[0_32px_90px_rgba(0,0,0,0.92)] overflow-hidden"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="sm:hidden w-10 h-1 rounded-full bg-slate-600 mx-auto mt-2.5" />
+            <div className="sm:hidden w-10 h-1 rounded-full bg-[#6d573e] mx-auto mt-2.5" />
 
-            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-800">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-[#4b3a26]/85">
               <div>
                 <h2
                   id="inspector-title"
-                  className="font-[var(--font-display)] text-xl sm:text-2xl font-bold text-slate-100"
+                  className="font-[var(--font-display)] text-xl sm:text-2xl font-bold text-[#f6e1b5] tracking-wide"
                 >
                   {inspectedCopies.length > 0
                     ? `#${String(inspectedCard.number).padStart(2, '0')} ${inspectedCard.name}`
                     : `Locked Card #${String(inspectedCard.number).padStart(2, '0')}`}
                 </h2>
-                <div className="flex items-center gap-2 text-xs sm:text-sm text-slate-400 mt-0.5">
+                <div className="flex items-center gap-2 text-xs sm:text-sm text-[#a69277] mt-0.5">
                   <span className={RARITY_TEXT_COLOR[inspectedCard.rarity]}>
                     {RARITY_LABEL[inspectedCard.rarity]} (Stats{' '}
                     {RARITY_STAT_RANGE[inspectedCard.rarity].label} · Arrows{' '}
@@ -744,7 +743,7 @@ export const GalleryView: React.FC<GalleryViewProps> = ({
                 type="button"
                 onClick={() => setInspectedId(null)}
                 aria-label="Close card details"
-                className="min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 cursor-pointer"
+                className="iron-btn min-h-[42px] min-w-[42px] flex items-center justify-center rounded-[3px] cursor-pointer"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -774,8 +773,10 @@ export const GalleryView: React.FC<GalleryViewProps> = ({
 
                   {/* Right: Element/Tribe Traits, Augment Info, Stat Breakdown & Rolled Copy Vault */}
                   <div className="md:col-span-7 space-y-4">
-                    <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl bg-[#0c1322] border border-slate-800 px-3.5 py-2.5 text-xs">
-                      <span className="text-slate-400 font-medium">Element &amp; Tribe</span>
+                    <div className="flex flex-wrap items-center justify-between gap-2 rounded-[3px] basalt-recess px-3.5 py-2.5 text-xs">
+                      <span className="font-[var(--font-display)] uppercase tracking-wider text-[11px] text-[#9b886e]">
+                        Element &amp; Tribe
+                      </span>
                       <CardTraitPills
                         element={inspectedCard.element}
                         tribe={inspectedCard.tribe}
@@ -789,59 +790,61 @@ export const GalleryView: React.FC<GalleryViewProps> = ({
                       if (!activeAug) return null;
                       const isCrafted = Boolean(activeInspectedCopy?.augmentId);
                       return (
-                        <div className="rounded-xl bg-violet-950/60 border border-violet-400/50 p-3.5 flex items-start gap-2.5 text-xs sm:text-sm text-violet-100">
+                        <div className="rounded-[3px] bg-[#24162b]/80 border border-violet-400/50 p-3.5 flex items-start gap-2.5 text-xs sm:text-sm text-violet-100">
                           <Wand2 className="w-4 h-4 text-violet-300 shrink-0 mt-0.5" />
                           <div>
-                            <div className="font-bold text-violet-200">
+                            <div className="font-[var(--font-display)] font-bold text-violet-200">
                               {isCrafted ? 'Crafted Runeforge Augment' : 'Innate Mythic Trait'} —{' '}
                               {activeAug.name} ({activeAug.shortTag})
                             </div>
-                            <p className="text-slate-300 mt-0.5">{activeAug.description}</p>
+                            <p className="font-[var(--font-serif)] text-sm text-[#d4c4e0] mt-0.5">
+                              {activeAug.description}
+                            </p>
                           </div>
                         </div>
                       );
                     })()}
 
                   {/* Selected Copy Stat Breakdown */}
-                  <div className="grid grid-cols-4 gap-2 text-center rounded-xl bg-[#0c1322] border border-slate-800 p-3">
+                  <div className="grid grid-cols-4 gap-2 text-center rounded-[3px] basalt-recess p-3">
                     <div>
-                      <p className="text-[11px] text-slate-400">
+                      <p className="text-[11px] text-[#9b886e]">
                         Power ({RARITY_STAT_RANGE[inspectedCard.rarity].label})
                       </p>
-                      <p className="font-mono text-base font-bold tabular-nums text-white mt-0.5">
+                      <p className="font-mono text-base font-bold tabular-nums text-[#f7e7c7] mt-0.5">
                         {toHexDigit(activeInspectedCopy.stats.power)}
                       </p>
                     </div>
                     <div>
-                      <p className="text-[11px] text-slate-400">Type</p>
-                      <p className="font-mono text-base font-bold tabular-nums text-amber-300 mt-0.5">
+                      <p className="text-[11px] text-[#9b886e]">Type</p>
+                      <p className="font-mono text-base font-bold tabular-nums text-[#f0c76e] mt-0.5">
                         {activeInspectedCopy.stats.type}
                       </p>
                     </div>
                     <div>
-                      <p className="text-[11px] text-slate-400">
+                      <p className="text-[11px] text-[#9b886e]">
                         P.Def ({RARITY_STAT_RANGE[inspectedCard.rarity].label})
                       </p>
-                      <p className="font-mono text-base font-bold tabular-nums text-slate-200 mt-0.5">
+                      <p className="font-mono text-base font-bold tabular-nums text-[#e5d6bc] mt-0.5">
                         {toHexDigit(activeInspectedCopy.stats.pDef)}
                       </p>
                     </div>
                     <div>
-                      <p className="text-[11px] text-slate-400">
+                      <p className="text-[11px] text-[#9b886e]">
                         M.Def ({RARITY_STAT_RANGE[inspectedCard.rarity].label})
                       </p>
-                      <p className="font-mono text-base font-bold tabular-nums text-slate-200 mt-0.5">
+                      <p className="font-mono text-base font-bold tabular-nums text-[#e5d6bc] mt-0.5">
                         {toHexDigit(activeInspectedCopy.stats.mDef)}
                       </p>
                     </div>
                   </div>
 
-                  <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-slate-400 px-1">
+                  <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-[#a69277] px-1">
                     <span className="flex items-center gap-1.5">
-                      <Compass className="w-3.5 h-3.5 text-amber-300" />
+                      <Compass className="w-3.5 h-3.5 text-[#e2b053]" />
                       <span>
                         Arrows ({activeInspectedCopy.arrows.length}▲):{' '}
-                        <strong className="font-mono text-amber-200">
+                        <strong className="font-mono text-[#f0c76e]">
                           {formatArrowsCompact(activeInspectedCopy.arrows)}
                         </strong>
                       </span>
@@ -854,7 +857,7 @@ export const GalleryView: React.FC<GalleryViewProps> = ({
                   {/* Rolled Copies List (Up to 5 Copies with Equip & Sell Actions) */}
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
-                      <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-300">
+                      <h3 className="font-[var(--font-display)] text-xs font-bold uppercase tracking-wider text-[#dfd0b6]">
                         Owned Rolled Copies ({inspectedCopies.length} / {MAX_COPIES_PER_CARD})
                       </h3>
                       {inspectedCopies.length > 1 && (
@@ -874,7 +877,7 @@ export const GalleryView: React.FC<GalleryViewProps> = ({
                               );
                             }
                           }}
-                          className="text-xs font-semibold text-amber-300 hover:text-amber-200 flex items-center gap-1 cursor-pointer"
+                          className="font-[var(--font-display)] text-xs font-semibold text-[#f0c76e] hover:text-[#fae2a8] flex items-center gap-1 cursor-pointer"
                         >
                           <Coins className="w-3.5 h-3.5" />
                           <span>Sell Extras (Keep Best)</span>
@@ -900,31 +903,31 @@ export const GalleryView: React.FC<GalleryViewProps> = ({
                               sound.select();
                               setSelectedCopyUid(copy.uid);
                             }}
-                            className={`rounded-xl p-2.5 border flex items-center justify-between gap-2 transition-colors cursor-pointer ${
+                            className={`rounded-[3px] p-2.5 border flex items-center justify-between gap-2 transition-colors cursor-pointer ${
                               isFocused
-                                ? 'bg-[#192644] border-amber-400/70'
-                                : 'bg-[#0c1322] border-slate-800 hover:border-slate-700'
+                                ? 'brass-plaque border-[#cf9a42]'
+                                : 'basalt-recess hover:border-[#6e522b]'
                             }`}
                           >
                             <div className="flex items-center gap-2.5 min-w-0">
-                              <span className="w-6 h-6 rounded-lg bg-slate-900 border border-slate-700 font-mono text-xs font-bold text-slate-300 flex items-center justify-center shrink-0">
+                              <span className="w-6 h-6 rounded-[2px] bg-[#16110d] border border-[#4a3a29] font-mono text-xs font-bold text-[#cbb89a] flex items-center justify-center shrink-0">
                                 #{idx + 1}
                               </span>
                               <div className="min-w-0">
                                 <div className="flex flex-wrap items-center gap-2">
-                                  <span className="font-mono text-sm font-bold text-amber-200">
+                                  <span className="font-mono text-sm font-bold text-[#f0c76e]">
                                     {formatTetraCode(copy.stats)}
                                   </span>
-                                  <span className="font-mono text-xs font-semibold text-sky-300">
+                                  <span className="font-mono text-xs font-semibold text-[#e5d6bc]">
                                     {copy.arrows.length}▲ ({formatArrowsCompact(copy.arrows)})
                                   </span>
                                   {idx === 0 && inspectedCopies.length > 1 && (
-                                    <span className="text-[10px] font-semibold text-emerald-300">
+                                    <span className="text-[10px] font-semibold text-emerald-400">
                                       ★ Best Roll
                                     </span>
                                   )}
                                   {isEquipped && (
-                                    <span className="text-[10px] font-semibold text-blue-300">
+                                    <span className="text-[10px] font-semibold text-[#9bc6f5]">
                                       In {activeDeck.name}
                                     </span>
                                   )}
@@ -932,14 +935,14 @@ export const GalleryView: React.FC<GalleryViewProps> = ({
                                     const copyAug = resolveCardAugment(inspectedCard.id, copy.augmentId);
                                     if (!copyAug) return null;
                                     return (
-                                      <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-violet-950/90 border border-violet-400/50 text-[10px] font-mono font-semibold text-violet-200">
+                                      <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-[2px] bg-violet-950/90 border border-violet-400/50 text-[10px] font-mono font-semibold text-violet-200">
                                         <Wand2 className="w-2.5 h-2.5 text-violet-300" />
                                         <span>{copyAug.name}</span>
                                       </span>
                                     );
                                   })()}
                                 </div>
-                                <div className="text-[11px] text-slate-400">
+                                <div className="text-[11px] text-[#9b896f]">
                                   Pwr {toHexDigit(copy.stats.power)} · P.Def{' '}
                                   {toHexDigit(copy.stats.pDef)} · M.Def{' '}
                                   {toHexDigit(copy.stats.mDef)}
@@ -960,10 +963,10 @@ export const GalleryView: React.FC<GalleryViewProps> = ({
                                     showToast(res.message);
                                   }
                                 }}
-                                className={`min-h-[34px] px-2.5 py-1 rounded-lg text-xs font-semibold transition-colors cursor-pointer ${
+                                className={`min-h-[34px] px-2.5 py-1 rounded-[2px] font-[var(--font-display)] text-xs font-semibold transition-colors cursor-pointer ${
                                   isEquipped
-                                    ? 'bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700'
-                                    : 'bg-amber-400 hover:bg-amber-300 text-slate-950 font-bold'
+                                    ? 'iron-btn'
+                                    : 'brass-btn font-bold'
                                 }`}
                               >
                                 {isEquipped ? 'Unequip' : 'Equip'}
@@ -989,10 +992,10 @@ export const GalleryView: React.FC<GalleryViewProps> = ({
                                     ? `Sell this copy for +${sellGold}g`
                                     : `Keep at least ${DECK_CAPACITY} cards total in your collection`
                                 }
-                                className={`min-h-[34px] px-2.5 py-1 rounded-lg text-xs font-mono font-semibold flex items-center gap-1 transition-colors ${
+                                className={`min-h-[34px] px-2.5 py-1 rounded-[2px] text-xs font-mono font-semibold flex items-center gap-1 transition-colors ${
                                   canSell
-                                    ? 'bg-rose-950/60 hover:bg-rose-900/80 text-rose-200 border border-rose-500/40 cursor-pointer'
-                                    : 'bg-slate-900 text-slate-600 cursor-not-allowed'
+                                    ? 'crimson-btn cursor-pointer'
+                                    : 'basalt-recess text-[#685a49] cursor-not-allowed'
                                 }`}
                               >
                                 <Trash2 className="w-3 h-3" />
@@ -1008,34 +1011,34 @@ export const GalleryView: React.FC<GalleryViewProps> = ({
                 </div>
               ) : (
                 <div className="py-4 text-center space-y-4">
-                  <div className="w-28 h-28 mx-auto rounded-xl border border-dashed border-slate-700 bg-[#0c1322] flex flex-col items-center justify-center">
-                    <Lock className="w-7 h-7 text-slate-500 mb-1.5" />
-                    <span className="text-xs font-mono text-slate-400">
+                  <div className="w-28 h-28 mx-auto rounded-[4px] border border-dashed border-[#4a3b2c] basalt-recess flex flex-col items-center justify-center">
+                    <Lock className="w-7 h-7 text-[#6d5b46] mb-1.5" />
+                    <span className="text-xs font-mono text-[#a69277]">
                       #{String(inspectedCard.number).padStart(2, '0')}
                     </span>
                   </div>
                   {inspectedCard.rarity === 'mythic' ? (
-                    <div className="rounded-xl bg-amber-950/35 border border-amber-400/40 p-3.5 space-y-1.5 text-center">
-                      <p className="text-xs font-bold uppercase tracking-wider text-amber-300">
+                    <div className="rounded-[3px] brass-plaque p-3.5 space-y-1.5 text-center">
+                      <p className="font-[var(--font-display)] text-xs font-bold uppercase tracking-wider text-[#f0c76e]">
                         Arena Trophy Exclusive
                       </p>
-                      <p className="text-xs text-slate-300 leading-relaxed">
-                        Mythic legends are never sold in the Shop or Booster Packs. Win them via{' '}
-                        <strong className="text-amber-200">High-Tier Battle RNG (Tiers 6–10)</strong>{' '}
+                      <p className="font-[var(--font-serif)] text-sm text-[#cbb89a] leading-relaxed">
+                        Mythic legends are never sold in the Vault or Booster Packs. Win them via{' '}
+                        <strong className="text-[#f5d593]">High-Tier Battle RNG (Tiers 6–10)</strong>{' '}
                         or claim them directly from{' '}
-                        <strong className="text-amber-200">Tier 9–10 Bosses</strong>!
+                        <strong className="text-[#f5d593]">Tier 9–10 Bosses</strong>!
                       </p>
                     </div>
                   ) : (
                     <>
                       <div className="space-y-1">
-                        <p className="text-sm font-medium text-slate-200">
+                        <p className="font-[var(--font-display)] text-sm font-semibold text-[#f3dfb6]">
                           Not yet unlocked in your compendium
                         </p>
-                        <p className="text-xs text-slate-400">
+                        <p className="font-[var(--font-serif)] text-sm text-[#b39e81]">
                           Win matches against challengers in its card range, pull it from booster
-                          chests, or buy a rolled copy in the Shop for{' '}
-                          <span className="font-mono text-amber-300">
+                          reliquaries, or buy a rolled copy in the Vault for{' '}
+                          <span className="font-mono text-[#f0c76e]">
                             {inspectedCard.price.toLocaleString()}g
                           </span>
                           .
@@ -1047,10 +1050,10 @@ export const GalleryView: React.FC<GalleryViewProps> = ({
                           setInspectedId(null);
                           onGoToShop();
                         }}
-                        className="w-full min-h-[46px] rounded-xl bg-gradient-to-b from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-slate-950 font-bold text-sm flex items-center justify-center gap-2 transition-colors cursor-pointer"
+                        className="brass-btn w-full min-h-[46px] rounded-[3px] font-bold text-sm flex items-center justify-center gap-2 cursor-pointer"
                       >
                         <ShoppingBag className="w-4 h-4" />
-                        <span>Visit Card Emporium</span>
+                        <span>Visit Merchant Vault</span>
                       </button>
                     </>
                   )}

@@ -98,22 +98,22 @@ const PACK_STYLE: Record<
   { border: string; glow: string; badgeText: string; accentColor: string }
 > = {
   'tavern-pack': {
-    border: 'border-sky-500/40 hover:border-sky-400/75',
-    glow: 'from-[#16233d] via-[#10192d] to-[#0c1322]',
+    border: 'border-[#5a4a35] hover:border-[#b58742]',
+    glow: 'from-[#261d16] via-[#1a140f] to-[#120d0a]',
     badgeText: '30 Common · 30 Rare Pool · Fresh Stat & Arrow Rolls',
-    accentColor: 'text-sky-300',
+    accentColor: 'text-[#d9b880]',
   },
   'royal-vault': {
-    border: 'border-violet-500/50 hover:border-violet-400/85',
-    glow: 'from-[#22193f] via-[#14182e] to-[#0c1322]',
+    border: 'border-[#6d4e78] hover:border-violet-400/80',
+    glow: 'from-[#281a2e] via-[#1b141d] to-[#120d0b]',
     badgeText: 'Guaranteed Rare or Epic · Fresh Stat & Arrow Rolls',
     accentColor: 'text-violet-300',
   },
   'mythic-chest': {
-    border: 'border-amber-400/65 hover:border-amber-300',
-    glow: 'from-[#2c1f14] via-[#19182c] to-[#0c1322]',
+    border: 'border-[#9e7334] hover:border-[#e6b85c]',
+    glow: 'from-[#332212] via-[#20160e] to-[#120d0a]',
     badgeText: 'Guaranteed Epic · Rare & Epic Pool',
-    accentColor: 'text-amber-300',
+    accentColor: 'text-[#f0c76e]',
   },
 };
 
@@ -351,10 +351,10 @@ export const ShopView: React.FC<ShopViewProps> = ({
       {/* Shop Header */}
       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3">
         <div>
-          <h1 className="font-[var(--font-display)] text-2xl sm:text-3xl font-bold text-slate-100 tracking-wide">
-            Grand Card Emporium
+          <h1 className="font-[var(--font-display)] text-2xl sm:text-3xl font-bold text-[#f3dfb6] tracking-[0.06em]">
+            Merchant Vault &amp; Runeforge
           </h1>
-          <p className="text-sm text-slate-400 mt-1">
+          <p className="font-[var(--font-serif)] text-base text-[#b39e81] mt-1">
             Roll up to {MAX_COPIES_PER_CARD} copies per card to hunt for peak rarity stats, or sell extra copies for Gold.
           </p>
         </div>
@@ -363,16 +363,16 @@ export const ShopView: React.FC<ShopViewProps> = ({
             <button
               type="button"
               onClick={handleBulkSellExtras}
-              className="min-h-[40px] px-3.5 py-2 rounded-xl bg-amber-500/15 hover:bg-amber-500/25 border border-amber-400/40 text-amber-200 text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer"
+              className="brass-plaque hover:border-[#e2b053] min-h-[40px] px-3.5 py-2 rounded-[3px] text-[#f5d593] font-[var(--font-display)] text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer"
             >
-              <Coins className="w-3.5 h-3.5 text-amber-300" />
+              <Coins className="w-3.5 h-3.5 text-[#e2b053]" />
               <span>
                 Sell {extraCopiesSummary.extraCount} Extra Cop{extraCopiesSummary.extraCount > 1 ? 'ies' : 'y'} (+{extraCopiesSummary.totalGold.toLocaleString()}g)
               </span>
             </button>
           )}
-          <div className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-[#11192c] border border-amber-500/30 text-base font-mono font-bold tabular-nums text-amber-300">
-            <Coins className="w-5 h-5" />
+          <div className="brass-plaque rounded-[3px] flex items-center gap-2 px-3.5 py-2 text-base font-mono font-bold tabular-nums text-[#f0c76e]">
+            <Coins className="w-5 h-5 text-[#dca342]" />
             <span>{profile.gold.toLocaleString()} Gold</span>
           </div>
         </div>
@@ -380,21 +380,21 @@ export const ShopView: React.FC<ShopViewProps> = ({
 
       {/* Shop Section Switcher: Cards & Packs vs Runeforge Crafting */}
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="inline-flex items-center gap-1.5 p-1 rounded-xl bg-[#10182a] border border-slate-800">
+        <div className="inline-flex items-center gap-1.5 p-1 rounded-[3px] basalt-recess">
           <button
             type="button"
             onClick={() => {
               sound.select();
               setSectionTab('market');
             }}
-            className={`min-h-[40px] px-4 py-1.5 rounded-lg text-xs sm:text-sm font-semibold flex items-center gap-2 transition-colors cursor-pointer ${
+            className={`min-h-[40px] px-4 py-1.5 rounded-[2px] font-[var(--font-display)] text-xs sm:text-sm font-semibold flex items-center gap-2 transition-colors cursor-pointer ${
               sectionTab === 'market'
-                ? 'bg-amber-500 text-slate-950 shadow'
-                : 'text-slate-300 hover:text-white'
+                ? 'brass-btn font-bold'
+                : 'text-[#b39e81] hover:text-[#f3dfb6]'
             }`}
           >
             <PackageOpen className="w-4 h-4" />
-            <span>Packs &amp; Singles</span>
+            <span>Reliquaries &amp; Singles</span>
           </button>
           <button
             type="button"
@@ -402,19 +402,19 @@ export const ShopView: React.FC<ShopViewProps> = ({
               sound.select();
               setSectionTab('runeforge');
             }}
-            className={`min-h-[40px] px-4 py-1.5 rounded-lg text-xs sm:text-sm font-semibold flex items-center gap-2 transition-colors cursor-pointer ${
+            className={`min-h-[40px] px-4 py-1.5 rounded-[2px] font-[var(--font-display)] text-xs sm:text-sm font-semibold flex items-center gap-2 transition-colors cursor-pointer ${
               sectionTab === 'runeforge'
-                ? 'bg-gradient-to-r from-violet-500 to-fuchsia-500 text-white shadow'
-                : 'text-violet-200 hover:text-white'
+                ? 'bg-gradient-to-b from-[#6e3a8c] via-[#53286b] to-[#39194d] border border-violet-300/70 text-[#f5e7ff] shadow-[inset_0_1px_0_rgba(255,255,255,0.2)]'
+                : 'text-violet-300 hover:text-violet-100'
             }`}
           >
             <Hammer className="w-4 h-4" />
-            <span>Runeforge · Craft Augments</span>
+            <span>Runeforge Anvil</span>
             <span
-              className={`px-1.5 py-0.5 rounded font-mono text-[10px] font-bold ${
+              className={`px-1.5 py-0.5 rounded-[2px] font-mono text-[10px] font-bold ${
                 sectionTab === 'runeforge'
-                  ? 'bg-black/25 text-white'
-                  : 'bg-violet-950 text-violet-200 border border-violet-500/40'
+                  ? 'bg-black/30 text-white'
+                  : 'bg-[#211529] text-violet-200 border border-violet-500/40'
               }`}
             >
               {craftedCopyCount} Forged
@@ -422,16 +422,16 @@ export const ShopView: React.FC<ShopViewProps> = ({
           </button>
         </div>
 
-        <p className="text-xs text-slate-400">
+        <p className="font-[var(--font-serif)] italic text-sm text-[#a69277]">
           {sectionTab === 'runeforge'
             ? 'Imbue permanent battlefield augments onto your favorite card copies.'
-            : 'Augments are rare — only 5 Mythic Legends carry innate traits. Craft custom runes in the Runeforge!'}
+            : 'Augments are rare — only 5 Mythic Legends carry innate traits. Craft custom runes at the Runeforge!'}
         </p>
       </div>
 
       {/* Action Toast Feedback */}
       {statusToast && (
-        <div className="rounded-xl bg-emerald-950/90 border border-emerald-400/50 px-4 py-2.5 text-xs font-medium text-emerald-200 flex items-center justify-between shadow-lg">
+        <div className="rounded-[3px] bg-emerald-950/90 border border-emerald-500/55 px-4 py-2.5 text-xs font-medium text-emerald-200 flex items-center justify-between shadow-lg">
           <span>{statusToast}</span>
           <button
             type="button"
@@ -444,33 +444,33 @@ export const ShopView: React.FC<ShopViewProps> = ({
       )}
 
       {/* ================================================================= */}
-      {/* RUNEFORGE — AUGMENT CRAFTING WORKBENCH                            */}
+      {/* RUNEFORGE — AUGMENT CRAFTING ANVIL                                */}
       {/* ================================================================= */}
       {sectionTab === 'runeforge' && (
         <section className="space-y-5">
-          <div className="rounded-2xl bg-gradient-to-r from-[#1a1333] via-[#14182e] to-[#23152a] border border-violet-500/35 p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="brass-panel riveted-frame rounded-[4px] p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div className="space-y-1">
-              <div className="flex items-center gap-2 text-violet-200 font-[var(--font-display)] text-base font-bold">
+              <div className="flex items-center gap-2 text-[#f3d492] font-[var(--font-display)] text-base font-bold tracking-wide">
                 <Wand2 className="w-4 h-4 text-violet-300" />
-                <span>Arcane Runeforge</span>
+                <span>Arcane Runeforge Anvil</span>
               </div>
-              <p className="text-xs text-slate-300 leading-relaxed">
+              <p className="font-[var(--font-serif)] text-sm text-[#cbb89a] leading-relaxed">
                 Select any owned card copy and imbue it with a battlefield Augment Rune using Gold.
-                Each copy holds <strong>1 crafted rune</strong> and can be re-forged anytime.
-                <span className="text-amber-300">
+                Each copy holds <strong className="text-[#f3dfb6]">1 crafted rune</strong> and can be re-forged anytime.
+                <span className="text-[#f0c76e]">
                   {' '}
                   (The 5 Mythic Legendaries keep their innate traits permanently.)
                 </span>
               </p>
             </div>
             <div className="flex flex-wrap items-center gap-2 text-[11px] shrink-0">
-              <span className="px-2 py-1 rounded-lg bg-emerald-950/80 border border-emerald-500/40 text-emerald-200 font-mono">
+              <span className="px-2 py-1 rounded-[2px] bg-emerald-950/80 border border-emerald-500/45 text-emerald-200 font-mono">
                 Minor · 350–450g
               </span>
-              <span className="px-2 py-1 rounded-lg bg-sky-950/80 border border-sky-500/40 text-sky-200 font-mono">
+              <span className="px-2 py-1 rounded-[2px] bg-sky-950/80 border border-sky-500/45 text-sky-200 font-mono">
                 Major · 1.1k–1.4k
               </span>
-              <span className="px-2 py-1 rounded-lg bg-amber-950/80 border border-amber-500/40 text-amber-200 font-mono">
+              <span className="px-2 py-1 rounded-[2px] brass-plaque text-[#f0c76e] font-mono">
                 Sovereign · 2.8k–3.4k
               </span>
             </div>
@@ -478,17 +478,17 @@ export const ShopView: React.FC<ShopViewProps> = ({
 
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
             {/* Step 1: Select Owned Card Copy */}
-            <div className="lg:col-span-4 rounded-2xl bg-[#10182a] border border-slate-800 p-4 space-y-3">
+            <div className="lg:col-span-4 iron-panel rounded-[4px] p-4 space-y-3">
               <div className="flex items-center justify-between gap-2">
-                <h2 className="text-xs font-bold uppercase tracking-wider text-amber-300">
+                <h2 className="font-[var(--font-display)] text-xs font-bold uppercase tracking-wider text-[#e6b85c]">
                   1. Choose Card Copy
                 </h2>
-                <span className="text-[11px] font-mono text-slate-400">
+                <span className="text-[11px] font-mono text-[#9b896f]">
                   {visibleForgeCopies.length} shown
                 </span>
               </div>
 
-              <div className="flex items-center gap-1 p-1 rounded-xl bg-[#0b1120] border border-slate-800">
+              <div className="flex items-center gap-1 p-1 rounded-[3px] basalt-recess">
                 {(
                   [
                     { id: 'deck', label: `Active Hand` },
@@ -503,10 +503,10 @@ export const ShopView: React.FC<ShopViewProps> = ({
                       sound.select();
                       setForgeCopyFilter(f.id);
                     }}
-                    className={`flex-1 min-h-[32px] px-2 py-1 rounded-lg text-[11px] font-medium transition-colors cursor-pointer ${
+                    className={`flex-1 min-h-[32px] px-2 py-1 rounded-[2px] font-[var(--font-display)] text-[11px] transition-colors cursor-pointer ${
                       forgeCopyFilter === f.id
-                        ? 'bg-amber-500 text-slate-950 font-semibold'
-                        : 'text-slate-400 hover:text-slate-100'
+                        ? 'brass-btn font-bold'
+                        : 'text-[#a69277] hover:text-[#f0e4cc]'
                     }`}
                   >
                     {f.label}
@@ -515,7 +515,7 @@ export const ShopView: React.FC<ShopViewProps> = ({
               </div>
 
               {visibleForgeCopies.length === 0 ? (
-                <div className="rounded-xl bg-[#0b1120] border border-slate-800 p-6 text-center text-xs text-slate-400">
+                <div className="basalt-recess rounded-[3px] p-6 text-center font-[var(--font-serif)] text-sm text-[#9b896f]">
                   {forgeCopyFilter === 'crafted'
                     ? 'No cards have crafted augments yet. Pick a card from Active Hand or All to forge your first rune!'
                     : 'No forgeable copies in this filter.'}
@@ -539,10 +539,10 @@ export const ShopView: React.FC<ShopViewProps> = ({
                           sound.select();
                           setSelectedForgeUid(inst.uid);
                         }}
-                        className={`w-full rounded-xl p-2 border flex items-center gap-2.5 text-left transition-colors cursor-pointer ${
+                        className={`w-full rounded-[3px] p-2 border flex items-center gap-2.5 text-left transition-colors cursor-pointer ${
                           isSelected
-                            ? 'bg-[#1a2544] border-amber-400/80 shadow'
-                            : 'bg-[#0b1120] border-slate-800/90 hover:border-slate-700'
+                            ? 'brass-plaque border-[#d8a243]'
+                            : 'basalt-recess hover:border-[#6e522b]'
                         }`}
                       >
                         <div className="w-12 shrink-0">
@@ -558,10 +558,10 @@ export const ShopView: React.FC<ShopViewProps> = ({
                         </div>
                         <div className="min-w-0 flex-1 space-y-0.5">
                           <div className="flex items-start justify-between gap-1.5">
-                            <span className="text-xs font-semibold text-slate-100 leading-snug">
+                            <span className="font-[var(--font-display)] text-xs font-bold text-[#f3e5cb] leading-snug">
                               {def.name}
                             </span>
-                            <span className="font-mono text-[11px] font-bold text-amber-300 shrink-0">
+                            <span className="font-mono text-[11px] font-bold text-[#f0c76e] shrink-0">
                               {formatTetraCode(inst.stats)}
                             </span>
                           </div>
@@ -569,23 +569,23 @@ export const ShopView: React.FC<ShopViewProps> = ({
                             <span className={`capitalize font-medium ${RARITY_COLOR[def.rarity]}`}>
                               {def.rarity}
                             </span>
-                            <span className="text-slate-500">·</span>
-                            <span className="font-mono text-slate-300">
+                            <span className="text-[#5e4d3a]">·</span>
+                            <span className="font-mono text-[#cbb89a]">
                               {inst.arrows.length}▲
                             </span>
                             {inDeck && (
-                              <span className="px-1.5 py-0.2 rounded bg-blue-950/90 border border-blue-500/40 text-blue-200 font-semibold">
+                              <span className="px-1.5 py-0.2 rounded-[2px] bg-[#162944] border border-[#4d84c4] text-[#bcd9f7] font-semibold">
                                 In Hand
                               </span>
                             )}
                           </div>
                           {instRune ? (
-                            <div className="inline-flex items-center gap-1 text-[10px] font-mono text-violet-200 bg-violet-950/80 border border-violet-500/40 rounded px-1.5 py-0.5 max-w-full">
+                            <div className="inline-flex items-center gap-1 text-[10px] font-mono text-violet-200 bg-violet-950/80 border border-violet-500/40 rounded-[2px] px-1.5 py-0.5 max-w-full">
                               <Wand2 className="w-2.5 h-2.5 text-violet-300 shrink-0" />
                               <span className="truncate">{instRune.name}</span>
                             </div>
                           ) : (
-                            <div className="text-[10px] text-slate-500">No augment socketed</div>
+                            <div className="text-[10px] text-[#7d6c56]">No augment socketed</div>
                           )}
                         </div>
                       </button>
@@ -596,17 +596,17 @@ export const ShopView: React.FC<ShopViewProps> = ({
             </div>
 
             {/* Step 2: Select Craftable Augment Rune */}
-            <div className="lg:col-span-4 rounded-2xl bg-[#10182a] border border-slate-800 p-4 space-y-3">
+            <div className="lg:col-span-4 iron-panel rounded-[4px] p-4 space-y-3">
               <div className="flex items-center justify-between gap-2">
-                <h2 className="text-xs font-bold uppercase tracking-wider text-violet-300">
+                <h2 className="font-[var(--font-display)] text-xs font-bold uppercase tracking-wider text-violet-300">
                   2. Select Augment Rune
                 </h2>
-                <span className="text-[11px] font-mono text-slate-400">
+                <span className="text-[11px] font-mono text-[#9b896f]">
                   {visibleRunes.length} runes
                 </span>
               </div>
 
-              <div className="flex items-center gap-1 p-1 rounded-xl bg-[#0b1120] border border-slate-800">
+              <div className="flex items-center gap-1 p-1 rounded-[3px] basalt-recess">
                 {(['all', 'minor', 'major', 'sovereign'] as const).map((tier) => (
                   <button
                     key={tier}
@@ -615,10 +615,10 @@ export const ShopView: React.FC<ShopViewProps> = ({
                       sound.select();
                       setForgeRuneTier(tier);
                     }}
-                    className={`flex-1 min-h-[32px] px-2 py-1 rounded-lg text-[11px] font-medium capitalize transition-colors cursor-pointer ${
+                    className={`flex-1 min-h-[32px] px-2 py-1 rounded-[2px] font-[var(--font-display)] text-[11px] capitalize transition-colors cursor-pointer ${
                       forgeRuneTier === tier
-                        ? 'bg-violet-500 text-white font-semibold'
-                        : 'text-slate-400 hover:text-slate-100'
+                        ? 'bg-[#5c2d78] border border-violet-300/60 text-white font-bold'
+                        : 'text-[#a69277] hover:text-[#f0e4cc]'
                     }`}
                   >
                     {tier}
@@ -641,26 +641,26 @@ export const ShopView: React.FC<ShopViewProps> = ({
                         sound.select();
                         setSelectedRuneId(rune.id);
                       }}
-                      className={`w-full rounded-xl p-3 border text-left space-y-1.5 transition-colors cursor-pointer ${
+                      className={`w-full rounded-[3px] p-3 border text-left space-y-1.5 transition-colors cursor-pointer ${
                         isSelected
-                          ? 'bg-[#20183c] border-violet-400/85 shadow'
-                          : 'bg-[#0b1120] border-slate-800/90 hover:border-slate-700'
+                          ? 'bg-[#261830] border-violet-400/80 shadow'
+                          : 'basalt-recess hover:border-[#6e522b]'
                       }`}
                     >
                       <div className="flex items-center justify-between gap-2">
                         <div className="flex items-center gap-1.5 min-w-0">
                           <Wand2 className="w-3.5 h-3.5 text-violet-300 shrink-0" />
-                          <span className="text-xs font-bold text-slate-100 truncate">
+                          <span className="font-[var(--font-display)] text-xs font-bold text-[#f3e5cb] truncate">
                             {rune.name}
                           </span>
                         </div>
                         <span
                           className={`font-mono text-xs font-bold shrink-0 flex items-center gap-1 ${
                             isAlreadyOnCopy
-                              ? 'text-emerald-300'
+                              ? 'text-emerald-400'
                               : canAfford
-                              ? 'text-amber-300'
-                              : 'text-slate-500'
+                              ? 'text-[#f0c76e]'
+                              : 'text-[#6e5f4c]'
                           }`}
                         >
                           {isAlreadyOnCopy ? (
@@ -679,16 +679,16 @@ export const ShopView: React.FC<ShopViewProps> = ({
 
                       <div className="flex flex-wrap items-center gap-1.5">
                         <span
-                          className={`px-1.5 py-0.5 rounded border text-[9.5px] font-bold uppercase tracking-wider ${tierMeta.badgeClass}`}
+                          className={`px-1.5 py-0.5 rounded-[2px] border text-[9.5px] font-bold uppercase tracking-wider ${tierMeta.badgeClass}`}
                         >
                           {tierMeta.label}
                         </span>
-                        <span className="px-1.5 py-0.5 rounded bg-violet-950/90 border border-violet-500/40 font-mono text-[10px] font-semibold text-violet-200">
+                        <span className="px-1.5 py-0.5 rounded-[2px] bg-violet-950/90 border border-violet-500/40 font-mono text-[10px] font-semibold text-violet-200">
                           {rune.shortTag}
                         </span>
                       </div>
 
-                      <p className="text-[11px] text-slate-300 leading-snug">
+                      <p className="font-[var(--font-serif)] text-[13.5px] text-[#cbb89a] leading-snug">
                         {rune.description}
                       </p>
                     </button>
@@ -698,14 +698,14 @@ export const ShopView: React.FC<ShopViewProps> = ({
             </div>
 
             {/* Step 3: Live Tarot Forging Preview & Craft Button */}
-            <div className="lg:col-span-4 rounded-2xl bg-gradient-to-b from-[#171935] via-[#11172a] to-[#0b1120] border border-violet-400/40 p-4 sm:p-5 space-y-4">
+            <div className="lg:col-span-4 brass-panel riveted-frame rounded-[4px] p-4 sm:p-5 space-y-4">
               <div className="flex items-center justify-between gap-2">
-                <h2 className="text-xs font-bold uppercase tracking-wider text-amber-200 flex items-center gap-1.5">
-                  <Sparkles className="w-3.5 h-3.5 text-amber-300" />
-                  <span>3. Forging Preview</span>
+                <h2 className="font-[var(--font-display)] text-xs font-bold uppercase tracking-wider text-[#f3d492] flex items-center gap-1.5">
+                  <Sparkles className="w-3.5 h-3.5 text-[#e2b053]" />
+                  <span>3. Forging Anvil</span>
                 </h2>
                 {currentCraftedRune && (
-                  <span className="text-[10px] font-mono text-violet-200 px-2 py-0.5 rounded bg-violet-950/80 border border-violet-400/40">
+                  <span className="text-[10px] font-mono text-violet-200 px-2 py-0.5 rounded-[2px] bg-violet-950/80 border border-violet-400/40">
                     Re-forge Slot
                   </span>
                 )}
@@ -726,25 +726,25 @@ export const ShopView: React.FC<ShopViewProps> = ({
                     />
                   </div>
 
-                  <div className="rounded-xl bg-[#0b1120] border border-slate-800 p-3 space-y-1.5 text-xs">
+                  <div className="basalt-recess rounded-[3px] p-3 space-y-1.5 text-xs">
                     <div className="flex items-center justify-between gap-2">
-                      <span className="text-slate-400">Target Copy</span>
-                      <span className="font-semibold text-slate-100">
+                      <span className="text-[#9b896f]">Target Copy</span>
+                      <span className="font-semibold text-[#f3e5cb]">
                         {activeForgeCard.name}{' '}
-                        <span className="font-mono text-amber-300">
+                        <span className="font-mono text-[#f0c76e]">
                           ({formatTetraCode(activeForgeCopy.stats)} · {activeForgeCopy.arrows.length}▲)
                         </span>
                       </span>
                     </div>
                     <div className="flex items-center justify-between gap-2">
-                      <span className="text-slate-400">Current Augment</span>
+                      <span className="text-[#9b896f]">Current Augment</span>
                       <span className="text-violet-200 font-medium">
                         {currentCraftedRune ? currentCraftedRune.name : 'None'}
                       </span>
                     </div>
                     <div className="flex items-center justify-between gap-2">
-                      <span className="text-slate-400">New Augment</span>
-                      <span className="text-emerald-300 font-semibold">{activeRune.name}</span>
+                      <span className="text-[#9b896f]">New Augment</span>
+                      <span className="text-emerald-400 font-semibold">{activeRune.name}</span>
                     </div>
                   </div>
 
@@ -758,12 +758,12 @@ export const ShopView: React.FC<ShopViewProps> = ({
                         type="button"
                         disabled={isDisabled}
                         onClick={handleForgeImbue}
-                        className={`w-full min-h-[46px] px-4 py-2.5 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all ${
+                        className={`w-full min-h-[46px] px-4 py-2.5 rounded-[3px] font-bold text-sm flex items-center justify-center gap-2 transition-all ${
                           isSameRune
-                            ? 'bg-emerald-950/70 border border-emerald-500/40 text-emerald-300 cursor-not-allowed'
+                            ? 'bg-emerald-950/75 border border-emerald-500/45 text-emerald-300 font-[var(--font-display)] cursor-not-allowed'
                             : canAfford
-                            ? 'bg-gradient-to-r from-violet-500 via-fuchsia-500 to-amber-500 hover:brightness-110 active:scale-[0.98] text-white shadow-[0_6px_20px_rgba(168,85,247,0.38)] cursor-pointer'
-                            : 'bg-slate-800/90 text-slate-500 cursor-not-allowed'
+                            ? 'brass-btn cursor-pointer'
+                            : 'basalt-recess text-[#6e5f4c] font-[var(--font-display)] cursor-not-allowed'
                         }`}
                       >
                         {isSameRune ? (
@@ -785,7 +785,7 @@ export const ShopView: React.FC<ShopViewProps> = ({
                   })()}
                 </>
               ) : (
-                <div className="rounded-xl bg-[#0b1120] border border-slate-800 p-8 text-center text-xs text-slate-400">
+                <div className="basalt-recess rounded-[3px] p-8 text-center font-[var(--font-serif)] text-sm text-[#9b896f]">
                   Select an owned card copy on the left to preview and craft an augment.
                 </div>
               )}
@@ -797,39 +797,39 @@ export const ShopView: React.FC<ShopViewProps> = ({
       {sectionTab === 'market' && (
       <>
       {/* Rarity Tier Pricing, Stat Roll Ranges & Mythic Combat Exclusivity Notice */}
-      <div className="rounded-2xl bg-gradient-to-r from-[#131d36] via-[#171d33] to-[#231829] border border-amber-500/30 p-4 flex flex-col md:flex-row md:items-center justify-between gap-3 text-xs">
-        <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-slate-300">
+      <div className="iron-panel rounded-[4px] p-4 flex flex-col md:flex-row md:items-center justify-between gap-3 text-xs">
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-[#cbb89a]">
           <span>
-            <strong className="text-slate-200">Common (Rolls {RARITY_STAT_RANGE.common.label}):</strong>{' '}
-            <span className="font-mono text-amber-300">140g–340g</span>
+            <strong className="text-[#f3e5cb]">Common (Rolls {RARITY_STAT_RANGE.common.label}):</strong>{' '}
+            <span className="font-mono text-[#f0c76e]">140g–340g</span>
           </span>
-          <span aria-hidden="true" className="text-slate-600">·</span>
+          <span aria-hidden="true" className="text-[#5e4d3a]">·</span>
           <span>
             <strong className="text-sky-300">Rare (Rolls {RARITY_STAT_RANGE.rare.label}):</strong>{' '}
-            <span className="font-mono text-amber-300">950g–1,980g</span>
+            <span className="font-mono text-[#f0c76e]">950g–1,980g</span>
           </span>
-          <span aria-hidden="true" className="text-slate-600">·</span>
+          <span aria-hidden="true" className="text-[#5e4d3a]">·</span>
           <span>
             <strong className="text-violet-300">Epic (Rolls {RARITY_STAT_RANGE.epic.label}):</strong>{' '}
-            <span className="font-mono text-amber-300">3,800g–6,500g</span>
+            <span className="font-mono text-[#f0c76e]">3,800g–6,500g</span>
           </span>
         </div>
 
-        <div className="flex items-center gap-2 text-amber-200 font-medium">
-          <Crown className="w-4 h-4 text-amber-400 shrink-0" />
+        <div className="flex items-center gap-2 text-[#f0c76e] font-medium">
+          <Crown className="w-4 h-4 text-[#dca342] shrink-0" />
           <span>
             <strong>Mythics (Rolls A–F)</strong> are combat-only trophies!
           </span>
         </div>
       </div>
 
-      {/* 3 Tactile Illustrated Booster Chests */}
+      {/* 3 Tactile Illustrated Booster Reliquaries */}
       <section className="space-y-3">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
-          <h2 className="text-sm font-semibold text-slate-200">
+          <h2 className="font-[var(--font-display)] text-sm font-bold tracking-wide text-[#f3dfb6]">
             Sealed Booster Reliquaries (3 Rolled Cards Each · Common to Epic)
           </h2>
-          <span className="text-xs text-slate-400">
+          <span className="font-[var(--font-serif)] italic text-sm text-[#a69277]">
             Collect up to {MAX_COPIES_PER_CARD} copies per card · 6th copy auto-sells for Gold
           </span>
         </div>
@@ -843,7 +843,7 @@ export const ShopView: React.FC<ShopViewProps> = ({
             return (
               <div
                 key={pack.id}
-                className={`group relative overflow-hidden rounded-2xl border bg-gradient-to-br ${style.glow} ${style.border} p-5 flex flex-col justify-between gap-5 shadow-[0_14px_32px_rgba(0,0,0,0.45)] transition-all duration-200 hover:-translate-y-1`}
+                className={`group relative overflow-hidden rounded-[4px] riveted-frame border bg-gradient-to-br ${style.glow} ${style.border} p-5 flex flex-col justify-between gap-5 shadow-[0_14px_32px_rgba(0,0,0,0.6)] transition-all duration-200 hover:-translate-y-1`}
               >
                 {accentCard && (
                   <div className="pointer-events-none absolute -right-6 -top-6 w-36 h-36 rounded-full overflow-hidden opacity-25 group-hover:opacity-35 group-hover:scale-105 transition-transform">
@@ -856,7 +856,7 @@ export const ShopView: React.FC<ShopViewProps> = ({
                       decoding="async"
                       className={`w-full h-full object-cover ${accentCard.artFilter ?? ''}`}
                     />
-                    <div className="absolute inset-0 bg-gradient-to-l from-transparent to-[#0c1322]" />
+                    <div className="absolute inset-0 bg-gradient-to-l from-transparent to-[#140f0b]" />
                   </div>
                 )}
 
@@ -872,14 +872,14 @@ export const ShopView: React.FC<ShopViewProps> = ({
                   <div className="space-y-1 min-w-0">
                     <div className="flex items-center gap-1.5">
                       <PackageOpen className={`w-4 h-4 shrink-0 ${style.accentColor}`} />
-                      <h3 className="font-[var(--font-display)] text-lg font-bold text-slate-100 truncate">
+                      <h3 className="font-[var(--font-display)] text-lg font-bold text-[#f6e3be] truncate">
                         {pack.name}
                       </h3>
                     </div>
                     <p className={`text-xs font-medium ${style.accentColor}`}>
                       {pack.guaranteeText}
                     </p>
-                    <p className="text-xs text-slate-400">{style.badgeText}</p>
+                    <p className="font-[var(--font-serif)] text-sm text-[#a69277]">{style.badgeText}</p>
                   </div>
                 </div>
 
@@ -887,10 +887,10 @@ export const ShopView: React.FC<ShopViewProps> = ({
                   type="button"
                   disabled={!canAfford}
                   onClick={() => handleOpenPack(pack.id, pack.name)}
-                  className={`relative z-10 w-full min-h-[44px] px-4 py-2.5 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all ${
+                  className={`relative z-10 w-full min-h-[44px] px-4 py-2.5 rounded-[3px] font-bold text-sm flex items-center justify-center gap-2 ${
                     canAfford
-                      ? 'bg-gradient-to-b from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 active:scale-[0.98] text-slate-950 shadow-[0_4px_14px_rgba(245,158,11,0.3)] cursor-pointer'
-                      : 'bg-slate-800/90 text-slate-500 cursor-not-allowed'
+                      ? 'brass-btn cursor-pointer'
+                      : 'basalt-recess text-[#6e5f4c] font-[var(--font-display)] cursor-not-allowed'
                   }`}
                 >
                   <Coins className="w-4 h-4" />
@@ -904,28 +904,28 @@ export const ShopView: React.FC<ShopViewProps> = ({
         </div>
       </section>
 
-      {/* Single Card Market across the 80 Purchasable Cards (Common, Rare, Epic) */}
+      {/* Single Card Market */}
       <section className="space-y-4">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
           <div>
-            <h2 className="text-sm font-semibold text-slate-200">
-              Direct Card Market ({marketCards.length} of {purchasableCatalog.length} shown)
+            <h2 className="font-[var(--font-display)] text-sm font-bold tracking-wide text-[#f3dfb6]">
+              Direct Card Vault ({marketCards.length} of {purchasableCatalog.length} shown)
             </h2>
-            <p className="text-xs text-slate-400 mt-0.5">
+            <p className="font-[var(--font-serif)] text-sm text-[#a69277] mt-0.5">
               Each purchase rolls random stats within the card&apos;s rarity tier (max {MAX_COPIES_PER_CARD} copies per card)
             </p>
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
             {/* Ownership & Augment Filter */}
-            <div className="inline-flex items-center gap-1 p-1 rounded-xl bg-[#10182a] border border-slate-800">
+            <div className="inline-flex items-center gap-1 p-1 rounded-[3px] basalt-recess">
               <button
                 type="button"
                 onClick={() => setOwnershipFilter('all')}
-                className={`min-h-[34px] px-3 py-1 rounded-lg text-xs font-medium transition-colors whitespace-nowrap cursor-pointer ${
+                className={`min-h-[34px] px-3 py-1 rounded-[2px] font-[var(--font-display)] text-xs transition-colors whitespace-nowrap cursor-pointer ${
                   ownershipFilter === 'all'
-                    ? 'bg-slate-700 text-white font-semibold'
-                    : 'text-slate-400 hover:text-slate-100'
+                    ? 'brass-plaque text-[#f5d593] font-bold'
+                    : 'text-[#a69277] hover:text-[#f0e4cc]'
                 }`}
               >
                 All ({purchasableCatalog.length})
@@ -933,10 +933,10 @@ export const ShopView: React.FC<ShopViewProps> = ({
               <button
                 type="button"
                 onClick={() => setOwnershipFilter('unowned')}
-                className={`min-h-[34px] px-3 py-1 rounded-lg text-xs font-medium transition-colors whitespace-nowrap cursor-pointer ${
+                className={`min-h-[34px] px-3 py-1 rounded-[2px] font-[var(--font-display)] text-xs transition-colors whitespace-nowrap cursor-pointer ${
                   ownershipFilter === 'unowned'
-                    ? 'bg-amber-500 text-slate-950 font-semibold'
-                    : 'text-slate-400 hover:text-slate-100'
+                    ? 'brass-btn font-bold'
+                    : 'text-[#a69277] hover:text-[#f0e4cc]'
                 }`}
               >
                 Unowned
@@ -944,10 +944,10 @@ export const ShopView: React.FC<ShopViewProps> = ({
               <button
                 type="button"
                 onClick={() => setOwnershipFilter('duplicates')}
-                className={`min-h-[34px] px-3 py-1 rounded-lg text-xs font-medium transition-colors whitespace-nowrap cursor-pointer ${
+                className={`min-h-[34px] px-3 py-1 rounded-[2px] font-[var(--font-display)] text-xs transition-colors whitespace-nowrap cursor-pointer ${
                   ownershipFilter === 'duplicates'
-                    ? 'bg-amber-500 text-slate-950 font-semibold'
-                    : 'text-slate-400 hover:text-slate-100'
+                    ? 'brass-btn font-bold'
+                    : 'text-[#a69277] hover:text-[#f0e4cc]'
                 }`}
               >
                 2+ Copies
@@ -958,23 +958,23 @@ export const ShopView: React.FC<ShopViewProps> = ({
                   sound.select();
                   setSectionTab('runeforge');
                 }}
-                className="min-h-[34px] px-3 py-1 rounded-lg text-xs font-semibold text-violet-200 hover:text-white hover:bg-violet-600/40 transition-colors whitespace-nowrap cursor-pointer"
+                className="min-h-[34px] px-3 py-1 rounded-[2px] font-[var(--font-display)] text-xs font-semibold text-violet-300 hover:text-white hover:bg-[#3e1f52] transition-colors whitespace-nowrap cursor-pointer"
               >
                 ✦ Craft Augments →
               </button>
             </div>
 
-            {/* Rarity Filter (Common, Rare, Epic only) */}
-            <div className="inline-flex items-center gap-1 p-1 rounded-xl bg-[#10182a] border border-slate-800 overflow-x-auto max-w-full">
+            {/* Rarity Filter */}
+            <div className="inline-flex items-center gap-1 p-1 rounded-[3px] basalt-recess overflow-x-auto max-w-full">
               {(['all', 'common', 'rare', 'epic'] as ShopRarityFilter[]).map((r) => (
                 <button
                   key={r}
                   type="button"
                   onClick={() => setRarityFilter(r)}
-                  className={`min-h-[34px] px-2.5 py-1 rounded-lg text-xs font-medium capitalize transition-colors whitespace-nowrap cursor-pointer ${
+                  className={`min-h-[34px] px-2.5 py-1 rounded-[2px] font-[var(--font-display)] text-xs capitalize transition-colors whitespace-nowrap cursor-pointer ${
                     rarityFilter === r
-                      ? 'bg-slate-700 text-white font-semibold'
-                      : 'text-slate-400 hover:text-slate-100'
+                      ? 'brass-plaque text-[#f5d593] font-bold'
+                      : 'text-[#a69277] hover:text-[#f0e4cc]'
                   }`}
                 >
                   {r}
@@ -983,16 +983,16 @@ export const ShopView: React.FC<ShopViewProps> = ({
             </div>
 
             {/* Attack Type Filter */}
-            <div className="inline-flex items-center gap-1 p-1 rounded-xl bg-[#10182a] border border-slate-800">
+            <div className="inline-flex items-center gap-1 p-1 rounded-[3px] basalt-recess">
               {(['all', 'P', 'M', 'X', 'A'] as const).map((t) => (
                 <button
                   key={t}
                   type="button"
                   onClick={() => setTypeFilter(t)}
-                  className={`min-h-[34px] px-2.5 py-1 rounded-lg text-xs font-medium transition-colors whitespace-nowrap cursor-pointer ${
+                  className={`min-h-[34px] px-2.5 py-1 rounded-[2px] font-[var(--font-display)] text-xs transition-colors whitespace-nowrap cursor-pointer ${
                     typeFilter === t
-                      ? 'bg-slate-700 text-white font-semibold'
-                      : 'text-slate-400 hover:text-slate-100'
+                      ? 'brass-plaque text-[#f5d593] font-bold'
+                      : 'text-[#a69277] hover:text-[#f0e4cc]'
                   }`}
                 >
                   {t === 'all' ? 'All Types' : t}
@@ -1003,11 +1003,11 @@ export const ShopView: React.FC<ShopViewProps> = ({
         </div>
 
         {marketCards.length === 0 ? (
-          <div className="rounded-2xl bg-[#10182a] border border-slate-800 p-8 text-center">
-            <p className="text-sm font-medium text-amber-200">
+          <div className="iron-panel rounded-[4px] p-8 text-center">
+            <p className="font-[var(--font-display)] text-sm font-semibold text-[#f0c76e]">
               No purchasable cards match this filter.
             </p>
-            <p className="text-xs text-slate-400 mt-1">
+            <p className="font-[var(--font-serif)] text-sm text-[#a69277] mt-1">
               Reset your rarity or ownership filter to browse all {purchasableCatalog.length} shop cards.
             </p>
           </div>
@@ -1027,7 +1027,7 @@ export const ShopView: React.FC<ShopViewProps> = ({
               return (
                 <div
                   key={card.id}
-                  className="card-grid-item rounded-xl bg-[#10182a] border border-slate-800/90 hover:border-slate-700 p-2.5 flex flex-col gap-2 transition-colors"
+                  className="card-grid-item iron-panel rounded-[4px] hover:border-[#7a5d34] p-2.5 flex flex-col gap-2 transition-colors"
                 >
                   <div className="relative">
                     <GameCard
@@ -1040,12 +1040,12 @@ export const ShopView: React.FC<ShopViewProps> = ({
                       showName
                     />
                     <span
-                      className={`absolute top-1.5 right-1.5 z-30 px-1.5 py-0.5 rounded-md text-[10px] font-mono font-bold border shadow ${
+                      className={`absolute top-1.5 right-1.5 z-30 px-1.5 py-0.5 rounded-[2px] text-[10px] font-mono font-bold border shadow ${
                         isMaxCopies
-                          ? 'bg-amber-500/95 border-amber-300 text-slate-950'
+                          ? 'bg-[#e2b053] border-[#f8df9d] text-[#170f06]'
                           : ownedCount > 0
-                          ? 'bg-slate-950/90 border-slate-600 text-slate-200'
-                          : 'bg-slate-950/85 border-slate-700 text-slate-400'
+                          ? 'brass-plaque text-[#f0c76e]'
+                          : 'bg-[#15100c]/90 border-[#433526] text-[#9b896f]'
                       }`}
                     >
                       {ownedCount}/{MAX_COPIES_PER_CARD}
@@ -1056,7 +1056,7 @@ export const ShopView: React.FC<ShopViewProps> = ({
                     <span className={`capitalize font-medium ${RARITY_COLOR[card.rarity]}`}>
                       #{String(card.number).padStart(2, '0')} · {rangeLabel} / {arrowRangeLabel}
                     </span>
-                    <span className="font-mono tabular-nums text-slate-300">
+                    <span className="font-mono tabular-nums text-[#dfd0b6]">
                       {bestCopy
                         ? `${formatTetraCode(bestCopy.stats)}·${bestCopy.arrows.length}▲`
                         : `${formatTetraCode(card.stats)}·${card.arrows.length}▲`}
@@ -1066,7 +1066,7 @@ export const ShopView: React.FC<ShopViewProps> = ({
                   {bestCopy?.augmentId && CRAFTABLE_AUGMENT_MAP[bestCopy.augmentId] && (
                     <div
                       title={CRAFTABLE_AUGMENT_MAP[bestCopy.augmentId].description}
-                      className="rounded-lg bg-violet-950/60 border border-violet-500/35 px-2 py-1 text-[10px] text-violet-200 flex items-center gap-1 truncate"
+                      className="rounded-[2px] bg-violet-950/65 border border-violet-500/40 px-2 py-1 text-[10px] text-violet-200 flex items-center gap-1 truncate"
                     >
                       <Wand2 className="w-3 h-3 text-violet-300 shrink-0" />
                       <span className="truncate">
@@ -1079,14 +1079,14 @@ export const ShopView: React.FC<ShopViewProps> = ({
                     type="button"
                     disabled={!canAfford}
                     onClick={() => handleDirectBuy(card.id)}
-                    className={`w-full min-h-[40px] rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 transition-all mt-auto ${
+                    className={`w-full min-h-[40px] rounded-[3px] text-xs font-semibold flex items-center justify-center gap-1.5 transition-all mt-auto ${
                       wasJustBought
-                        ? 'bg-emerald-500 text-slate-950 font-bold'
+                        ? 'bg-emerald-600 text-[#0d0a08] font-bold'
                         : isMaxCopies
-                        ? 'bg-slate-900/90 text-slate-500 border border-slate-800 cursor-not-allowed'
+                        ? 'basalt-recess text-[#6e5f4c] cursor-not-allowed'
                         : canAfford
-                        ? 'bg-slate-800 hover:bg-amber-500 hover:text-slate-950 text-amber-300 cursor-pointer'
-                        : 'bg-slate-900 text-slate-600 cursor-not-allowed'
+                        ? 'iron-btn text-[#f0c76e] hover:border-[#e2b053] cursor-pointer'
+                        : 'basalt-recess text-[#685a49] cursor-not-allowed'
                     }`}
                   >
                     {wasJustBought ? (
@@ -1115,7 +1115,7 @@ export const ShopView: React.FC<ShopViewProps> = ({
                       type="button"
                       onClick={() => handleSellWeakestCopy(card.id)}
                       title={`Sell copy (${formatTetraCode(weakestCopy.stats)} · ${weakestCopy.arrows.length}▲)`}
-                      className="w-full min-h-[32px] rounded-lg bg-slate-900/90 hover:bg-rose-950/60 border border-slate-800 hover:border-rose-500/40 text-[11px] font-medium text-slate-400 hover:text-rose-200 flex items-center justify-center gap-1 transition-colors cursor-pointer"
+                      className="w-full min-h-[32px] rounded-[3px] basalt-recess hover:border-rose-500/50 text-[11px] font-medium text-[#9b896f] hover:text-rose-200 flex items-center justify-center gap-1 transition-colors cursor-pointer"
                     >
                       <Trash2 className="w-3 h-3" />
                       <span>
@@ -1132,23 +1132,23 @@ export const ShopView: React.FC<ShopViewProps> = ({
       </>
       )}
 
-      {/* Booster Pack Interactive Reveal Modal — Spacious Full-Card Showcase */}
+      {/* Booster Pack Interactive Reveal Modal — Carved Reliquary */}
       {packModal && (
         <div
-          className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-[#04070f]/90 p-0 sm:p-5"
+          className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-[#060403]/92 p-0 sm:p-5"
           role="dialog"
           aria-modal="true"
           aria-labelledby="pack-modal-title"
         >
-          <div className="w-full max-w-4xl max-h-[94dvh] flex flex-col rounded-t-3xl sm:rounded-3xl bg-gradient-to-b from-[#17213a] to-[#0f1628] border border-amber-400/45 shadow-[0_25px_70px_rgba(0,0,0,0.85)] overflow-hidden">
-            <div className="sm:hidden w-10 h-1 rounded-full bg-slate-600 mx-auto mt-2.5" />
+          <div className="w-full max-w-4xl max-h-[94dvh] flex flex-col rounded-t-[6px] sm:rounded-[5px] brass-panel riveted-frame shadow-[0_28px_80px_rgba(0,0,0,0.9)] overflow-hidden">
+            <div className="sm:hidden w-10 h-1 rounded-full bg-[#6d573e] mx-auto mt-2.5" />
 
-            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-800/90">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-[#4b3a26]/85">
               <div className="flex items-center gap-2">
-                <Sparkles className="w-5 h-5 text-amber-300" />
+                <Sparkles className="w-5 h-5 text-[#e2b053]" />
                 <h2
                   id="pack-modal-title"
-                  className="font-[var(--font-display)] text-xl font-bold text-amber-200"
+                  className="font-[var(--font-display)] text-xl font-bold text-[#f6e1b5] tracking-wide"
                 >
                   {packModal.packName}
                 </h2>
@@ -1157,14 +1157,14 @@ export const ShopView: React.FC<ShopViewProps> = ({
                 type="button"
                 onClick={() => setPackModal(null)}
                 aria-label="Close pack reveal"
-                className="min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg text-slate-400 hover:text-white cursor-pointer"
+                className="iron-btn min-h-[40px] min-w-[40px] flex items-center justify-center rounded-[3px] cursor-pointer"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
             <div className="overflow-y-auto px-5 sm:px-6 py-5 space-y-5">
-              <p className="text-xs sm:text-sm text-slate-300 text-center">
+              <p className="font-[var(--font-serif)] text-base text-[#cbb89a] text-center">
                 {packModal.revealed.every(Boolean)
                   ? 'All 3 rolled cards processed into your collection!'
                   : 'Tap each sealed card to flip and reveal its rolled stats & arrows'}
@@ -1196,24 +1196,26 @@ export const ShopView: React.FC<ShopViewProps> = ({
                             >
                               {formatTetraCode(item.instance.stats)} · {item.instance.arrows.length}▲
                             </p>
-                            <p className="text-[11px] text-slate-300">
+                            <p className="text-[11px] text-[#cbb89a]">
                               {item.wasOverflowSold ? (
-                                <span className="font-mono text-amber-300">
+                                <span className="font-mono text-[#f0c76e]">
                                   5/5 Full · Sold +{item.overflowGold}g
                                 </span>
                               ) : item.isNewUnlock ? (
-                                <span className="text-emerald-300 font-semibold">
+                                <span className="text-emerald-400 font-semibold">
                                   New Unlock (1/{MAX_COPIES_PER_CARD})
                                 </span>
                               ) : (
-                                <span className="text-sky-300 font-medium">
+                                <span className="text-[#e8d5b3] font-medium">
                                   Copy #{item.copyNumber}/{MAX_COPIES_PER_CARD} Saved
                                 </span>
                               )}
                             </p>
                           </>
                         ) : (
-                          <p className="text-xs text-amber-300/80 font-medium">Tap to reveal</p>
+                          <p className="font-[var(--font-serif)] italic text-sm text-[#e2b053]">
+                            Tap to reveal
+                          </p>
                         )}
                       </div>
                     </div>
@@ -1222,12 +1224,12 @@ export const ShopView: React.FC<ShopViewProps> = ({
               </div>
             </div>
 
-            <div className="px-5 py-4 border-t border-slate-800 bg-[#0d1424] flex items-center gap-3">
+            <div className="px-5 py-4 border-t border-[#4b3a26]/85 bg-[#120d0a] flex items-center gap-3">
               {!packModal.revealed.every(Boolean) ? (
                 <button
                   type="button"
                   onClick={revealAll}
-                  className="w-full min-h-[44px] rounded-xl bg-gradient-to-b from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-slate-950 font-bold text-sm transition-all cursor-pointer"
+                  className="brass-btn w-full min-h-[44px] rounded-[3px] font-bold text-sm cursor-pointer"
                 >
                   Reveal All 3 Cards
                 </button>
@@ -1235,7 +1237,7 @@ export const ShopView: React.FC<ShopViewProps> = ({
                 <button
                   type="button"
                   onClick={() => setPackModal(null)}
-                  className="w-full min-h-[44px] rounded-xl bg-gradient-to-b from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-slate-950 font-bold text-sm transition-all cursor-pointer"
+                  className="brass-btn w-full min-h-[44px] rounded-[3px] font-bold text-sm cursor-pointer"
                 >
                   Collect Cards
                 </button>

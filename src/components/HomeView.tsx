@@ -40,26 +40,27 @@ export const HomeView: React.FC<HomeViewProps> = ({
   const conqueredCount = Object.values(profile.fighterWins ?? {}).filter((w) => w > 0).length;
 
   return (
-    <div className="w-full max-w-[1680px] mx-auto px-5 sm:px-8 lg:px-10 py-8 lg:py-12 space-y-10 lg:space-y-14">
+    <div className="w-full max-w-[1680px] mx-auto px-5 sm:px-8 lg:px-10 py-8 lg:py-12 space-y-10 lg:space-y-12">
       {/* Hero Section */}
       <section className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-8 items-center">
         {/* Left Copy & Primary CTAs */}
         <div className="lg:col-span-6 space-y-6 text-center lg:text-left">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-400/35 text-amber-200 text-xs font-medium tracking-wide">
-            <Crown className="w-3.5 h-3.5 text-amber-300" />
-            <span>4×4 Tactical Fantasy Card Duel</span>
+          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-[3px] brass-plaque text-[#e9c479] font-[var(--font-display)] text-[11px] font-semibold uppercase tracking-[0.18em]">
+            <Crown className="w-3.5 h-3.5 text-[#d8a243]" />
+            <span>4×4 Tactical Biome Card War</span>
           </div>
 
           <div className="space-y-3">
-            <h1 className="font-[var(--font-display)] text-4xl sm:text-5xl lg:text-[54px] font-bold tracking-wide text-amber-100 leading-[1.08]">
+            <h1 className="font-[var(--font-display)] text-4xl sm:text-5xl lg:text-[58px] font-bold tracking-[0.08em] text-[#f5dfb2] leading-[1.05] drop-shadow-[0_4px_18px_rgba(0,0,0,0.85)]">
               GridDuel
             </h1>
-            <p className="font-[var(--font-serif)] italic text-lg sm:text-xl text-amber-200/85">
+            <div className="ornate-divider max-w-[260px] mx-auto lg:mx-0" />
+            <p className="font-[var(--font-serif)] italic text-xl sm:text-2xl text-[#dec391]">
               “Master the terrain, command the arrows, claim the board.”
             </p>
-            <p className="text-sm sm:text-base text-slate-300 leading-relaxed max-w-xl mx-auto lg:mx-0">
+            <p className="font-[var(--font-serif)] text-base sm:text-lg text-[#c7b69a] leading-relaxed max-w-xl mx-auto lg:mx-0">
               Outflank rivals across an open 4×4 biome battlefield using 8-way compass arrows,
-              elemental &amp; tribal terrain shifts, combo chains, and custom Runeforge augments.
+              elemental &amp; tribal terrain shifts, combo chains, and forged Runeforge augments.
             </p>
           </div>
 
@@ -71,10 +72,10 @@ export const HomeView: React.FC<HomeViewProps> = ({
                 sound.select();
                 onStartFlow('choose');
               }}
-              className="min-h-[52px] px-7 py-3 rounded-xl bg-gradient-to-b from-amber-300 via-amber-400 to-amber-500 hover:from-amber-200 hover:to-amber-400 active:scale-[0.98] text-slate-950 font-[var(--font-display)] font-bold text-base tracking-wide shadow-[0_10px_28px_rgba(245,158,11,0.35)] border border-amber-200/70 flex items-center justify-center gap-2 transition-transform cursor-pointer"
+              className="brass-btn min-h-[52px] px-7 py-3 rounded-[3px] font-bold text-base flex items-center justify-center gap-2 cursor-pointer"
             >
               <Swords className="w-5 h-5" />
-              <span>Play a Match</span>
+              <span>Enter the Arena</span>
               <ChevronRight className="w-4 h-4" />
             </button>
 
@@ -84,26 +85,26 @@ export const HomeView: React.FC<HomeViewProps> = ({
                 sound.select();
                 onStartFlow('quick');
               }}
-              className="min-h-[52px] px-5 py-3 rounded-xl bg-[#11192d] hover:bg-[#182442] border border-sky-400/40 text-sky-200 font-semibold text-sm flex items-center justify-center gap-2 transition-colors cursor-pointer"
+              className="iron-btn min-h-[52px] px-5 py-3 rounded-[3px] font-[var(--font-display)] font-semibold tracking-wide text-sm flex items-center justify-center gap-2 cursor-pointer"
             >
-              <Dices className="w-4 h-4 text-sky-300" />
+              <Dices className="w-4 h-4 text-[#d8a64c]" />
               <span>Quick Random Duel</span>
             </button>
           </div>
 
           {/* Secondary Utility Links */}
-          <div className="flex flex-wrap items-center justify-center lg:justify-start gap-x-5 gap-y-2 pt-1 text-xs sm:text-sm text-slate-400">
+          <div className="flex flex-wrap items-center justify-center lg:justify-start gap-x-6 gap-y-2 pt-1 text-xs sm:text-sm font-[var(--font-display)] tracking-wide text-[#a89578]">
             <button
               type="button"
               onClick={() => {
                 sound.select();
                 onOpenGallery();
               }}
-              className="inline-flex items-center gap-1.5 hover:text-amber-200 transition-colors cursor-pointer"
+              className="inline-flex items-center gap-1.5 hover:text-[#f2d089] transition-colors cursor-pointer"
             >
-              <LayoutGrid className="w-4 h-4 text-slate-400" />
+              <LayoutGrid className="w-4 h-4 text-[#9a8364]" />
               <span>
-                Gallery ({ownedUniqueCount}/{totalCards})
+                Compendium ({ownedUniqueCount}/{totalCards})
               </span>
             </button>
             <button
@@ -112,10 +113,10 @@ export const HomeView: React.FC<HomeViewProps> = ({
                 sound.select();
                 onOpenShop();
               }}
-              className="inline-flex items-center gap-1.5 hover:text-amber-200 transition-colors cursor-pointer"
+              className="inline-flex items-center gap-1.5 hover:text-[#f2d089] transition-colors cursor-pointer"
             >
-              <ShoppingBag className="w-4 h-4 text-slate-400" />
-              <span>Shop &amp; Runeforge</span>
+              <ShoppingBag className="w-4 h-4 text-[#9a8364]" />
+              <span>Vault &amp; Runeforge</span>
             </button>
             <button
               type="button"
@@ -123,10 +124,10 @@ export const HomeView: React.FC<HomeViewProps> = ({
                 sound.select();
                 onOpenRules();
               }}
-              className="inline-flex items-center gap-1.5 hover:text-amber-200 transition-colors cursor-pointer"
+              className="inline-flex items-center gap-1.5 hover:text-[#f2d089] transition-colors cursor-pointer"
             >
-              <BookOpen className="w-4 h-4 text-slate-400" />
-              <span>How to Play</span>
+              <BookOpen className="w-4 h-4 text-[#9a8364]" />
+              <span>Field Codex</span>
             </button>
           </div>
         </div>
@@ -134,14 +135,14 @@ export const HomeView: React.FC<HomeViewProps> = ({
         {/* Right Fanned Collector Tarot Showcase */}
         <div className="lg:col-span-6 flex items-center justify-center py-4 sm:py-6">
           <div className="relative w-full max-w-[540px] h-[320px] sm:h-[400px] xl:h-[440px] flex items-center justify-center">
-            {/* Ambient Gold & Violet Halo */}
+            {/* Warm Candlelit & Ember Hearth Halo */}
             <div
               aria-hidden="true"
-              className="pointer-events-none absolute inset-6 rounded-full bg-gradient-to-tr from-amber-500/15 via-violet-500/12 to-sky-500/15 blur-2xl"
+              className="pointer-events-none absolute inset-6 rounded-full bg-gradient-to-tr from-[#c97c24]/20 via-[#8d4218]/14 to-[#d6a348]/18 blur-2xl"
             />
 
             {/* Left Card (Rare) */}
-            <div className="w-[165px] sm:w-[205px] xl:w-[228px] -mr-14 sm:-mr-16 -rotate-[11deg] translate-y-4 opacity-90 transition-transform duration-300 hover:-translate-y-1 hover:z-30">
+            <div className="w-[165px] sm:w-[205px] xl:w-[228px] -mr-14 sm:-mr-16 -rotate-[11deg] translate-y-4 opacity-92 transition-transform duration-300 hover:-translate-y-1 hover:z-30 drop-shadow-[0_18px_24px_rgba(0,0,0,0.8)]">
               <GameCard
                 cardId="glacial-mage"
                 variant="tarot"
@@ -151,7 +152,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
             </div>
 
             {/* Center Hero Card (Mythic) */}
-            <div className="relative z-20 w-[195px] sm:w-[240px] xl:w-[266px] -translate-y-2 transition-transform duration-300 hover:-translate-y-4">
+            <div className="relative z-20 w-[195px] sm:w-[240px] xl:w-[266px] -translate-y-2 transition-transform duration-300 hover:-translate-y-4 drop-shadow-[0_24px_32px_rgba(0,0,0,0.88)]">
               <GameCard
                 cardId="solar-sovereign"
                 variant="tarot"
@@ -161,7 +162,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
             </div>
 
             {/* Right Card (Epic) */}
-            <div className="w-[165px] sm:w-[205px] xl:w-[228px] -ml-14 sm:-ml-16 rotate-[11deg] translate-y-4 opacity-90 transition-transform duration-300 hover:-translate-y-1 hover:z-30">
+            <div className="w-[165px] sm:w-[205px] xl:w-[228px] -ml-14 sm:-ml-16 rotate-[11deg] translate-y-4 opacity-92 transition-transform duration-300 hover:-translate-y-1 hover:z-30 drop-shadow-[0_18px_24px_rgba(0,0,0,0.8)]">
               <GameCard
                 cardId="abyssal-lich"
                 variant="tarot"
@@ -173,66 +174,66 @@ export const HomeView: React.FC<HomeViewProps> = ({
         </div>
       </section>
 
-      {/* Clean 3-Pillar Game Overview */}
+      {/* Rugged 3-Pillar Campaign Plaques */}
       <section className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="rounded-2xl bg-[#0e1526]/90 border border-slate-800/90 p-5 space-y-2">
-          <div className="w-9 h-9 rounded-xl bg-amber-500/15 border border-amber-400/35 flex items-center justify-center text-amber-300">
+        <div className="iron-panel riveted-frame rounded-[4px] p-5 space-y-2.5">
+          <div className="w-9 h-9 rounded-[3px] brass-plaque flex items-center justify-center text-[#e6b85c]">
             <Compass className="w-4 h-4" />
           </div>
-          <h2 className="font-[var(--font-display)] text-base font-bold text-slate-100">
+          <h2 className="font-[var(--font-display)] text-base font-bold tracking-wide text-[#f2dfb9]">
             8-Way Flanks &amp; Clashes
           </h2>
-          <p className="text-xs sm:text-sm text-slate-400 leading-relaxed">
+          <p className="font-[var(--font-serif)] text-[15px] text-[#bda98c] leading-relaxed">
             Point unopposed arrows to capture rivals instantly, or trigger high-stakes hex stat
             clashes that chain into multi-card combos.
           </p>
         </div>
 
-        <div className="rounded-2xl bg-[#0e1526]/90 border border-slate-800/90 p-5 space-y-2">
-          <div className="w-9 h-9 rounded-xl bg-sky-500/15 border border-sky-400/35 flex items-center justify-center text-sky-300">
+        <div className="iron-panel riveted-frame rounded-[4px] p-5 space-y-2.5">
+          <div className="w-9 h-9 rounded-[3px] brass-plaque flex items-center justify-center text-[#d99d4a]">
             <Trophy className="w-4 h-4" />
           </div>
-          <h2 className="font-[var(--font-display)] text-base font-bold text-slate-100">
-            Arena Ladder or Quick Duel
+          <h2 className="font-[var(--font-display)] text-base font-bold tracking-wide text-[#f2dfb9]">
+            Arena Ladder &amp; Skirmish
           </h2>
-          <p className="text-xs sm:text-sm text-slate-400 leading-relaxed">
+          <p className="font-[var(--font-serif)] text-[15px] text-[#bda98c] leading-relaxed">
             Climb the 10-tier Championship Arena to unlock Bosses &amp; Mythic drops, or jump into a
-            one-off duel against a random challenger.
+            one-off duel against a random unlocked rival.
           </p>
         </div>
 
-        <div className="rounded-2xl bg-[#0e1526]/90 border border-slate-800/90 p-5 space-y-2">
-          <div className="w-9 h-9 rounded-xl bg-violet-500/15 border border-violet-400/35 flex items-center justify-center text-violet-300">
+        <div className="iron-panel riveted-frame rounded-[4px] p-5 space-y-2.5">
+          <div className="w-9 h-9 rounded-[3px] brass-plaque flex items-center justify-center text-[#e0934c]">
             <Hammer className="w-4 h-4" />
           </div>
-          <h2 className="font-[var(--font-display)] text-base font-bold text-slate-100">
-            Collect &amp; Runeforge
+          <h2 className="font-[var(--font-display)] text-base font-bold tracking-wide text-[#f2dfb9]">
+            Spoils &amp; Runeforge
           </h2>
-          <p className="text-xs sm:text-sm text-slate-400 leading-relaxed">
+          <p className="font-[var(--font-serif)] text-[15px] text-[#bda98c] leading-relaxed">
             Claim spoils from defeated foes, hunt peak stat rolls across {totalCards} cards, and
-            imbue custom Augment Runes at the Shop Runeforge.
+            imbue custom Augment Runes at the Runeforge anvil.
           </p>
         </div>
       </section>
 
-      {/* Subtle Progress Footer Bar */}
-      <section className="rounded-2xl bg-[#0c1322] border border-slate-800/80 px-5 py-4 flex flex-wrap items-center justify-between gap-4 text-xs sm:text-sm">
-        <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-slate-300">
-          <span>
+      {/* Campaign Ledger Footer Bar */}
+      <section className="brass-panel riveted-frame rounded-[4px] px-6 py-4 flex flex-wrap items-center justify-between gap-4 text-xs sm:text-sm">
+        <div className="flex flex-wrap items-center gap-x-7 gap-y-2 text-[#cbbba0]">
+          <span className="font-[var(--font-display)] tracking-wide text-xs uppercase">
             Record:{' '}
-            <strong className="font-mono text-emerald-300">{profile.wins}W</strong>{' '}
-            <span className="text-slate-600">·</span>{' '}
-            <strong className="font-mono text-rose-300">{profile.losses}L</strong>
+            <strong className="font-mono text-sm text-emerald-400">{profile.wins}W</strong>{' '}
+            <span className="text-[#5e4d3a]">·</span>{' '}
+            <strong className="font-mono text-sm text-rose-400">{profile.losses}L</strong>
           </span>
-          <span>
+          <span className="font-[var(--font-display)] tracking-wide text-xs uppercase">
             Arena Conquered:{' '}
-            <strong className="font-mono text-amber-300">
+            <strong className="font-mono text-sm text-[#f0c76e]">
               {conqueredCount}/{ALL_FIGHTERS.length}
             </strong>
           </span>
-          <span>
-            Collection:{' '}
-            <strong className="font-mono text-sky-300">
+          <span className="font-[var(--font-display)] tracking-wide text-xs uppercase">
+            Compendium:{' '}
+            <strong className="font-mono text-sm text-[#e8d5b3]">
               {ownedUniqueCount}/{totalCards}
             </strong>
           </span>
@@ -244,7 +245,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
             sound.select();
             onStartFlow('arena');
           }}
-          className="inline-flex items-center gap-1.5 text-amber-300 hover:text-amber-200 font-semibold transition-colors cursor-pointer"
+          className="inline-flex items-center gap-1.5 font-[var(--font-display)] text-xs sm:text-sm uppercase tracking-wider text-[#f0c76e] hover:text-[#fae2a8] font-bold transition-colors cursor-pointer"
         >
           <span>Continue Arena Ladder</span>
           <ChevronRight className="w-4 h-4" />

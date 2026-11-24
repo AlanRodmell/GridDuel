@@ -70,10 +70,10 @@ export const DeckShelf: React.FC<DeckShelfProps> = ({
     <div className="space-y-3">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="flex items-center gap-2">
-          <h3 className="font-[var(--font-display)] text-sm sm:text-base font-bold text-amber-200 tracking-wide">
-            Saved Decks
+          <h3 className="font-[var(--font-display)] text-sm sm:text-base font-bold text-[#f3d492] tracking-wide">
+            Saved Warbands
           </h3>
-          <span className="px-2 py-0.5 rounded-md bg-slate-900 border border-slate-700 font-mono text-[11px] font-semibold text-slate-300">
+          <span className="px-2 py-0.5 rounded-[2px] basalt-recess font-mono text-[11px] font-semibold text-[#cbb89a]">
             {decks.length} / {MAX_DECK_SLOTS}
           </span>
         </div>
@@ -82,10 +82,10 @@ export const DeckShelf: React.FC<DeckShelfProps> = ({
           type="button"
           disabled={!canAddDeck}
           onClick={() => onCreateDeck()}
-          className={`min-h-[34px] px-3 py-1 rounded-xl text-xs font-semibold flex items-center gap-1.5 border transition-colors ${
+          className={`min-h-[34px] px-3 py-1 rounded-[3px] font-[var(--font-display)] text-xs font-semibold flex items-center gap-1.5 border transition-colors ${
             canAddDeck
-              ? 'bg-amber-500/15 hover:bg-amber-500/25 border-amber-400/50 text-amber-200 cursor-pointer'
-              : 'bg-slate-900 border-slate-800 text-slate-500 cursor-not-allowed'
+              ? 'brass-plaque text-[#f5d593] hover:border-[#d8a243] cursor-pointer'
+              : 'basalt-recess text-[#6e5f4c] cursor-not-allowed'
           }`}
         >
           <Plus className="w-3.5 h-3.5" />
@@ -93,7 +93,7 @@ export const DeckShelf: React.FC<DeckShelfProps> = ({
         </button>
       </div>
 
-      {/* Hearthstone-Style Deck Box Shelf */}
+      {/* Forged Deck Box Shelf */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
         {decks.map((deck, idx) => {
           const isSelected = idx === activeDeckIndex;
@@ -125,10 +125,10 @@ export const DeckShelf: React.FC<DeckShelfProps> = ({
                 sound.select();
                 onSelectDeck(idx);
               }}
-              className={`group relative overflow-hidden rounded-2xl border p-3 transition-colors cursor-pointer ${
+              className={`group relative overflow-hidden rounded-[4px] border p-3 transition-colors cursor-pointer ${
                 isSelected
-                  ? 'bg-gradient-to-r from-[#1e2b4b] via-[#15203a] to-[#11192e] border-amber-400 shadow-[0_8px_22px_rgba(245,158,11,0.22)]'
-                  : 'bg-[#0c1322] border-slate-800 hover:border-slate-600'
+                  ? 'brass-panel border-[#cf9a42]'
+                  : 'basalt-recess hover:border-[#6e522b]'
               }`}
             >
               {/* Subtle Cover Art Wash */}
@@ -143,15 +143,15 @@ export const DeckShelf: React.FC<DeckShelfProps> = ({
                     decoding="async"
                     className={`w-full h-full object-cover object-top ${coverCard.artFilter ?? ''}`}
                   />
-                  <div className="absolute inset-0 bg-gradient-to-r from-[#0c1322] via-[#0c1322]/60 to-transparent" />
+                  <div className="absolute inset-0 bg-gradient-to-r from-[#120e0b] via-[#120e0b]/60 to-transparent" />
                 </div>
               )}
 
               <div className="relative z-10 flex items-center gap-3">
                 {/* Cover Medallion */}
                 <div
-                  className={`w-11 h-14 rounded-lg overflow-hidden border-2 shrink-0 ${
-                    isSelected ? 'border-amber-400' : 'border-slate-700'
+                  className={`w-11 h-14 rounded-[2px] overflow-hidden border-2 shrink-0 ${
+                    isSelected ? 'border-[#e0ae53]' : 'border-[#4b3b2b]'
                   }`}
                 >
                   {coverCard && (
@@ -185,12 +185,12 @@ export const DeckShelf: React.FC<DeckShelfProps> = ({
                         maxLength={28}
                         autoFocus
                         aria-label="Deck name"
-                        className="w-full min-w-0 px-2 py-1 rounded-md bg-slate-950 border border-amber-400/70 text-xs font-semibold text-white focus:outline-none"
+                        className="w-full min-w-0 px-2 py-1 rounded-[2px] bg-[#0d0a08] border border-[#d4a046] text-xs font-semibold text-[#f5e7cc] focus:outline-none"
                       />
                       <button
                         type="submit"
                         aria-label="Save deck name"
-                        className="p-1 rounded-md bg-amber-500 text-slate-950 hover:bg-amber-400 cursor-pointer"
+                        className="p-1 rounded-[2px] brass-btn cursor-pointer"
                       >
                         <Check className="w-3.5 h-3.5" />
                       </button>
@@ -198,7 +198,7 @@ export const DeckShelf: React.FC<DeckShelfProps> = ({
                         type="button"
                         onClick={() => setEditingIndex(null)}
                         aria-label="Cancel rename"
-                        className="p-1 rounded-md bg-slate-800 text-slate-300 hover:text-white cursor-pointer"
+                        className="p-1 rounded-[2px] iron-btn cursor-pointer"
                       >
                         <X className="w-3.5 h-3.5" />
                       </button>
@@ -207,25 +207,25 @@ export const DeckShelf: React.FC<DeckShelfProps> = ({
                     <div className="flex items-center justify-between gap-1.5">
                       <span
                         className={`font-[var(--font-display)] text-sm font-bold leading-snug ${
-                          isSelected ? 'text-amber-200' : 'text-slate-100'
+                          isSelected ? 'text-[#f6dfb0]' : 'text-[#e5d6bc]'
                         }`}
                       >
                         {deck.name}
                       </span>
                       {isSelected && (
-                        <span className="px-1.5 py-0.5 rounded bg-amber-400 text-slate-950 text-[9.5px] font-bold uppercase tracking-wider shrink-0">
+                        <span className="px-1.5 py-0.5 rounded-[2px] bg-[#e2b053] text-[#170f06] text-[9.5px] font-[var(--font-display)] font-bold uppercase tracking-wider shrink-0">
                           Active
                         </span>
                       )}
                     </div>
                   )}
 
-                  <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[11px] font-mono text-slate-400">
-                    <span className={instances.length === DECK_CAPACITY ? 'text-emerald-300' : 'text-amber-300'}>
+                  <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[11px] font-mono text-[#a69277]">
+                    <span className={instances.length === DECK_CAPACITY ? 'text-emerald-400' : 'text-[#f0c76e]'}>
                       {instances.length}/{DECK_CAPACITY} Cards
                     </span>
                     <span>·</span>
-                    <span className="text-sky-300">{totalArrows}▲</span>
+                    <span className="text-[#e8d5b3]">{totalArrows}▲</span>
                     {augCount > 0 && (
                       <>
                         <span>·</span>
@@ -247,7 +247,7 @@ export const DeckShelf: React.FC<DeckShelfProps> = ({
                         type="button"
                         onClick={() => startRename(idx, deck.name)}
                         title="Rename deck"
-                        className="px-1.5 py-0.5 rounded bg-slate-900/90 hover:bg-slate-800 border border-slate-700/80 text-[10px] font-medium text-slate-300 hover:text-amber-200 inline-flex items-center gap-1 cursor-pointer"
+                        className="iron-btn px-1.5 py-0.5 rounded-[2px] text-[10px] font-medium inline-flex items-center gap-1 cursor-pointer"
                       >
                         <Pencil className="w-2.5 h-2.5" />
                         <span>Rename</span>
@@ -257,7 +257,7 @@ export const DeckShelf: React.FC<DeckShelfProps> = ({
                           type="button"
                           onClick={() => onCreateDeck(undefined, idx)}
                           title="Duplicate deck"
-                          className="px-1.5 py-0.5 rounded bg-slate-900/90 hover:bg-slate-800 border border-slate-700/80 text-[10px] font-medium text-slate-300 hover:text-sky-200 inline-flex items-center gap-1 cursor-pointer"
+                          className="iron-btn px-1.5 py-0.5 rounded-[2px] text-[10px] font-medium inline-flex items-center gap-1 cursor-pointer"
                         >
                           <Copy className="w-2.5 h-2.5" />
                           <span>Copy</span>
@@ -268,7 +268,7 @@ export const DeckShelf: React.FC<DeckShelfProps> = ({
                           type="button"
                           onClick={() => onDeleteDeck(idx)}
                           title="Delete deck"
-                          className="px-1.5 py-0.5 rounded bg-slate-900/90 hover:bg-rose-950/80 border border-slate-700/80 hover:border-rose-500/40 text-[10px] font-medium text-slate-400 hover:text-rose-200 inline-flex items-center gap-1 cursor-pointer"
+                          className="iron-btn hover:border-rose-500/60 hover:text-rose-300 px-1.5 py-0.5 rounded-[2px] text-[10px] font-medium inline-flex items-center gap-1 cursor-pointer"
                         >
                           <Trash2 className="w-2.5 h-2.5" />
                         </button>
@@ -286,7 +286,7 @@ export const DeckShelf: React.FC<DeckShelfProps> = ({
           <button
             type="button"
             onClick={() => onCreateDeck()}
-            className="rounded-2xl border border-dashed border-slate-700 hover:border-amber-400/60 bg-[#090f1d] hover:bg-[#10182b] p-4 flex items-center justify-center gap-2 text-xs font-semibold text-slate-400 hover:text-amber-200 transition-colors cursor-pointer min-h-[82px]"
+            className="rounded-[4px] border border-dashed border-[#4e3f2f] hover:border-[#c89640] bg-[#110d0a] hover:bg-[#1a140f] p-4 flex items-center justify-center gap-2 font-[var(--font-display)] text-xs font-semibold text-[#a59277] hover:text-[#f2d089] transition-colors cursor-pointer min-h-[82px]"
           >
             <Plus className="w-4 h-4" />
             <span>Create Saved Deck</span>
