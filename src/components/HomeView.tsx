@@ -40,7 +40,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
   const conqueredCount = Object.values(profile.fighterWins ?? {}).filter((w) => w > 0).length;
 
   return (
-    <div className="w-full max-w-6xl mx-auto px-4 sm:px-6 py-8 sm:py-14 space-y-12 sm:space-y-16">
+    <div className="w-full max-w-[1680px] mx-auto px-5 sm:px-8 lg:px-10 py-8 lg:py-12 space-y-10 lg:space-y-14">
       {/* Hero Section */}
       <section className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-8 items-center">
         {/* Left Copy & Primary CTAs */}
@@ -133,7 +133,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
 
         {/* Right Fanned Collector Tarot Showcase */}
         <div className="lg:col-span-6 flex items-center justify-center py-4 sm:py-6">
-          <div className="relative w-full max-w-[440px] h-[300px] sm:h-[360px] flex items-center justify-center">
+          <div className="relative w-full max-w-[540px] h-[320px] sm:h-[400px] xl:h-[440px] flex items-center justify-center">
             {/* Ambient Gold & Violet Halo */}
             <div
               aria-hidden="true"
@@ -141,7 +141,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
             />
 
             {/* Left Card (Rare) */}
-            <div className="w-[155px] sm:w-[190px] -mr-14 sm:-mr-16 -rotate-[11deg] translate-y-4 opacity-90 transition-transform duration-300 hover:-translate-y-1 hover:z-30">
+            <div className="w-[165px] sm:w-[205px] xl:w-[228px] -mr-14 sm:-mr-16 -rotate-[11deg] translate-y-4 opacity-90 transition-transform duration-300 hover:-translate-y-1 hover:z-30">
               <GameCard
                 cardId="glacial-mage"
                 variant="tarot"
@@ -151,7 +151,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
             </div>
 
             {/* Center Hero Card (Mythic) */}
-            <div className="relative z-20 w-[180px] sm:w-[220px] -translate-y-2 transition-transform duration-300 hover:-translate-y-4">
+            <div className="relative z-20 w-[195px] sm:w-[240px] xl:w-[266px] -translate-y-2 transition-transform duration-300 hover:-translate-y-4">
               <GameCard
                 cardId="solar-sovereign"
                 variant="tarot"
@@ -161,7 +161,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
             </div>
 
             {/* Right Card (Epic) */}
-            <div className="w-[155px] sm:w-[190px] -ml-14 sm:-ml-16 rotate-[11deg] translate-y-4 opacity-90 transition-transform duration-300 hover:-translate-y-1 hover:z-30">
+            <div className="w-[165px] sm:w-[205px] xl:w-[228px] -ml-14 sm:-ml-16 rotate-[11deg] translate-y-4 opacity-90 transition-transform duration-300 hover:-translate-y-1 hover:z-30">
               <GameCard
                 cardId="abyssal-lich"
                 variant="tarot"

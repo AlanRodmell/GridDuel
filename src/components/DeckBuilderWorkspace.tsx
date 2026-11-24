@@ -361,7 +361,7 @@ export const DeckBuilderWorkspace: React.FC<DeckBuilderWorkspaceProps> = ({
                       ? 'drop-shadow(0 18px 28px rgba(0, 0, 0, 0.88))'
                       : 'drop-shadow(-6px 8px 14px rgba(0, 0, 0, 0.55))',
                   }}
-                  className="relative w-[124px] sm:w-[144px] lg:w-[162px] shrink-0 will-change-transform"
+                  className="relative w-[124px] sm:w-[148px] lg:w-[168px] xl:w-[180px] 2xl:w-[194px] shrink-0 will-change-transform"
                 >
                   <GameCard
                     cardId={hCard.cardId}
@@ -544,7 +544,7 @@ export const DeckBuilderWorkspace: React.FC<DeckBuilderWorkspaceProps> = ({
               </button>
             </div>
           ) : (
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-4 sm:gap-5">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-4 sm:gap-5">
               {filteredLibrary.map((inst) => {
                 const def = CARD_MAP[inst.cardId];
                 if (!def) return null;

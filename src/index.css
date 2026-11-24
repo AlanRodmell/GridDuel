@@ -190,15 +190,34 @@
   filter: drop-shadow(0 22px 26px rgba(0, 0, 0, 0.75));
 }
 
-/* Zero-scroll mobile match stage: keeps authentic 5:7 Tarot board proportions inside 100dvh */
-@media (max-width: 1023px) {
-  .mobile-board-stage {
-    container-type: size;
-  }
+/* Universal zero-scroll board stage: keeps authentic 5:7 Tarot board proportions filling 100% of available height & width */
+.mobile-board-stage,
+.desktop-board-stage {
+  container-type: size;
+}
 
-  .mobile-board-fit {
-    width: min(100cqw, calc(100cqh * 5 / 7));
-  }
+.mobile-board-fit,
+.desktop-board-fit {
+  width: min(100cqw, calc(100cqh * 5 / 7));
+}
+
+/* Subtle desktop scrollbars inside panels */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(9, 14, 27, 0.55);
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(71, 85, 105, 0.55);
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(245, 158, 11, 0.55);
 }
 
 @media (prefers-reduced-motion: reduce) {

@@ -284,7 +284,7 @@ export const GalleryView: React.FC<GalleryViewProps> = ({
   const pct = Math.round((ownedUniqueCount / totalCards) * 100);
 
   return (
-    <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 py-5 sm:py-8 space-y-6">
+    <div className="w-full px-4 sm:px-6 lg:px-8 py-5 lg:py-7 space-y-6">
       {/* Floating Action Toast */}
       {feedbackToast && (
         <div className="fixed bottom-20 md:bottom-8 right-4 z-50 rounded-xl bg-slate-900/95 border border-amber-400/70 px-4 py-2.5 text-xs font-semibold text-amber-200 shadow-2xl flex items-center gap-2">
@@ -450,7 +450,7 @@ export const GalleryView: React.FC<GalleryViewProps> = ({
         </div>
 
         {/* Large Cards for Maximum Visibility (4-Col Grid on Desktop) */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-7 gap-3 sm:gap-4">
           {activeDeckInstances.map((inst) => (
             <div
               key={inst.uid}
@@ -606,7 +606,7 @@ export const GalleryView: React.FC<GalleryViewProps> = ({
           </p>
         </div>
       ) : (
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-5">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-4 sm:gap-5">
           {filteredCards.map((card) => {
             const copies = profile.inventory[card.id] ?? [];
             const count = copies.length;

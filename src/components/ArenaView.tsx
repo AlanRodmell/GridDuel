@@ -265,6 +265,7 @@ export const ArenaView: React.FC<ArenaViewProps> = ({
   const [lastBattleLog, setLastBattleLog] = useState<string>(
     'Drag or tap a card from your 7-card hand onto any open socket on the 4×4 board.'
   );
+  const [battleHistory, setBattleHistory] = useState<string[]>([]);
   const [playerFlipsCount, setPlayerFlipsCount] = useState(0);
   const [playerCombosCount, setPlayerCombosCount] = useState(0);
   const [summary, setSummary] = useState<MatchSummary | null>(null);
@@ -373,6 +374,13 @@ export const ArenaView: React.FC<ArenaViewProps> = ({
     };
   }, [phase, onMatchActiveChange]);
 
+  useEffect(() => {
+    if (phase !== 'playing' || !lastBattleLog) return;
+    setBattleHistory((prev) =>
+      prev[0] === lastBattleLog ? prev : [lastBattleLog, ...prev].slice(0, 24)
+    );
+  }, [lastBattleLog, phase]);
+
   const totalConqueredFighters = useMemo(() => {
     return ALL_FIGHTERS.filter((f) => (profile.fighterWins?.[f.id] ?? 0) > 0).length;
   }, [profile.fighterWins]);
@@ -440,13 +448,13 @@ export const ArenaView: React.FC<ArenaViewProps> = ({
       setPlayerCombosCount(0);
       setSummary(null);
       setIsAnimating(false);
-      setLastBattleLog(
-        `Open 4×4 Duel vs ${fighter.name} (${BIOME_TILE_COUNT} Biome tiles: ${uniqueSpawnedBiomes}). ${
-          starter === 'player'
-            ? 'Your move!'
-            : `${fighter.name} leads — you hold the final move.`
-        }`
-      );
+      const introLog = `Open 4×4 Duel vs ${fighter.name} (${BIOME_TILE_COUNT} Biome tiles: ${uniqueSpawnedBiomes}). ${
+        starter === 'player'
+          ? 'Your move!'
+          : `${fighter.name} leads — you hold the final move.`
+      }`;
+      setLastBattleLog(introLog);
+      setBattleHistory([introLog]);
       setPhase('playing');
       sound.place();
       showCallout(starter === 'player' ? 'Your Turn First' : 'Rival Leads');
@@ -1281,8 +1289,8 @@ export const ArenaView: React.FC<ArenaViewProps> = ({
     return (
       <div
         className={`w-full ${
-          setupStep === 'deck' ? 'max-w-[1440px]' : 'max-w-5xl'
-        } mx-auto px-4 sm:px-6 py-5 sm:py-8 space-y-5 sm:space-y-6`}
+          setupStep === 'deck' ? 'max-w-none' : 'max-w-6xl'
+        } mx-auto px-4 sm:px-6 lg:px-8 py-5 sm:py-6 space-y-5 sm:space-y-6`}
       >
         {/* Clean Minimal Breadcrumb & Back Bar */}
         <div className="flex flex-wrap items-center justify-between gap-3">
@@ -1434,7 +1442,7 @@ export const ArenaView: React.FC<ArenaViewProps> = ({
         {/* STEP 2A: CHAMPIONSHIP ARENA DETAILS → SINGLE TABBED COMPONENT   */}
         {/* --------------------------------------------------------------- */}
         {setupStep === 'details' && gameMode === 'arena' && (
-          <div className="max-w-3xl mx-auto space-y-4">
+          <div className="max-w-5xl mx-auto space-y-4">
             <div className="flex flex-wrap items-end justify-between gap-3">
               <div>
                 <h1 className="font-[var(--font-display)] text-2xl sm:text-3xl font-bold text-slate-100 tracking-wide">
@@ -1921,9 +1929,9 @@ export const ArenaView: React.FC<ArenaViewProps> = ({
       : 'w-[76px] sm:w-[88px] ml-2 first:ml-0';
 
   return (
-    <div className="h-dvh lg:h-auto overflow-hidden lg:overflow-visible flex flex-col lg:block w-full max-w-7xl mx-auto px-2 sm:px-4 lg:px-6 py-1.5 lg:py-4">
+    <div className="h-full w-full overflow-hidden flex flex-col px-2.5 sm:px-4 lg:px-5 py-2 lg:py-3 gap-2 lg:gap-3">
       {/* Top Hero Portrait Medallions & Glowing Score Orbs */}
-      <div className="shrink-0 rounded-xl lg:rounded-2xl bg-gradient-to-r from-[#101c35] via-[#131c31] to-[#261326] border border-slate-800/90 px-2 sm:px-3 lg:px-4 py-1.5 lg:py-2 flex items-center justify-between gap-1.5 lg:gap-2 shadow-lg">
+      <div className="shrink-0 rounded-xl lg:rounded-2xl bg-gradient-to-r from-[#101c35] via-[#131c31] to-[#261326] border border-slate-800/90 px-2.5 sm:px-4 py-1.5 lg:py-2 flex items-center justify-between gap-2 shadow-lg">
         {/* Player Hero Medallion + Score Crystal */}
         <div className="flex items-center gap-2 shrink-0">
           <div className="relative">
@@ -2058,41 +2066,115 @@ export const ArenaView: React.FC<ArenaViewProps> = ({
         </div>
       </div>
 
-      {/* Responsive Tabletop: Zero-Scroll Flex Stage on Mobile + 3-Column Desktop */}
-      <div className="flex-1 min-h-0 flex flex-col lg:grid lg:grid-cols-12 gap-1.5 lg:gap-5 items-stretch lg:items-center mt-1.5 lg:mt-2.5">
-        {/* Rival Hand (Desktop Side Column — Mobile uses compact HUD pips above) */}
-        <div className="hidden lg:block lg:col-span-2 order-1">
-          <div className="flex items-center justify-between mb-1.5 px-0.5">
-            <span className="text-xs font-semibold text-rose-300 truncate">
-              Rival ({rivalHand.length})
-            </span>
-            <button
-              type="button"
-              onClick={onOpenRules}
-              className="text-[11px] text-amber-300/90 hover:text-amber-200 underline underline-offset-4 shrink-0 cursor-pointer"
-            >
-              Guide
-            </button>
+      {/* Full-Height Desktop 3-Column Tabletop (Zero Scroll) + Mobile Flex Stage */}
+      <div className="flex-1 min-h-0 flex flex-col lg:grid lg:grid-cols-[268px_minmax(0,1fr)_356px] xl:grid-cols-[308px_minmax(0,1fr)_420px] 2xl:grid-cols-[340px_minmax(0,1fr)_480px] gap-2 lg:gap-4 items-stretch">
+        {/* LEFT COMMAND PANEL (Desktop): Rival Hand + Active Biomes + Scrolling Battle Log */}
+        <aside className="hidden lg:flex flex-col gap-3 min-h-0 h-full overflow-hidden order-1">
+          {/* Rival Hand Fan */}
+          <div className="shrink-0 rounded-2xl bg-[#0c1324]/95 border border-slate-800/90 p-3 space-y-2.5">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-semibold uppercase tracking-wider text-rose-300 truncate">
+                {currentFighter.name}’s Hand
+              </span>
+              <span className="font-mono text-xs font-bold text-rose-200 bg-rose-950/80 border border-rose-500/40 px-2 py-0.5 rounded-md">
+                {rivalHand.length}/{HAND_SIZE}
+              </span>
+            </div>
+
+            <div className="flex items-center justify-center pt-1 pb-0.5 min-h-[78px]">
+              {rivalHand.length === 0 ? (
+                <span className="text-xs text-slate-500">All rival cards played</span>
+              ) : (
+                rivalHand.map((hCard, idx) => (
+                  <div
+                    key={hCard.uid}
+                    style={{ marginLeft: idx === 0 ? 0 : '-24px', zIndex: idx + 1 }}
+                    className="w-[56px] xl:w-[62px] shrink-0"
+                  >
+                    <GameCard cardId={hCard.cardId} owner="rival" faceDown size="xs" />
+                  </div>
+                ))
+              )}
+            </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-1.5">
-            {rivalHand.map((hCard) => (
-              <div key={hCard.uid} className="w-auto">
-                <GameCard cardId={hCard.cardId} owner="rival" faceDown size="xs" />
+          {/* Active Biomes Field Breakdown */}
+          {activeBoardBiomes.length > 0 && (
+            <div className="shrink-0 rounded-2xl bg-[#0c1324]/95 border border-slate-800/90 p-3 space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-semibold uppercase tracking-wider text-amber-300/90">
+                  Active Field Biomes
+                </span>
+                <span className="text-[10px] font-mono text-slate-400">4 tiles</span>
               </div>
-            ))}
-          </div>
-        </div>
+              <div className="space-y-1.5">
+                {activeBoardBiomes.map(([biome, count]) => {
+                  const meta = BIOME_META[biome];
+                  return (
+                    <div
+                      key={biome}
+                      className="rounded-xl bg-[#080e1b] border border-slate-800/80 px-2.5 py-2 space-y-0.5 text-[11px]"
+                    >
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="inline-flex items-center gap-1.5 font-semibold">
+                          <span
+                            className={`w-4 h-4 rounded-full border flex items-center justify-center shrink-0 ${meta.badgeClass}`}
+                          >
+                            <BiomeIcon biome={biome} className="w-2.5 h-2.5" />
+                          </span>
+                          <span className={meta.accentTextClass}>{meta.name}</span>
+                        </span>
+                        <span className="font-mono text-[10px] text-slate-400">×{count}</span>
+                      </div>
+                      <div className="text-[10.5px] text-emerald-300/95 leading-snug">
+                        ▲ {meta.favorsSummary}
+                      </div>
+                      <div className="text-[10.5px] text-rose-300/95 leading-snug">
+                        ▼ {meta.hindersSummary}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
 
-        {/* Center 4x4 Tactile Sanctuary Board (Preserves exact 5:7 Tarot card tiles!) */}
-        <div className="mobile-board-stage flex-1 min-h-0 lg:flex-none lg:col-span-7 order-2 relative flex flex-col items-center justify-center w-full">
+          {/* Live Scrolling Combat Log */}
+          <div className="flex-1 min-h-0 rounded-2xl bg-[#0c1324]/95 border border-slate-800/90 p-3 flex flex-col gap-2 overflow-hidden">
+            <div className="shrink-0 flex items-center justify-between">
+              <span className="text-xs font-semibold uppercase tracking-wider text-slate-300">
+                Battle Log
+              </span>
+              <span className="text-[10px] font-mono text-slate-500">
+                Click any board card to zoom
+              </span>
+            </div>
+            <div className="flex-1 min-h-0 overflow-y-auto space-y-1.5 pr-1">
+              {battleHistory.map((entry, idx) => (
+                <div
+                  key={`${idx}-${entry.slice(0, 18)}`}
+                  className={`rounded-lg px-2.5 py-1.5 text-[11px] leading-snug border ${
+                    idx === 0
+                      ? 'bg-amber-500/10 border-amber-400/35 text-amber-100 font-medium'
+                      : 'bg-[#080e1b]/80 border-slate-800/70 text-slate-400'
+                  }`}
+                >
+                  {entry}
+                </div>
+              ))}
+            </div>
+          </div>
+        </aside>
+
+        {/* CENTER FULL-HEIGHT 4x4 AERIAL BATTLEFIELD (Scales cleanly to fill monitor height!) */}
+        <div className="mobile-board-stage desktop-board-stage flex-1 min-h-0 h-full order-2 relative flex items-center justify-center w-full">
           {/* Animated Floating Callout Banner */}
           {callout && (
             <div
               key={callout.id}
-              className="pointer-events-none absolute top-1 lg:-top-2.5 z-30 animate-callout"
+              className="pointer-events-none absolute top-2 z-30 animate-callout"
             >
-              <div className="rounded-xl bg-gradient-to-b from-slate-900 to-slate-950 border-2 border-amber-400 px-3.5 py-1 lg:px-4 lg:py-1.5 shadow-[0_10px_28px_rgba(0,0,0,0.85)]">
+              <div className="rounded-xl bg-gradient-to-b from-slate-900 to-slate-950 border-2 border-amber-400 px-4 py-1.5 shadow-[0_10px_28px_rgba(0,0,0,0.85)]">
                 <span className="font-[var(--font-display)] text-xs sm:text-sm font-bold text-amber-200 tracking-wider">
                   {callout.text}
                 </span>
@@ -2102,28 +2184,14 @@ export const ArenaView: React.FC<ArenaViewProps> = ({
 
           {/* Animated Clash Duel Mini-Overlay */}
           {activeClash && (
-            <div className="pointer-events-none absolute bottom-2 lg:bottom-3 z-30 animate-callout">
-              <div className="rounded-xl bg-slate-950/95 border border-amber-400/80 px-3 py-1.5 lg:px-3.5 lg:py-2 shadow-2xl flex items-center gap-2.5 text-[11px] lg:text-xs">
+            <div className="pointer-events-none absolute bottom-3 z-30 animate-callout">
+              <div className="rounded-xl bg-slate-950/95 border border-amber-400/80 px-3.5 py-2 shadow-2xl flex items-center gap-2.5 text-xs">
                 <span className="font-semibold text-blue-300">{activeClash.attackerName}</span>
                 <span className="font-mono font-bold px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-400/40">
                   {toHexDigit(activeClash.attackerVal)}
                   {activeClash.attackType} vs {toHexDigit(activeClash.defenderVal)}
                 </span>
                 <span className="font-semibold text-rose-300">{activeClash.defenderName}</span>
-              </div>
-            </div>
-          )}
-
-          {/* Active Board Biomes Legend Strip (Desktop/Tablet so mobile stays zero-scroll) */}
-          {activeBoardBiomes.length > 0 && (
-            <div className="hidden sm:flex w-full max-w-[490px] sm:max-w-[580px] mb-2 flex-wrap items-center justify-between gap-2 px-2.5 py-1.5 rounded-xl bg-[#0d1424]/90 border border-slate-800/90 text-[11px]">
-              <span className="text-slate-400 font-medium">
-                4 Biome Tiles <span className="text-slate-500">· Hover for effects</span>
-              </span>
-              <div className="flex flex-wrap items-center gap-1.5">
-                {activeBoardBiomes.map(([biome, count]) => (
-                  <BiomePill key={biome} biome={biome} count={count} compact />
-                ))}
               </div>
             </div>
           )}
@@ -2141,8 +2209,8 @@ export const ArenaView: React.FC<ArenaViewProps> = ({
             </div>
           )}
 
-          {/* Continuous Blended Open 4x4 Aerial Battlefield Canvas (5:7 Tarot tiles auto-fit 100dvh on mobile) */}
-          <div className="relative mobile-board-fit lg:w-full lg:max-w-[580px] rounded-xl lg:rounded-2xl border-2 border-amber-500/35 p-1.5 sm:p-2 lg:p-2.5 overflow-hidden bg-[#0a0f18] shadow-[0_24px_60px_rgba(0,0,0,0.75),inset_0_1px_0_rgba(255,255,255,0.1)]">
+          {/* Continuous Blended Open 4x4 Aerial Battlefield Canvas (Auto-fits 100% of stage height & width!) */}
+          <div className="relative mobile-board-fit desktop-board-fit rounded-xl lg:rounded-2xl border-2 border-amber-500/35 p-1.5 sm:p-2 lg:p-3 overflow-hidden bg-[#0a0f18] shadow-[0_24px_60px_rgba(0,0,0,0.75),inset_0_1px_0_rgba(255,255,255,0.1)]">
             {/* Unbroken Weathered Stone Battlefield Floor Beneath All 16 Squares */}
             <div
               aria-hidden="true"
@@ -2338,42 +2406,99 @@ export const ArenaView: React.FC<ArenaViewProps> = ({
           </div>
         </div>
 
-        {/* Player Hand — Zero-Scroll 7-Card Fan on Mobile + 2-Column Grid on Desktop */}
-        <div className="shrink-0 lg:col-span-3 order-3 w-full pb-safe lg:pb-0">
-          <div className="flex items-center justify-between gap-2 mb-0.5 lg:mb-1 px-0.5 min-h-[20px]">
+        {/* RIGHT COMMAND PANEL: Live Selected Card Inspector + Spacious Desktop Hand Grid */}
+        <aside className="shrink-0 lg:shrink lg:min-h-0 lg:h-full lg:flex lg:flex-col lg:gap-2.5 order-3 w-full pb-safe lg:pb-0">
+          {/* Desktop Permanent Selected Card Inspector */}
+          {selectedCardDef && selectedHandCard && (
+            <div className="hidden lg:block shrink-0 rounded-2xl bg-[#0c1324]/95 border border-amber-500/30 p-3.5 text-xs space-y-2 shadow-md">
+              <div className="flex items-center justify-between gap-2">
+                <span className="font-[var(--font-display)] text-sm font-bold text-amber-100 truncate">
+                  {selectedCardDef.name}
+                </span>
+                <span className="font-mono text-sm font-bold text-amber-300 shrink-0">
+                  {formatTetraCode(selectedHandCard.stats)}
+                </span>
+              </div>
+              <div className="flex items-center justify-between gap-2">
+                <CardTraitPills
+                  element={selectedCardDef.element}
+                  tribe={selectedCardDef.tribe}
+                  compact
+                />
+                <span className="flex items-center gap-1 text-slate-300 font-mono text-[11px]">
+                  <Compass className="w-3.5 h-3.5 text-amber-300" />
+                  {selectedHandCard.arrows.length} arrows
+                </span>
+              </div>
+              <div className="text-[11px] font-mono text-slate-400">
+                ATK {toHexDigit(selectedHandCard.stats.power)} · Type {selectedHandCard.stats.type}{' '}
+                · P.DEF {toHexDigit(selectedHandCard.stats.pDef)} · M.DEF{' '}
+                {toHexDigit(selectedHandCard.stats.mDef)}
+              </div>
+
+              {/* Selected Card Live Matchups Against This Board's Active Biomes */}
+              {(() => {
+                const matchups = activeBoardBiomes
+                  .map(([b]) => evaluateTerrainEffect(b, selectedCardDef))
+                  .filter((ev): ev is NonNullable<typeof ev> => Boolean(ev && ev.hasEffect));
+                if (matchups.length === 0) return null;
+                return (
+                  <div className="flex flex-wrap items-center gap-1.5 pt-1 border-t border-slate-800/80">
+                    {matchups.map((m) => (
+                      <span
+                        key={m.biome}
+                        className={`inline-flex items-center gap-1 rounded-md border px-2 py-0.5 font-mono text-[10.5px] font-semibold ${
+                          m.isPositive
+                            ? 'bg-emerald-950/85 border-emerald-400/50 text-emerald-200'
+                            : 'bg-rose-950/80 border-rose-400/45 text-rose-200'
+                        }`}
+                      >
+                        <BiomeIcon biome={m.biome} className="w-3 h-3 shrink-0" />
+                        <span>
+                          {BIOME_META[m.biome].shortName}: {m.shortTag}
+                        </span>
+                      </span>
+                    ))}
+                  </div>
+                );
+              })()}
+
+              {selectedActiveAugment && (
+                <div className="rounded-xl bg-violet-950/60 border border-violet-400/50 px-2.5 py-1.5 text-[11px] text-violet-100 flex items-start gap-1.5">
+                  <Wand2 className="w-3.5 h-3.5 text-violet-300 shrink-0 mt-0.5" />
+                  <div>
+                    <strong className="text-violet-200">{selectedActiveAugment.name}:</strong>{' '}
+                    <span>{selectedActiveAugment.description}</span>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Hand Header */}
+          <div className="flex items-center justify-between gap-2 mb-0.5 lg:mb-0 px-1 shrink-0 min-h-[20px]">
             <div className="flex items-center gap-1.5 shrink-0">
-              <span className="text-[11px] lg:text-xs font-semibold text-blue-300">
-                Hand ({playerHand.length})
+              <span className="text-[11px] lg:text-xs font-semibold uppercase tracking-wider text-blue-300">
+                Your Hand ({playerHand.length})
               </span>
               <span className="lg:hidden text-[10px] text-slate-400">
                 · Slide to inspect
               </span>
             </div>
+            <span className="hidden lg:inline text-[11px] text-slate-400">
+              Drag or click card → tile
+            </span>
             {selectedCardDef && selectedHandCard && (
-              <div className="flex items-center justify-end gap-1.5 text-[11px] lg:text-xs text-slate-200 min-w-0">
+              <div className="flex lg:hidden items-center justify-end gap-1.5 text-[11px] text-slate-200 min-w-0">
                 <span className="font-semibold truncate">{selectedCardDef.name}</span>
                 <span className="font-mono font-bold tabular-nums text-amber-300 shrink-0">
                   {formatTetraCode(selectedHandCard.stats)}
-                </span>
-                <span className="text-slate-400 shrink-0">
-                  · {selectedHandCard.arrows.length}▲
                 </span>
               </div>
             )}
           </div>
 
-          {/* Desktop Selected Card Augment Banner (Mobile floats this over the board edge) */}
-          {selectedActiveAugment && (
-            <div className="hidden lg:flex mb-2 rounded-xl bg-violet-950/60 border border-violet-400/50 px-2.5 py-1.5 text-[11px] text-violet-100 items-start gap-1.5 shadow">
-              <Wand2 className="w-3.5 h-3.5 text-violet-300 shrink-0 mt-0.5" />
-              <div>
-                <strong className="text-violet-200">{selectedActiveAugment.name}:</strong>{' '}
-                <span>{selectedActiveAugment.description}</span>
-              </div>
-            </div>
-          )}
-
-          {/* Mobile Zero-Scroll 7-Card Overlapping Fan (press & slide to scrub and pop cards bigger) */}
+          {/* Mobile Zero-Scroll 7-Card Overlapping Fan */}
           <div
             ref={mobileHandFanRef}
             className="flex lg:hidden items-end justify-center pt-4 pb-1.5 px-1 touch-none select-none"
@@ -2427,68 +2552,43 @@ export const ArenaView: React.FC<ArenaViewProps> = ({
             })}
           </div>
 
-          {/* Desktop 2-Column Hand Grid */}
-          <div className="hidden lg:grid lg:grid-cols-2 gap-2 pt-1">
-            {playerHand.map((hCard) => {
-              const isSelected = hCard.uid === selectedHandUid;
-              const isBeingDragged = draggingCard?.card.uid === hCard.uid;
-              return (
-                <div
-                  key={hCard.uid}
-                  onPointerDown={(e) => handleHandCardPointerDown(e, hCard)}
-                  className={`w-auto transition-opacity duration-150 ${
-                    phase === 'playing' && turn === 'player' && !isAnimating
-                      ? 'cursor-grab active:cursor-grabbing'
-                      : ''
-                  } ${isBeingDragged ? 'opacity-25 scale-95' : ''}`}
-                >
-                  <GameCard
-                    cardId={hCard.cardId}
-                    stats={hCard.stats}
-                    arrows={hCard.arrows}
-                    augmentId={hCard.augmentId}
-                    owner="player"
-                    size="sm"
-                    showName
-                    selected={isSelected && turn === 'player' && !isBeingDragged}
-                    onClick={() => {
-                      if (Date.now() < suppressHandClickUntilRef.current) return;
-                      sound.select();
-                      setSelectedHandUid(hCard.uid);
-                    }}
-                  />
-                </div>
-              );
-            })}
-          </div>
-
-          {selectedCardDef && selectedHandCard && (
-            <div className="mt-2 hidden lg:block rounded-xl bg-[#10182a] border border-amber-500/25 p-3 text-xs space-y-1.5 shadow-md">
-              <div className="flex items-center justify-between gap-2">
-                <span className="font-semibold text-slate-100">{selectedCardDef.name}</span>
-                <span className="font-mono font-bold text-amber-300">
-                  {formatTetraCode(selectedHandCard.stats)}
-                </span>
-              </div>
-              <div className="flex items-center justify-between gap-2">
-                <CardTraitPills
-                  element={selectedCardDef.element}
-                  tribe={selectedCardDef.tribe}
-                  compact
-                />
-                <span className="flex items-center gap-1 text-amber-300 font-mono text-[11px]">
-                  <Compass className="w-3.5 h-3.5" />
-                  {selectedHandCard.arrows.length}
-                </span>
-              </div>
-              <div className="text-slate-400">
-                Pwr {toHexDigit(selectedHandCard.stats.power)} · Type {selectedHandCard.stats.type}{' '}
-                · P.Def {toHexDigit(selectedHandCard.stats.pDef)} · M.Def{' '}
-                {toHexDigit(selectedHandCard.stats.mDef)}
-              </div>
+          {/* Desktop Full-Height Scrollable Hand Panel (2 cols on lg/xl, 3 cols on 2xl) */}
+          <div className="hidden lg:block flex-1 min-h-0 overflow-y-auto rounded-2xl bg-[#0c1324]/90 border border-slate-800/90 p-2.5">
+            <div className="grid grid-cols-2 2xl:grid-cols-3 gap-2.5">
+              {playerHand.map((hCard) => {
+                const isSelected = hCard.uid === selectedHandUid;
+                const isBeingDragged = draggingCard?.card.uid === hCard.uid;
+                return (
+                  <div
+                    key={hCard.uid}
+                    onPointerDown={(e) => handleHandCardPointerDown(e, hCard)}
+                    className={`w-auto transition-opacity duration-150 ${
+                      phase === 'playing' && turn === 'player' && !isAnimating
+                        ? 'cursor-grab active:cursor-grabbing'
+                        : ''
+                    } ${isBeingDragged ? 'opacity-25 scale-95' : ''}`}
+                  >
+                    <GameCard
+                      cardId={hCard.cardId}
+                      stats={hCard.stats}
+                      arrows={hCard.arrows}
+                      augmentId={hCard.augmentId}
+                      owner="player"
+                      size="md"
+                      showName
+                      selected={isSelected && turn === 'player' && !isBeingDragged}
+                      onClick={() => {
+                        if (Date.now() < suppressHandClickUntilRef.current) return;
+                        sound.select();
+                        setSelectedHandUid(hCard.uid);
+                      }}
+                    />
+                  </div>
+                );
+              })}
             </div>
-          )}
-        </div>
+          </div>
+        </aside>
       </div>
 
       {/* Hover-Only Unclipped Biome Tile Tooltip Portal */}
