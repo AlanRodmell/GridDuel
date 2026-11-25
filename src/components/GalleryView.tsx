@@ -455,7 +455,7 @@ export const GalleryView: React.FC<GalleryViewProps> = ({
             <button
               type="button"
               onClick={() => onAutoBuildDeck('augments')}
-              className="min-h-[36px] px-3 py-1 bg-[#24162b] hover:bg-[#311d3a] border border-violet-500/45 text-violet-200 font-[var(--font-display)] text-xs flex items-center gap-1 transition-colors whitespace-nowrap cursor-pointer"
+              className="organic-tag min-h-[36px] px-3.5 py-1 bg-[#281832] hover:bg-[#351f42] text-violet-200 font-[var(--font-display)] text-xs flex items-center gap-1 transition-colors whitespace-nowrap cursor-pointer"
             >
               <Wand2 className="w-3 h-3" />
               <span>Augment Synergy</span>
@@ -470,16 +470,16 @@ export const GalleryView: React.FC<GalleryViewProps> = ({
           </div>
         </div>
 
-        {/* Fixed 7-Slot Active Deck Grid (with Dashed Empty Card Outlines!) */}
+        {/* Fixed 7-Slot Active Deck Grid (with Hand-Carved Empty Card Imprints!) */}
         <div className="basalt-recess p-3 grid grid-cols-2 sm:grid-cols-4 md:grid-cols-7 gap-3 sm:gap-3.5">
           {activeDeckSlots.map((inst, slotIdx) => {
             if (!inst) {
               return (
                 <div
                   key={`compendium-empty-${slotIdx}`}
-                  className="relative aspect-[5/7] border-2 border-dashed border-[#5c4732] bg-[#110c08]/65 flex flex-col items-center justify-center p-2 text-center"
+                  className="empty-card-imprint relative aspect-[5/7] flex flex-col items-center justify-center p-2 text-center"
                 >
-                  <span className="absolute top-1.5 left-1.5 font-mono text-[10px] font-bold text-[#8c775c]">
+                  <span className="absolute top-2 left-2 font-mono text-[10px] font-bold text-[#8c775c]">
                     #{slotIdx + 1}
                   </span>
                   <Plus className="w-5 h-5 text-[#7c6850] mb-1" />
@@ -492,8 +492,8 @@ export const GalleryView: React.FC<GalleryViewProps> = ({
 
             return (
               <div key={`compendium-slot-${slotIdx}-${inst.uid}`} className="group relative">
-                <span className="pointer-events-none absolute top-1 left-1 z-30 px-1 py-[1px] bg-[#140f0b]/90 border border-[#584531] font-mono text-[9px] font-bold text-[#d8c4a3] shadow">
-                  #{slotIdx + 1}
+                <span className="organic-seal pointer-events-none absolute top-1 left-1 z-30 w-5 h-5 bg-[#19120c]/95 font-mono text-[9px] font-bold text-[#e5d2b0] flex items-center justify-center shadow">
+                  {slotIdx + 1}
                 </span>
                 <GameCard
                   cardId={inst.cardId}
@@ -508,7 +508,7 @@ export const GalleryView: React.FC<GalleryViewProps> = ({
                     onToggleDeckCard(inst.uid);
                   }}
                 />
-                <span className="pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity absolute -top-1.5 -right-1.5 z-40 px-1.5 py-0.5 bg-[#7c1f1f] border border-rose-300 text-[9.5px] font-[var(--font-display)] font-bold text-white shadow-lg flex items-center gap-0.5">
+                <span className="organic-tag pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity absolute -top-1.5 -right-1.5 z-40 px-2 py-0.5 bg-[#7c1f1f] text-[9.5px] font-[var(--font-display)] font-bold text-white shadow-lg flex items-center gap-0.5">
                   <X className="w-2.5 h-2.5 stroke-[3]" />
                   <span>Remove</span>
                 </span>
@@ -592,7 +592,7 @@ export const GalleryView: React.FC<GalleryViewProps> = ({
               sound.select();
               setElementFilter(e.target.value as 'all' | CardElement);
             }}
-            className="min-h-[38px] px-2.5 py-1 rounded-[3px] basalt-recess hover:border-[#8e6732] text-xs font-medium text-[#e5d6bc] focus:outline-none focus:border-[#d4a046] cursor-pointer"
+            className="organic-control min-h-[38px] pl-3 text-xs font-medium text-[#e5d6bc] cursor-pointer"
           >
             <option value="all">All Elements</option>
             {ALL_ELEMENTS.map((el) => (
@@ -609,7 +609,7 @@ export const GalleryView: React.FC<GalleryViewProps> = ({
               sound.select();
               setTribeFilter(e.target.value as 'all' | CardTribe);
             }}
-            className="min-h-[38px] px-2.5 py-1 rounded-[3px] basalt-recess hover:border-[#8e6732] text-xs font-medium text-[#e5d6bc] focus:outline-none focus:border-[#d4a046] cursor-pointer"
+            className="organic-control min-h-[38px] pl-3 text-xs font-medium text-[#e5d6bc] cursor-pointer"
           >
             <option value="all">All Tribes</option>
             {ALL_TRIBES.map((tr) => (
@@ -622,14 +622,14 @@ export const GalleryView: React.FC<GalleryViewProps> = ({
 
         {/* Search by Name, Number, or Augment */}
         <div className="relative w-full sm:w-56">
-          <Search className="w-3.5 h-3.5 text-[#8c785f] absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+          <Search className="w-3.5 h-3.5 text-[#8c785f] absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none z-10" />
           <input
             type="search"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder={`Find card, #01–#${totalCards}, or augment...`}
             aria-label="Search cards by name, number, or augment"
-            className="w-full min-h-[38px] pl-8 pr-3 py-1.5 rounded-[3px] basalt-recess text-xs text-[#efe3cd] placeholder:text-[#7d6c56] focus:outline-none focus:border-[#c89640]"
+            className="organic-control w-full min-h-[38px] pl-8 pr-3 py-1.5 text-xs text-[#efe3cd] placeholder:text-[#7d6c56]"
           />
         </div>
       </div>
@@ -706,12 +706,12 @@ export const GalleryView: React.FC<GalleryViewProps> = ({
                   />
                   {/* Copy Count Badge (1/5 to 5/5) */}
                   <span
-                    className={`pointer-events-none absolute top-2.5 left-2.5 z-20 px-1.5 py-0.5 rounded-[2px] font-mono text-[10px] font-bold tabular-nums border shadow ${
+                    className={`organic-tag pointer-events-none absolute top-2 left-2 z-20 px-2 py-0.5 font-mono text-[10px] font-bold tabular-nums shadow ${
                       count >= MAX_COPIES_PER_CARD
-                        ? 'bg-[#e2b053] text-[#170f06] border-[#f8df9d]'
+                        ? 'bg-[#e2b053] text-[#170f06]'
                         : count > 1
                         ? 'brass-plaque text-[#f0c76e]'
-                        : 'bg-[#16110d]/90 text-[#cbb89a] border-[#4b3a29]'
+                        : 'bg-[#19120c]/95 text-[#cbb89a]'
                     }`}
                   >
                     {count}/{MAX_COPIES_PER_CARD}
@@ -719,7 +719,7 @@ export const GalleryView: React.FC<GalleryViewProps> = ({
                   {inDeck && (
                     <span
                       title={`In ${activeDeck.name}`}
-                      className="pointer-events-none absolute top-2.5 right-2.5 z-20 px-1.5 h-5 rounded-[2px] bg-[#e2b053] text-[#170f06] border border-[#f8df9d] font-mono text-[10px] font-bold flex items-center justify-center gap-0.5 shadow"
+                      className="organic-tag pointer-events-none absolute top-2 right-2 z-20 px-2 h-5 bg-[#e2b053] text-[#170f06] font-mono text-[10px] font-bold flex items-center justify-center gap-0.5 shadow"
                     >
                       <Check className="w-3 h-3 stroke-[3]" />
                       {equippedCountForType > 1 && <span>×{equippedCountForType}</span>}

@@ -370,7 +370,7 @@ export const MatchSpoilsModal: React.FC<MatchSpoilsModalProps> = ({
                           <div className="flex justify-center">
                             <span
                               title={spoilRune.description}
-                              className="inline-flex items-center gap-1 px-2 py-0.5 rounded-[2px] bg-violet-950/90 border border-violet-400/50 font-mono text-[10.5px] font-semibold text-violet-200"
+                              className="organic-tag inline-flex items-center gap-1 px-2.5 py-0.5 bg-violet-950/95 font-mono text-[10.5px] font-semibold text-violet-200"
                             >
                               <Wand2 className="w-3 h-3 text-violet-300 shrink-0" />
                               <span>{spoilRune.name}</span>
@@ -381,7 +381,7 @@ export const MatchSpoilsModal: React.FC<MatchSpoilsModalProps> = ({
                           <div className="flex justify-center">
                             <span
                               title={comparison.tooltip}
-                              className={`inline-flex items-center rounded-[2px] border px-2 py-0.5 font-mono text-[11px] font-semibold leading-tight cursor-help ${comparison.badgeClass}`}
+                              className={`organic-tag inline-flex items-center px-2.5 py-0.5 font-mono text-[11px] font-semibold leading-tight cursor-help ${comparison.badgeClass}`}
                             >
                               {comparison.badgeText}
                             </span>

@@ -1,6 +1,11 @@
 import { createContext, useContext } from 'react';
 import { ArrowDir, BiomeType, Owner, PlacedCard, TetraStats } from '../types/game';
 
+export interface ArenaBiomeCount {
+  biome: BiomeType;
+  count: number;
+}
+
 export interface CardPreviewData {
   cardId: string;
   stats: TetraStats;
@@ -10,6 +15,7 @@ export interface CardPreviewData {
   owner?: Owner | 'neutral';
   terrain?: BiomeType | null;
   terrainMod?: PlacedCard['terrainMod'];
+  arenaBiomes?: ArenaBiomeCount[];
   lastAugmented?: {
     label: string;
     isBuff: boolean;

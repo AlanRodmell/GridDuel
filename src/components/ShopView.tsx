@@ -481,13 +481,13 @@ export const ShopView: React.FC<ShopViewProps> = ({
               </p>
             </div>
             <div className="flex flex-wrap items-center gap-2 text-[11px] shrink-0">
-              <span className="px-2 py-1 rounded-[2px] bg-emerald-950/80 border border-emerald-500/45 text-emerald-200 font-mono">
+              <span className="organic-tag px-2.5 py-1 bg-emerald-950/90 text-emerald-200 font-mono">
                 Minor · 350–450g
               </span>
-              <span className="px-2 py-1 rounded-[2px] bg-sky-950/80 border border-sky-500/45 text-sky-200 font-mono">
+              <span className="organic-tag px-2.5 py-1 bg-sky-950/90 text-sky-200 font-mono">
                 Major · 1.1k–1.4k
               </span>
-              <span className="px-2 py-1 rounded-[2px] brass-plaque text-[#f0c76e] font-mono">
+              <span className="px-2.5 py-1 brass-plaque text-[#f0c76e] font-mono">
                 Sovereign · 2.8k–3.4k
               </span>
             </div>
@@ -696,11 +696,11 @@ export const ShopView: React.FC<ShopViewProps> = ({
 
                       <div className="flex flex-wrap items-center gap-1.5">
                         <span
-                          className={`px-1.5 py-0.5 rounded-[2px] border text-[9.5px] font-bold uppercase tracking-wider ${tierMeta.badgeClass}`}
+                          className={`organic-tag px-2 py-0.5 text-[9.5px] font-bold uppercase tracking-wider ${tierMeta.badgeClass}`}
                         >
                           {tierMeta.label}
                         </span>
-                        <span className="px-1.5 py-0.5 rounded-[2px] bg-violet-950/90 border border-violet-500/40 font-mono text-[10px] font-semibold text-violet-200">
+                        <span className="organic-tag px-2 py-0.5 bg-violet-950/95 font-mono text-[10px] font-semibold text-violet-200">
                           {rune.shortTag}
                         </span>
                       </div>
@@ -1057,12 +1057,12 @@ export const ShopView: React.FC<ShopViewProps> = ({
                       showName
                     />
                     <span
-                      className={`absolute top-1.5 right-1.5 z-30 px-1.5 py-0.5 rounded-[2px] text-[10px] font-mono font-bold border shadow ${
+                      className={`organic-tag absolute top-1.5 right-1.5 z-30 px-2 py-0.5 text-[10px] font-mono font-bold shadow ${
                         isMaxCopies
-                          ? 'bg-[#e2b053] border-[#f8df9d] text-[#170f06]'
+                          ? 'bg-[#e2b053] text-[#170f06]'
                           : ownedCount > 0
                           ? 'brass-plaque text-[#f0c76e]'
-                          : 'bg-[#15100c]/90 border-[#433526] text-[#9b896f]'
+                          : 'bg-[#19120c]/95 text-[#a89478]'
                       }`}
                     >
                       {ownedCount}/{MAX_COPIES_PER_CARD}

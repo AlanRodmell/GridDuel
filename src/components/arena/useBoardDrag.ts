@@ -8,6 +8,7 @@ interface UseBoardDragParams {
   turn: Owner;
   isAnimating: boolean;
   playerHand: HandCard[];
+  clickToPlace?: boolean;
   onSelectHandUid: (uid: string | null) => void;
   onExecutePlayerMove: (uid: string, row: number, col: number) => void;
   timersRef: React.MutableRefObject<number[]>;
@@ -19,6 +20,7 @@ export function useBoardDrag({
   turn,
   isAnimating,
   playerHand,
+  clickToPlace = false,
   onSelectHandUid,
   onExecutePlayerMove,
   timersRef,
@@ -185,7 +187,9 @@ export function useBoardDrag({
         tilt: 0,
       };
 
-      onSelectHandUid(card.uid);
+      if (clickToPlace) {
+        onSelectHandUid(card.uid);
+      }
       setDraggingCard({
         card,
         width: ghostWidth,
@@ -268,7 +272,9 @@ export function useBoardDrag({
             s.activeUid = targetCard.uid;
             scrubCardUidRef.current = targetCard.uid;
             setScrubCardUid(targetCard.uid);
-            onSelectHandUid(targetCard.uid);
+            if (clickToPlace) {
+              onSelectHandUid(targetCard.uid);
+            }
             sound.hover();
             if (typeof navigator !== 'undefined' && typeof navigator.vibrate === 'function') {
               navigator.vibrate(8);
@@ -300,7 +306,9 @@ export function useBoardDrag({
         d.targetY = e.clientY - d.offsetY - touchLiftY;
         d.tilt = 0;
 
-        onSelectHandUid(d.card.uid);
+        if (clickToPlace) {
+          onSelectHandUid(d.card.uid);
+        }
         setDraggingCard({
           card: d.card,
           width: d.width,
@@ -423,7 +431,7 @@ export function useBoardDrag({
         dragRafRef.current = null;
       }
     };
-  }, [board, onExecutePlayerMove, onSelectHandUid, timersRef]);
+  }, [board, clickToPlace, onExecutePlayerMove, onSelectHandUid, timersRef]);
 
   const handleMobileFanPointerDown = (
     e: React.PointerEvent<HTMLDivElement>,

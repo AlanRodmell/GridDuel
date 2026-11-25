@@ -117,6 +117,7 @@ const DEFAULT_PROFILE: PlayerProfile = {
   cardWins: {},
   fighterWins: {},
   soundEnabled: true,
+  clickToPlace: false,
 };
 
 /**
@@ -285,6 +286,7 @@ function parseAndSanitizeProfile(raw: string): PlayerProfile | null {
       decks,
       activeDeckIndex,
       fighterWins: parsed.fighterWins ?? {},
+      clickToPlace: Boolean(parsed.clickToPlace),
     };
   } catch {
     return null;
@@ -378,6 +380,14 @@ export function useProfile() {
       sound.enabled = next;
       return { ...prev, soundEnabled: next };
     });
+  }, []);
+
+  const toggleClickToPlace = useCallback(() => {
+    setProfile((prev) => ({
+      ...prev,
+      clickToPlace: !prev.clickToPlace,
+    }));
+    sound.select();
   }, []);
 
   const selectDeckSlot = useCallback((index: number) => {
@@ -1112,10 +1122,11 @@ export function useProfile() {
       decks: buildDefaultDecksFromInventory(freshInv),
       activeDeckIndex: 0,
       soundEnabled: profile.soundEnabled,
+      clickToPlace: Boolean(profile.clickToPlace),
     };
     setProfile(freshProfile);
     sound.select();
-  }, [profile.soundEnabled]);
+  }, [profile.clickToPlace, profile.soundEnabled]);
 
   const ownedUniqueCount = CARDS.filter((c) => (profile.owned[c.id] ?? 0) > 0).length;
   const totalCopiesCount = Object.values(profile.inventory).reduce(
@@ -1132,6 +1143,7 @@ export function useProfile() {
     totalCopiesCount,
     totalCards: CARDS.length,
     toggleSound,
+    toggleClickToPlace,
     selectDeckSlot,
     createDeck,
     renameDeck,

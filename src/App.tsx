@@ -6,6 +6,7 @@ import {
   HardDrive,
   Home,
   LayoutGrid,
+  MousePointerClick,
   Music,
   ShoppingBag,
   Swords,
@@ -56,6 +57,7 @@ export default function App() {
     ownedUniqueCount,
     totalCards,
     toggleSound,
+    toggleClickToPlace,
     selectDeckSlot,
     createDeck,
     renameDeck,
@@ -248,7 +250,7 @@ export default function App() {
                 <Swords className="w-4 h-4 shrink-0" />
                 <span className="hidden xl:inline flex-1 text-left">Battle</span>
                 {isMatchActive && (
-                  <span className="hidden xl:inline-flex px-1.5 py-0.5 bg-emerald-950/90 border border-emerald-500/50 text-[10px] font-mono text-emerald-300">
+                  <span className="hidden xl:inline-flex organic-tag px-2 py-0.5 bg-emerald-950/90 text-[10px] font-mono text-emerald-300">
                     LIVE
                   </span>
                 )}
@@ -347,6 +349,31 @@ export default function App() {
               <span className="hidden xl:inline flex-1 text-left">Sound FX</span>
               <span className="hidden xl:inline text-[10px] font-mono text-[#82715b]">
                 {profile.soundEnabled ? 'ON' : 'MUTE'}
+              </span>
+            </button>
+
+            <button
+              type="button"
+              onClick={toggleClickToPlace}
+              title={
+                profile.clickToPlace
+                  ? 'Accessibility: Click Card → Click Tile is ON (Click to switch back to Drag to Place + Click to Inspect)'
+                  : 'Accessibility: Enable Click Card → Click Tile placement (Default: Drag to Place, Click Card to Inspect)'
+              }
+              className={`w-full min-h-[38px] px-2.5 xl:px-3 py-2 rounded-[3px] flex items-center justify-center xl:justify-start gap-3 text-xs font-[var(--font-display)] tracking-wide border transition-colors cursor-pointer ${
+                profile.clickToPlace
+                  ? 'text-[#f2d28f] bg-[#2a1f13] border-[#6e5025] hover:bg-[#332617]'
+                  : 'text-[#9e8c72] border-transparent hover:text-[#efe3cd] hover:bg-[#221a13]/80 hover:border-[#423426]'
+              }`}
+            >
+              <MousePointerClick
+                className={`w-4 h-4 shrink-0 ${
+                  profile.clickToPlace ? 'text-[#f0c76e]' : ''
+                }`}
+              />
+              <span className="hidden xl:inline flex-1 text-left">Click-Place</span>
+              <span className="hidden xl:inline text-[10px] font-mono text-[#a69275]">
+                {profile.clickToPlace ? 'ON' : 'DRAG'}
               </span>
             </button>
 
@@ -462,6 +489,7 @@ export default function App() {
                 onGoToGallery={() => switchTab('gallery')}
                 onOpenRules={() => setRulesOpen(true)}
                 onToggleSound={toggleSound}
+                onToggleClickToPlace={toggleClickToPlace}
                 onMatchActiveChange={setIsMatchActive}
                 onMatchThemeChange={handleMatchThemeChange}
               />

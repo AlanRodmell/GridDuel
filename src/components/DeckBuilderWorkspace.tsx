@@ -578,7 +578,7 @@ export const DeckBuilderWorkspace: React.FC<DeckBuilderWorkspaceProps> = ({
                   maxLength={28}
                   autoFocus
                   aria-label="Rename active deck"
-                  className="px-2 py-0.5 bg-[#0e0a07] border border-[#d4a046] text-xs font-semibold text-[#f5e7cc] focus:outline-none"
+                  className="organic-control px-2.5 py-1 text-xs font-semibold text-[#f5e7cc]"
                 />
                 <button type="submit" className="brass-btn p-1 cursor-pointer" aria-label="Save">
                   <Check className="w-3 h-3" />
@@ -663,7 +663,7 @@ export const DeckBuilderWorkspace: React.FC<DeckBuilderWorkspaceProps> = ({
                 onAutoBuildDeck('biome', arenaBiomes, false);
                 setTargetSlotIdx(null);
               }}
-              className="px-2 py-0.5 bg-emerald-950/80 hover:bg-emerald-900/85 border border-emerald-500/45 text-[11px] font-[var(--font-display)] font-bold text-emerald-200 cursor-pointer"
+              className="organic-tag px-2.5 py-1 bg-emerald-950/90 hover:bg-emerald-900/90 text-[11px] font-[var(--font-display)] font-bold text-emerald-200 cursor-pointer"
             >
               Biome Fit
             </button>
@@ -699,7 +699,7 @@ export const DeckBuilderWorkspace: React.FC<DeckBuilderWorkspaceProps> = ({
           </div>
         </div>
 
-        {/* FIXED 7-SLOT WARBAND GRID (Zero Reordering · Dashed Empty Card Outlines!) */}
+        {/* FIXED 7-SLOT WARBAND GRID (Zero Reordering · Hand-Carved Empty Card Imprints!) */}
         <div className="grid grid-cols-4 sm:grid-cols-7 gap-2 sm:gap-2.5 lg:gap-3 pt-0.5">
           {fixedDeckSlots.map((slotInst, slotIdx) => {
             const isTargeted = targetSlotIdx === slotIdx;
@@ -714,20 +714,18 @@ export const DeckBuilderWorkspace: React.FC<DeckBuilderWorkspaceProps> = ({
                     setTargetSlotIdx((cur) => (cur === slotIdx ? null : slotIdx));
                   }}
                   title={`Empty Slot #${slotIdx + 1} — click any card in your Vault below to fill`}
-                  className={`group relative aspect-[5/7] w-full max-w-[142px] mx-auto border-2 border-dashed flex flex-col items-center justify-center p-2 text-center transition-all cursor-pointer ${
-                    isTargeted
-                      ? 'border-[#f0c76e] bg-amber-500/10 shadow-[0_0_18px_rgba(240,199,110,0.22)]'
-                      : 'border-[#5c4732] bg-[#110c08]/65 hover:border-[#c89640] hover:bg-[#1a130c]/80'
-                  }`}
+                  className={`empty-card-imprint ${
+                    isTargeted ? 'empty-card-imprint-active' : ''
+                  } group relative aspect-[5/7] w-full max-w-[142px] mx-auto flex flex-col items-center justify-center p-2 text-center transition-transform hover:scale-[1.02] cursor-pointer`}
                 >
-                  <span className="absolute top-1.5 left-1.5 font-mono text-[10px] font-bold text-[#8c775c]">
+                  <span className="absolute top-2 left-2 font-mono text-[10px] font-bold text-[#8c775c]">
                     #{slotIdx + 1}
                   </span>
                   <div
-                    className={`w-7 h-7 rounded-full border flex items-center justify-center mb-1 transition-colors ${
+                    className={`organic-seal w-7 h-7 flex items-center justify-center mb-1 transition-colors ${
                       isTargeted
-                        ? 'border-[#f0c76e] text-[#f0c76e] bg-amber-500/15'
-                        : 'border-[#5a4631] text-[#8c775c] group-hover:border-[#d8a243] group-hover:text-[#f0c76e]'
+                        ? 'bg-amber-600/35 text-[#f7dea2]'
+                        : 'bg-[#211810] text-[#9b866a] group-hover:text-[#f0c76e]'
                     }`}
                   >
                     <Plus className="w-4 h-4" />
@@ -747,8 +745,8 @@ export const DeckBuilderWorkspace: React.FC<DeckBuilderWorkspaceProps> = ({
                 key={`slot-${slotIdx}-${slotInst.uid}`}
                 className="group relative w-full max-w-[142px] mx-auto"
               >
-                <span className="pointer-events-none absolute top-1 left-1 z-30 px-1 py-[1px] bg-[#140f0b]/90 border border-[#584531] font-mono text-[9px] font-bold text-[#d8c4a3] shadow">
-                  #{slotIdx + 1}
+                <span className="organic-seal pointer-events-none absolute top-1 left-1 z-30 w-5 h-5 bg-[#19120c]/95 font-mono text-[9px] font-bold text-[#e5d2b0] flex items-center justify-center shadow">
+                  {slotIdx + 1}
                 </span>
 
                 <GameCard
@@ -765,7 +763,7 @@ export const DeckBuilderWorkspace: React.FC<DeckBuilderWorkspaceProps> = ({
                   }}
                 />
 
-                <span className="pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity absolute -top-1.5 -right-1.5 z-40 px-1.5 py-0.5 bg-[#7c1f1f] border border-rose-300 text-[9.5px] font-[var(--font-display)] font-bold text-white shadow-lg flex items-center gap-0.5">
+                <span className="organic-tag pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity absolute -top-1.5 -right-1.5 z-40 px-2 py-0.5 bg-[#7c1f1f] text-[9.5px] font-[var(--font-display)] font-bold text-white shadow-lg flex items-center gap-0.5">
                   <X className="w-2.5 h-2.5 stroke-[3]" />
                   <span>Remove</span>
                 </span>
@@ -826,7 +824,7 @@ export const DeckBuilderWorkspace: React.FC<DeckBuilderWorkspaceProps> = ({
                   sound.select();
                   setVaultSort(e.target.value as VaultSortKey);
                 }}
-                className="min-h-[34px] px-2.5 py-1 bg-[#120d09] border border-[#4d3b28] text-xs font-medium text-[#f0d8a8] focus:outline-none focus:border-[#d4a046] cursor-pointer"
+                className="organic-control min-h-[34px] pl-3 text-xs font-medium text-[#f0d8a8] cursor-pointer"
               >
                 <option value="power">Sort: Highest Power</option>
                 <option value="number">Sort: Card #01–#120</option>
@@ -835,13 +833,13 @@ export const DeckBuilderWorkspace: React.FC<DeckBuilderWorkspaceProps> = ({
               </select>
 
               <div className="relative w-44 sm:w-56">
-                <Search className="w-3.5 h-3.5 text-[#8c785f] absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                <Search className="w-3.5 h-3.5 text-[#8c785f] absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none z-10" />
                 <input
                   type="text"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder="Search card or rune..."
-                  className="w-full min-h-[34px] pl-8 pr-2.5 bg-[#120d09] border border-[#4d3b28] focus:border-[#c89640] focus:outline-none text-xs text-[#efe3cd] placeholder:text-[#7d6c56]"
+                  className="organic-control w-full min-h-[34px] pl-8 pr-3 text-xs text-[#efe3cd] placeholder:text-[#7d6c56]"
                 />
               </div>
 
@@ -903,10 +901,10 @@ export const DeckBuilderWorkspace: React.FC<DeckBuilderWorkspaceProps> = ({
                 sound.select();
                 setOnlyBiomeFavored((v) => !v);
               }}
-              className={`min-h-[28px] px-2.5 py-0.5 border font-[var(--font-display)] text-[11px] font-semibold cursor-pointer ${
+              className={`organic-tag min-h-[28px] px-3 py-0.5 font-[var(--font-display)] text-[11px] font-semibold cursor-pointer ${
                 onlyBiomeFavored
-                  ? 'bg-emerald-800 border-emerald-400 text-white'
-                  : 'bg-[#15100b] border-[#3e3022] text-emerald-300 hover:border-emerald-400/60'
+                  ? 'bg-emerald-800 text-white'
+                  : 'bg-[#1a2619] text-emerald-300 hover:bg-[#223421]'
               }`}
             >
               ▲ Favored Here
@@ -918,10 +916,10 @@ export const DeckBuilderWorkspace: React.FC<DeckBuilderWorkspaceProps> = ({
                 sound.select();
                 setOnlyAugments((v) => !v);
               }}
-              className={`min-h-[28px] px-2.5 py-0.5 border font-[var(--font-display)] text-[11px] font-semibold inline-flex items-center gap-1 cursor-pointer ${
+              className={`organic-tag min-h-[28px] px-3 py-0.5 font-[var(--font-display)] text-[11px] font-semibold inline-flex items-center gap-1 cursor-pointer ${
                 onlyAugments
-                  ? 'bg-violet-800 border-violet-400 text-white'
-                  : 'bg-[#15100b] border-[#3e3022] text-violet-300 hover:border-violet-400/60'
+                  ? 'bg-violet-800 text-white'
+                  : 'bg-[#23162b] text-violet-300 hover:bg-[#2f1d3a]'
               }`}
             >
               <Wand2 className="w-3 h-3" />
@@ -936,7 +934,7 @@ export const DeckBuilderWorkspace: React.FC<DeckBuilderWorkspaceProps> = ({
                   sound.select();
                   setRarityFilter(r);
                 }}
-                className={`min-h-[28px] px-2 py-0.5 font-[var(--font-display)] text-[11px] capitalize cursor-pointer ${
+                className={`min-h-[28px] px-2.5 py-0.5 font-[var(--font-display)] text-[11px] capitalize cursor-pointer ${
                   rarityFilter === r ? 'brass-plaque text-[#f5d593] font-bold' : 'text-[#a69277] hover:text-[#f0e4cc]'
                 }`}
               >
@@ -951,7 +949,7 @@ export const DeckBuilderWorkspace: React.FC<DeckBuilderWorkspaceProps> = ({
                 sound.select();
                 setTypeFilter(e.target.value as 'all' | AttackType);
               }}
-              className="min-h-[28px] px-2 py-0.5 bg-[#120d09] border border-[#4d3b28] text-[11px] text-[#e5d6bc] cursor-pointer"
+              className="organic-control min-h-[28px] pl-2.5 text-[11px] text-[#e5d6bc] cursor-pointer"
             >
               <option value="all">All Types</option>
               <option value="P">Type P</option>
@@ -967,7 +965,7 @@ export const DeckBuilderWorkspace: React.FC<DeckBuilderWorkspaceProps> = ({
                 sound.select();
                 setElementFilter(e.target.value as 'all' | CardElement);
               }}
-              className="min-h-[28px] px-2 py-0.5 bg-[#120d09] border border-[#4d3b28] text-[11px] text-[#e5d6bc] cursor-pointer"
+              className="organic-control min-h-[28px] pl-2.5 text-[11px] text-[#e5d6bc] cursor-pointer"
             >
               <option value="all">All Elements</option>
               {ALL_ELEMENTS.map((el) => (
@@ -984,7 +982,7 @@ export const DeckBuilderWorkspace: React.FC<DeckBuilderWorkspaceProps> = ({
                 sound.select();
                 setTribeFilter(e.target.value as 'all' | CardTribe);
               }}
-              className="min-h-[28px] px-2 py-0.5 bg-[#120d09] border border-[#4d3b28] text-[11px] text-[#e5d6bc] cursor-pointer"
+              className="organic-control min-h-[28px] pl-2.5 text-[11px] text-[#e5d6bc] cursor-pointer"
             >
               <option value="all">All Tribes</option>
               {ALL_TRIBES.map((tr) => (
@@ -1075,7 +1073,7 @@ export const DeckBuilderWorkspace: React.FC<DeckBuilderWorkspaceProps> = ({
                       )}
 
                       {inDeck && (
-                        <span className="pointer-events-none absolute top-1.5 right-1.5 z-20 px-1.5 py-0.5 bg-[#e2b053] text-[#170f06] border border-[#f8df9d] text-[9.5px] font-[var(--font-display)] font-bold flex items-center gap-0.5 shadow-lg">
+                        <span className="organic-tag pointer-events-none absolute top-1.5 right-1.5 z-20 px-2 py-0.5 bg-[#e2b053] text-[#170f06] text-[9.5px] font-[var(--font-display)] font-bold flex items-center gap-0.5 shadow-lg">
                           <Check className="w-2.5 h-2.5 stroke-[3]" />
                           <span>
                             {groupByCard && equippedCopiesCount > 1
@@ -1093,10 +1091,10 @@ export const DeckBuilderWorkspace: React.FC<DeckBuilderWorkspaceProps> = ({
                           <span
                             key={hint.biome}
                             title={`${BIOME_META[hint.biome].name}: ${hint.shortTag}`}
-                            className={`inline-flex items-center px-1.5 py-[1px] border font-mono text-[10px] font-semibold cursor-help ${
+                            className={`organic-tag inline-flex items-center px-2 py-0.5 font-mono text-[10px] font-semibold cursor-help ${
                               hint.isPositive
-                                ? 'bg-emerald-950/85 border-emerald-500/50 text-emerald-300'
-                                : 'bg-rose-950/80 border-rose-500/45 text-rose-300'
+                                ? 'bg-emerald-950/90 text-emerald-300'
+                                : 'bg-rose-950/90 text-rose-300'
                             }`}
                           >
                             {hint.isPositive ? '▲' : '▼'} {BIOME_META[hint.biome].shortName}
@@ -1106,7 +1104,7 @@ export const DeckBuilderWorkspace: React.FC<DeckBuilderWorkspaceProps> = ({
 
                       {aug && (
                         <div className="flex justify-center">
-                          <span className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-violet-950/90 border border-violet-500/45 text-[10px] font-mono text-violet-200 max-w-full truncate">
+                          <span className="organic-tag inline-flex items-center gap-1 px-2 py-0.5 bg-violet-950/95 text-[10px] font-mono text-violet-200 max-w-full truncate">
                             <Wand2 className="w-2.5 h-2.5 text-violet-300 shrink-0" />
                             <span className="truncate">{aug.name}</span>
                           </span>
@@ -1130,7 +1128,7 @@ export const DeckBuilderWorkspace: React.FC<DeckBuilderWorkspaceProps> = ({
                       {!groupByCard && deltaVsBest && (
                         <div className="flex items-center justify-between gap-1">
                           <span
-                            className={`px-1.5 py-0.5 border font-mono text-[10px] font-semibold truncate ${deltaVsBest.className}`}
+                            className={`organic-tag px-2 py-0.5 font-mono text-[10px] font-semibold truncate ${deltaVsBest.className}`}
                           >
                             {deltaVsBest.label}
                           </span>
@@ -1262,7 +1260,7 @@ export const DeckBuilderWorkspace: React.FC<DeckBuilderWorkspaceProps> = ({
                       <div className="flex items-center justify-between gap-1 text-[10.5px]">
                         <span className="font-mono font-bold text-[#cbb89a]">Copy #{idx + 1}</span>
                         <span
-                          className={`px-1.5 py-0.5 border font-mono text-[10px] font-semibold ${delta.className}`}
+                          className={`organic-tag px-2 py-0.5 font-mono text-[10px] font-semibold ${delta.className}`}
                         >
                           {delta.label}
                         </span>
@@ -1284,7 +1282,7 @@ export const DeckBuilderWorkspace: React.FC<DeckBuilderWorkspaceProps> = ({
 
                       {copyAug && (
                         <div className="flex justify-center">
-                          <span className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-violet-950/90 border border-violet-500/45 text-[10px] font-mono text-violet-200 max-w-full truncate">
+                          <span className="organic-tag inline-flex items-center gap-1 px-2 py-0.5 bg-violet-950/95 text-[10px] font-mono text-violet-200 max-w-full truncate">
                             <Wand2 className="w-2.5 h-2.5 text-violet-300 shrink-0" />
                             <span className="truncate">{copyAug.name}</span>
                           </span>

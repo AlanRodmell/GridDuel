@@ -5,16 +5,17 @@ import React, {
   useRef,
   useState,
 } from 'react';
-import { Compass, Sparkles, X } from 'lucide-react';
+import { Compass, Sparkles, Wand2, X } from 'lucide-react';
 import {
   CardPreviewContext,
   CardPreviewData,
 } from '../context/cardPreviewContext';
-import { BIOME_META } from '../data/biomes';
+import { BIOME_META, evaluateTerrainEffect } from '../data/biomes';
 import {
   CARD_MAP,
   formatArrowsCompact,
   formatTetraCode,
+  resolveCardAugment,
 } from '../data/cards';
 import { CARD_RARITY_THEMES } from '../styles/cardThemes';
 import { BiomeIcon, CardTraitPills } from './BiomeBadge';
@@ -64,6 +65,27 @@ export const CardPreviewProvider: React.FC<{ children: React.ReactNode }> = ({
   const hasBoardMod = pwrDelta !== 0 || pDefDelta !== 0 || mDefDelta !== 0;
   const netModDelta = pwrDelta + pDefDelta + mDefDelta;
   const terrainMeta = preview?.terrain ? BIOME_META[preview.terrain] : null;
+  const activeAugment =
+    card && preview ? resolveCardAugment(card.id, preview.augmentId) : undefined;
+  const arenaBiomeBreakdown = useMemo(() => {
+    if (!card || !stats || preview?.terrain || !preview?.arenaBiomes?.length) {
+      return [];
+    }
+    return preview.arenaBiomes.map(({ biome, count }) => {
+      const meta = BIOME_META[biome];
+      const effect = evaluateTerrainEffect(biome, card);
+      const projectedStats =
+        effect && effect.hasEffect
+          ? {
+              ...stats,
+              power: Math.max(0, Math.min(15, stats.power + effect.powerDelta)),
+              pDef: Math.max(0, Math.min(15, stats.pDef + effect.pDefDelta)),
+              mDef: Math.max(0, Math.min(15, stats.mDef + effect.mDefDelta)),
+            }
+          : stats;
+      return { meta, count, effect, projectedStats };
+    });
+  }, [card, preview?.arenaBiomes, preview?.terrain, stats]);
 
   const theme = card ? CARD_RARITY_THEMES[card.rarity] : null;
   const contextValue = useMemo(
@@ -92,18 +114,18 @@ export const CardPreviewProvider: React.FC<{ children: React.ReactNode }> = ({
             <div className="w-full flex items-center justify-between gap-2 px-1">
               <div className="flex items-center gap-1.5">
                 <span
-                  className={`px-2 py-0.5 rounded-[2px] border text-[10px] font-[var(--font-display)] font-bold uppercase tracking-wider ${theme.badgeClass}`}
+                  className={`organic-tag px-2.5 py-0.5 text-[10px] font-[var(--font-display)] font-bold uppercase tracking-wider ${theme.badgeClass}`}
                 >
                   {theme.tierLabel}
                 </span>
                 <CardTraitPills element={card.element} tribe={card.tribe} compact />
                 {preview.owner === 'player' && (
-                  <span className="px-2 py-0.5 rounded-[2px] bg-[#162944] border border-[#4d84c4] text-[10px] font-[var(--font-display)] font-bold uppercase tracking-wider text-[#bcd9f7]">
+                  <span className="organic-tag px-2.5 py-0.5 bg-[#162944] text-[10px] font-[var(--font-display)] font-bold uppercase tracking-wider text-[#bcd9f7]">
                     Your Card
                   </span>
                 )}
                 {preview.owner === 'rival' && (
-                  <span className="px-2 py-0.5 rounded-[2px] bg-[#3a1616] border border-[#a83e3e] text-[10px] font-[var(--font-display)] font-bold uppercase tracking-wider text-[#f3b6b6]">
+                  <span className="organic-tag px-2.5 py-0.5 bg-[#3a1616] text-[10px] font-[var(--font-display)] font-bold uppercase tracking-wider text-[#f3b6b6]">
                     Rival Card
                   </span>
                 )}
@@ -136,28 +158,28 @@ export const CardPreviewProvider: React.FC<{ children: React.ReactNode }> = ({
               />
             </div>
 
-            {/* Active Biome Tile Banner (when inspecting a card on a biome tile) */}
+            {/* Active Biome Tile Banner (when inspecting a card placed on a biome tile) */}
             {terrainMeta && (
               <div
-                className={`w-full max-w-[388px] rounded-[3px] border px-3 py-2 flex items-center justify-between gap-2 text-xs ${terrainMeta.badgeClass}`}
+                className={`organic-tag w-full max-w-[388px] px-3.5 py-2 flex items-center justify-between gap-2 text-xs ${terrainMeta.badgeClass}`}
               >
                 <span className="inline-flex items-center gap-1.5 font-[var(--font-display)] font-semibold">
                   <BiomeIcon biome={terrainMeta.id} className="w-3.5 h-3.5 shrink-0" />
                   <span>{terrainMeta.name}</span>
                 </span>
                 <span className="font-mono font-bold">
-                  {preview.terrainMod ? preview.terrainMod.label : 'Neutral effect'}
+                  {preview.terrainMod ? preview.terrainMod.label : 'Neutral (no modifier)'}
                 </span>
               </div>
             )}
 
-            {/* Active Board Modification Banner (Terrain + Augments) */}
+            {/* Active Board Modification Banner (Terrain + Augments on placed cards) */}
             {hasBoardMod && baseStats && (
               <div
-                className={`w-full max-w-[388px] rounded-[3px] border px-3 py-2 flex items-center justify-between gap-2 text-xs ${
+                className={`organic-tag w-full max-w-[388px] px-3.5 py-2 flex items-center justify-between gap-2 text-xs ${
                   netModDelta < 0
-                    ? 'bg-rose-950/75 border-rose-500/50'
-                    : 'bg-emerald-950/75 border-emerald-500/50'
+                    ? 'bg-rose-950/85 text-rose-100'
+                    : 'bg-emerald-950/85 text-emerald-100'
                 }`}
               >
                 <span
@@ -183,11 +205,91 @@ export const CardPreviewProvider: React.FC<{ children: React.ReactNode }> = ({
               </div>
             )}
 
+            {/* Active Battlefield Biome Buff / Penalty Specifics (when inspecting from Hand during Match) */}
+            {arenaBiomeBreakdown.length > 0 && (
+              <div className="w-full max-w-[388px] brass-panel px-3.5 py-2.5 space-y-2 text-xs">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="font-[var(--font-display)] text-[10.5px] font-bold uppercase tracking-[0.14em] text-[#e7c47a]">
+                    Battlefield Biome Specifics
+                  </span>
+                  <span className="text-[10px] font-mono text-[#a89477]">
+                    If placed on tile
+                  </span>
+                </div>
+
+                <div className="space-y-1.5">
+                  {arenaBiomeBreakdown.map(({ meta, count, effect, projectedStats }) => {
+                    const hasEffect = Boolean(effect?.hasEffect);
+                    const isBuff = Boolean(effect?.isPositive);
+                    return (
+                      <div
+                        key={meta.id}
+                        className={`organic-tag px-2.5 py-1.5 flex items-center justify-between gap-2 ${
+                          hasEffect
+                            ? isBuff
+                              ? 'bg-emerald-950/75 text-emerald-100'
+                              : 'bg-rose-950/75 text-rose-100'
+                            : 'bg-[#1a130d]/85 text-[#baa689]'
+                        }`}
+                      >
+                        <div className="min-w-0 flex flex-col gap-0.5">
+                          <span className="inline-flex items-center gap-1.5 font-[var(--font-display)] font-semibold text-[11.5px]">
+                            <BiomeIcon biome={meta.id} className="w-3.5 h-3.5 shrink-0" />
+                            <span className="truncate">{meta.name}</span>
+                            <span className="font-mono text-[10px] opacity-80">×{count}</span>
+                          </span>
+                          <span className="text-[10.5px] opacity-90 leading-tight">
+                            {hasEffect && effect
+                              ? effect.reasons.join(' · ')
+                              : `No modifier (${meta.favorsSummary})`}
+                          </span>
+                        </div>
+
+                        {hasEffect && effect ? (
+                          <div className="shrink-0 text-right font-mono">
+                            <div
+                              className={`text-[11px] font-bold ${
+                                isBuff ? 'text-emerald-300' : 'text-rose-300'
+                              }`}
+                            >
+                              {isBuff ? '▲' : '▼'} {effect.shortTag}
+                            </div>
+                            <div className="text-[10px] text-[#efe3cd]/90 tabular-nums">
+                              {formatTetraCode(stats)} → {formatTetraCode(projectedStats)}
+                            </div>
+                          </div>
+                        ) : (
+                          <span className="shrink-0 font-mono text-[10.5px] text-[#8f7d64]">
+                            Neutral
+                          </span>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* Runeforge / Mythic Augment Specifics Summary */}
+            {activeAugment && (
+              <div className="organic-tag w-full max-w-[388px] bg-[#23152c]/90 px-3.5 py-2 text-xs text-violet-100 space-y-0.5">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="inline-flex items-center gap-1.5 font-[var(--font-display)] font-bold text-violet-200">
+                    <Wand2 className="w-3.5 h-3.5 text-violet-300 shrink-0" />
+                    <span>{activeAugment.name}</span>
+                  </span>
+                  <span className="font-mono text-[10.5px] font-bold text-violet-300">
+                    {activeAugment.shortTag}
+                  </span>
+                </div>
+                <p className="text-[11px] text-violet-100/90 leading-snug">
+                  {activeAugment.description}
+                </p>
+              </div>
+            )}
+
             {/* Compact Decimal & Compass Readout Plaque */}
-            <div
-              style={{ borderColor: theme.hairline }}
-              className="w-full max-w-[388px] rounded-[3px] brass-panel px-3.5 py-2.5 flex items-center justify-between gap-2 text-xs"
-            >
+            <div className="w-full max-w-[388px] brass-panel px-3.5 py-2.5 flex items-center justify-between gap-2 text-xs">
               <span className="font-mono tabular-nums text-[#dfd0b6]">
                 ATK {stats.power} · {stats.type} · P.DEF {stats.pDef} · M.DEF {stats.mDef}
               </span>

@@ -127,7 +127,7 @@ const GameCardInner: React.FC<GameCardProps> = ({
               top: `${orbTip.y}px`,
               transform: 'translate(-50%, -100%)',
             }}
-            className="pointer-events-none fixed z-[200] whitespace-nowrap rounded-lg bg-slate-950/95 border border-amber-400/60 px-2.5 py-1 text-[11px] font-mono font-semibold text-amber-100 shadow-[0_8px_24px_rgba(0,0,0,0.75)]"
+            className="pointer-events-none fixed z-[200] whitespace-nowrap brass-plaque px-3 py-1 text-[11px] font-mono font-semibold text-[#f7dfb0] shadow-[0_8px_24px_rgba(0,0,0,0.85)]"
           >
             {orbTip.text}
           </div>,
@@ -426,10 +426,7 @@ const GameCardInner: React.FC<GameCardProps> = ({
               className="h-full w-full rounded-[4px] border px-2.5 py-2 flex flex-col justify-between gap-1.5"
             >
               {/* 1. Framed Serif Title Plate */}
-              <div
-                style={{ borderColor: theme.hairline }}
-                className="rounded-[2px] border bg-black/25 px-2 py-1 text-center shrink-0"
-              >
+              <div className="organic-tag bg-black/35 px-2.5 py-1 text-center shrink-0">
                 <div
                   style={{ color: theme.titleColor }}
                   className="font-[var(--font-display)] text-[13px] sm:text-[14.5px] font-bold uppercase tracking-[0.09em] leading-[1.15] [text-wrap:balance]"
@@ -497,10 +494,7 @@ const GameCardInner: React.FC<GameCardProps> = ({
               </div>
 
               {/* 4. Framed Ability / Lore Box */}
-              <div
-                style={{ borderColor: theme.hairline }}
-                className="rounded-[2px] border bg-black/30 px-2 py-1.5 text-center space-y-0.5 shrink-0"
-              >
+              <div className="organic-tag bg-black/35 px-2.5 py-1.5 text-center space-y-0.5 shrink-0">
                 <p className="font-[var(--font-serif)] text-[11px] sm:text-[12px] leading-[1.25] text-slate-100/95 line-clamp-2">
                   <strong style={{ color: theme.titleColor }} className="font-semibold">
                     {activeAugment ? `${activeAugment.name}.` : `${typeRule.title}.`}
@@ -688,10 +682,7 @@ const GameCardInner: React.FC<GameCardProps> = ({
           >
             {/* Optional Serif Nameplate — Standardized Uniform Font Size, Never Truncated */}
             {showName && !isCompact && !targetStatus && !hasActiveBuff && !hasActiveDebuff && (
-              <div
-                style={{ borderColor: theme.hairline }}
-                className="w-full rounded-[2px] border bg-black/45 px-1 py-[1.5px] text-center shrink-0"
-              >
+              <div className="organic-tag w-full bg-black/50 px-1.5 py-[1.5px] text-center shrink-0">
                 <div
                   style={{ color: theme.titleColor }}
                   className={`font-[var(--font-display)] font-bold uppercase tracking-[0.04em] leading-[1.12] [text-wrap:balance] break-words ${nameplateTextClass}`}
@@ -739,7 +730,7 @@ const GameCardInner: React.FC<GameCardProps> = ({
                   title={`${activeAugment.name}: ${activeAugment.description}`}
                   className="pointer-events-none absolute bottom-0.5 inset-x-0.5 z-10 flex justify-center"
                 >
-                  <span className="inline-flex items-center gap-0.5 rounded bg-violet-950/90 border border-violet-300/60 px-1 py-[0.5px] text-[7px] sm:text-[8px] font-mono font-bold text-violet-100 max-w-full">
+                  <span className="organic-tag inline-flex items-center gap-0.5 bg-violet-950/95 px-1.5 py-[1px] text-[7px] sm:text-[8px] font-mono font-bold text-violet-100 max-w-full">
                     <Wand2 className="w-2 h-2 text-violet-300 shrink-0" />
                     <span className="truncate">{activeAugment.badgeLabel}</span>
                   </span>
@@ -816,10 +807,10 @@ const GameCardInner: React.FC<GameCardProps> = ({
         {targetStatus && (
           <div className="pointer-events-none absolute inset-x-2 top-3 z-30 flex justify-center">
             <span
-              className={`inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[9px] sm:text-[10px] font-bold uppercase tracking-wider shadow border ${
+              className={`organic-tag inline-flex items-center gap-1 px-2 py-0.5 text-[9px] sm:text-[10px] font-bold uppercase tracking-wider shadow ${
                 targetStatus === 'unopposed'
-                  ? 'bg-emerald-950/95 text-emerald-300 border-emerald-400/80'
-                  : 'bg-amber-950/95 text-amber-200 border-amber-400/80'
+                  ? 'bg-emerald-950/95 text-emerald-300'
+                  : 'bg-amber-950/95 text-amber-200'
               }`}
             >
               {targetStatus === 'unopposed' ? (
@@ -841,10 +832,10 @@ const GameCardInner: React.FC<GameCardProps> = ({
         {(hasActiveBuff || hasActiveDebuff || lastAugmented) && !targetStatus && (
           <div className="pointer-events-none absolute top-2.5 inset-x-2 z-30 flex justify-center">
             <span
-              className={`inline-flex items-center gap-0.5 rounded px-1.5 py-0.5 text-[8.5px] sm:text-[9.5px] font-mono font-bold tracking-tight border shadow ${
+              className={`organic-tag inline-flex items-center gap-0.5 px-2 py-0.5 text-[8.5px] sm:text-[9.5px] font-mono font-bold tracking-tight shadow ${
                 hasActiveDebuff && !hasActiveBuff
-                  ? 'bg-rose-950/95 text-rose-200 border-rose-400/80'
-                  : 'bg-emerald-950/95 text-emerald-200 border-emerald-400/80'
+                  ? 'bg-rose-950/95 text-rose-200'
+                  : 'bg-emerald-950/95 text-emerald-200'
               }`}
             >
               <Wand2 className="w-2.5 h-2.5 shrink-0" />

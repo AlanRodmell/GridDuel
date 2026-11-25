@@ -451,25 +451,134 @@
   );
 }
 
-/* Chiseled Irregular Battlefield Stone Socket for Open 4x4 Tiles */
+/* Chiseled Irregular Battlefield Stone Socket for Open 5x3 Tiles */
 .battle-stone-socket {
   border-radius: 0 !important;
   clip-path: polygon(
-    4px 1px,
+    6px 2px,
     34% 0%,
     41% 2px,
-    calc(100% - 5px) 0%,
-    100% 5px,
+    calc(100% - 6px) 1px,
+    100% 7px,
     calc(100% - 2px) 42%,
-    100% calc(100% - 5px),
-    calc(100% - 5px) 100%,
+    100% calc(100% - 6px),
+    calc(100% - 6px) 100%,
     64% calc(100% - 2px),
     56% 100%,
-    4px calc(100% - 1px),
-    0% calc(100% - 5px),
+    6px calc(100% - 1px),
+    0% calc(100% - 7px),
     2px 58%,
-    0% 5px
+    0% 7px
   );
+}
+
+/* Softened Worn-Parchment / River-Slate Label Tag (Replaces all sharp 90° 1px-border pills & badges) */
+.organic-tag {
+  border: none !important;
+  border-radius: 0 !important;
+  clip-path: polygon(
+    5px 1px,
+    14% 0%,
+    48% 1px,
+    85% 0%,
+    calc(100% - 5px) 1.5px,
+    calc(100% - 1.5px) 5px,
+    100% 50%,
+    calc(100% - 1.5px) calc(100% - 5px),
+    calc(100% - 5px) calc(100% - 1px),
+    82% 100%,
+    46% calc(100% - 1px),
+    15% 100%,
+    5px calc(100% - 1.5px),
+    1.5px calc(100% - 5px),
+    0% 52%,
+    1.5px 5px
+  );
+  box-shadow:
+    inset 0 1px 0 rgba(255, 242, 210, 0.22),
+    inset 0 -1.5px 0 rgba(0, 0, 0, 0.62);
+}
+
+/* Worn Wax / River-Pebble Seal for Small Counters, Score Badges & Keycaps (Zero sharp 90° corners!) */
+.organic-seal {
+  border: none !important;
+  border-radius: 0 !important;
+  clip-path: polygon(
+    30% 0%,
+    70% 1%,
+    90% 12%,
+    100% 32%,
+    99% 68%,
+    89% 89%,
+    69% 100%,
+    31% 99%,
+    11% 88%,
+    0% 69%,
+    1% 31%,
+    12% 11%
+  );
+  box-shadow:
+    inset 0 1px 0 rgba(255, 244, 214, 0.34),
+    inset 0 -1.5px 0 rgba(0, 0, 0, 0.68);
+}
+
+/* Carved Timber Trough for Search Inputs & Filter Dropdowns (Replaces crisp rectangular <input>/<select> boxes) */
+.organic-control {
+  border: none !important;
+  border-radius: 0 !important;
+  background-color: #140f0a;
+  background-image: linear-gradient(180deg, rgba(8, 5, 3, 0.72) 0%, rgba(28, 20, 13, 0.85) 100%);
+  clip-path: polygon(
+    6px 1px,
+    26% 0%,
+    74% 1px,
+    calc(100% - 6px) 0%,
+    calc(100% - 1.5px) 5px,
+    100% 50%,
+    calc(100% - 1.5px) calc(100% - 5px),
+    calc(100% - 6px) 100%,
+    70% calc(100% - 1px),
+    28% 100%,
+    6px calc(100% - 1px),
+    1.5px calc(100% - 5px),
+    0% 50%,
+    1.5px 5px
+  );
+  box-shadow:
+    inset 0 2px 6px rgba(0, 0, 0, 0.82),
+    inset 0 -1.5px 0 rgba(214, 168, 92, 0.28),
+    inset 1.5px 0 0 rgba(120, 88, 48, 0.22),
+    inset -1.5px 0 0 rgba(120, 88, 48, 0.22);
+}
+.organic-control:focus {
+  outline: none;
+  box-shadow:
+    inset 0 2px 6px rgba(0, 0, 0, 0.82),
+    inset 0 -1.5px 0 rgba(240, 199, 110, 0.65),
+    inset 0 1px 0 rgba(240, 199, 110, 0.35);
+}
+select.organic-control {
+  appearance: none;
+  padding-right: 1.65rem;
+  background-image:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23d8a64c' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E"),
+    linear-gradient(180deg, rgba(8, 5, 3, 0.72) 0%, rgba(28, 20, 13, 0.85) 100%);
+  background-repeat: no-repeat, no-repeat;
+  background-position: right 0.45rem center, center;
+  background-size: 12px 12px, 100% 100%;
+}
+
+/* Hand-Carved Weathered Empty Card-Slot Imprint (Replaces straight CSS border-dashed boxes!) */
+.empty-card-imprint {
+  border: none !important;
+  border-radius: 0 !important;
+  background-color: transparent;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 150 210' preserveAspectRatio='none'%3E%3Cpath d='M12,5 L46,3 L78,6 L116,3 L139,6 L146,15 L144,64 L147,112 L144,162 L146,196 L137,205 L102,203 L66,206 L28,203 L11,205 L4,195 L6,148 L3,96 L6,46 L4,14 Z' fill='%23100b07' fill-opacity='0.72' stroke='%236e5539' stroke-width='2.2' stroke-dasharray='9 6 5 6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-size: 100% 100%;
+  background-repeat: no-repeat;
+}
+.empty-card-imprint-active {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 150 210' preserveAspectRatio='none'%3E%3Cpath d='M12,5 L46,3 L78,6 L116,3 L139,6 L146,15 L144,64 L147,112 L144,162 L146,196 L137,205 L102,203 L66,206 L28,203 L11,205 L4,195 L6,148 L3,96 L6,46 L4,14 Z' fill='%232b1e0d' fill-opacity='0.65' stroke='%23f0c76e' stroke-width='2.6' stroke-dasharray='9 5 5 5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
 }
 
 /* Tactile Card Slam, Flip & Foil Shimmer Animations */

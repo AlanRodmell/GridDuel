@@ -242,4 +242,5 @@ export interface PlayerProfile {
   cardWins: Record<string, number>;
   fighterWins: Record<string, number>;
   soundEnabled: boolean;
+  clickToPlace?: boolean;
 }

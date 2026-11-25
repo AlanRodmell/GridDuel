@@ -2,7 +2,9 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom';
 import {
   BookOpen,
+  Eye,
   Flag,
+  MousePointerClick,
   Swords,
   Volume2,
   VolumeX,
@@ -105,6 +107,7 @@ interface ArenaViewProps {
   onGoToGallery: () => void;
   onOpenRules: () => void;
   onToggleSound?: () => void;
+  onToggleClickToPlace?: () => void;
   onMatchActiveChange?: (active: boolean) => void;
   onMatchThemeChange?: (theme: 'tavern' | 'duel' | 'boss') => void;
 }
@@ -129,6 +132,7 @@ export const ArenaView: React.FC<ArenaViewProps> = ({
   onGoToGallery,
   onOpenRules,
   onToggleSound,
+  onToggleClickToPlace,
   onMatchActiveChange,
   onMatchThemeChange,
 }) => {
@@ -157,7 +161,7 @@ export const ArenaView: React.FC<ArenaViewProps> = ({
   const [callout, setCallout] = useState<{ id: number; text: string } | null>(null);
   const [activeClash, setActiveClash] = useState<ClashDetail | null>(null);
   const [lastBattleLog, setLastBattleLog] = useState<string>(
-    'Drag or click a card from your hand onto any open stone socket on the 5×3 battlefield.'
+    'Drag a card from your hand onto any open socket on the 5×3 battlefield · Click a card in hand to inspect full buffs.'
   );
   const [playerFlipsCount, setPlayerFlipsCount] = useState(0);
   const [playerCombosCount, setPlayerCombosCount] = useState(0);
@@ -565,6 +569,14 @@ export const ArenaView: React.FC<ArenaViewProps> = ({
     [executeMove]
   );
 
+  const clickToPlaceEnabled = Boolean(profile.clickToPlace);
+
+  useEffect(() => {
+    if (!clickToPlaceEnabled) {
+      setSelectedHandUid(null);
+    }
+  }, [clickToPlaceEnabled]);
+
   const {
     draggingCard,
     hoverCell,
@@ -584,6 +596,7 @@ export const ArenaView: React.FC<ArenaViewProps> = ({
     turn,
     isAnimating,
     playerHand,
+    clickToPlace: clickToPlaceEnabled,
     onSelectHandUid: setSelectedHandUid,
     onExecutePlayerMove: handleExecutePlayerMove,
     timersRef,
@@ -690,16 +703,10 @@ export const ArenaView: React.FC<ArenaViewProps> = ({
 
   const scores = useMemo(() => getScores(board), [board]);
 
-  const activeFocusCard = useMemo(() => {
-    if (hoveredDesktopHandIdx !== null && playerHand[hoveredDesktopHandIdx]) {
-      return playerHand[hoveredDesktopHandIdx];
-    }
-    return playerHand.find((c) => c.uid === selectedHandUid) ?? null;
-  }, [hoveredDesktopHandIdx, playerHand, selectedHandUid]);
-
-  const activeFocusDef = useMemo(() => {
-    return activeFocusCard ? CARD_MAP[activeFocusCard.cardId] ?? null : null;
-  }, [activeFocusCard]);
+  const selectedHandCard = useMemo(
+    () => playerHand.find((c) => c.uid === selectedHandUid) ?? null,
+    [playerHand, selectedHandUid]
+  );
 
   const activeBoardBiomes = useMemo(() => {
     const counts = new Map<BiomeType, number>();
@@ -712,6 +719,22 @@ export const ArenaView: React.FC<ArenaViewProps> = ({
     }
     return Array.from(counts.entries());
   }, [board]);
+
+  const openHandCardPreview = useCallback(
+    (hCard: HandCard) => {
+      sound.select();
+      openPreview({
+        cardId: hCard.cardId,
+        stats: hCard.stats,
+        baseStats: hCard.stats,
+        arrows: hCard.arrows,
+        augmentId: hCard.augmentId,
+        owner: 'player',
+        arenaBiomes: activeBoardBiomes.map(([biome, count]) => ({ biome, count })),
+      });
+    },
+    [activeBoardBiomes, openPreview]
+  );
 
   const previewDeckHand = useMemo(
     () => buildPlayerHand(activeDeck.cards, profile.inventory),
@@ -799,14 +822,6 @@ export const ArenaView: React.FC<ArenaViewProps> = ({
   const playerAvatarCard =
     CARD_MAP[previewDeckHand[0]?.cardId ?? 'ember-imp'] ?? CARD_MAP['ember-imp'];
   const rivalAvatarCard = CARD_MAP[currentFighter.avatarCardId] ?? CARD_MAP['ember-imp'];
-  const activeFocusAugment = activeFocusCard
-    ? resolveCardAugment(activeFocusCard.cardId, activeFocusCard.augmentId)
-    : undefined;
-  const activeFocusBiomeMatchups = activeFocusDef
-    ? activeBoardBiomes
-        .map(([b]) => evaluateTerrainEffect(b, activeFocusDef))
-        .filter((ev): ev is NonNullable<typeof ev> => Boolean(ev && ev.hasEffect))
-    : [];
 
   const mobileHandCardClass =
     playerHand.length >= 7
@@ -837,7 +852,7 @@ export const ArenaView: React.FC<ArenaViewProps> = ({
                 />
               )}
             </div>
-            <span className="absolute -bottom-1 -right-1 w-5 h-5 rounded-[2px] bg-gradient-to-b from-[#3b72b5] to-[#1e3d66] border border-[#96c4f5] flex items-center justify-center font-mono text-[11px] font-bold tabular-nums text-white shadow">
+            <span className="organic-seal absolute -bottom-1 -right-1 w-5 h-5 bg-gradient-to-b from-[#3b72b5] to-[#1e3d66] flex items-center justify-center font-mono text-[11px] font-bold tabular-nums text-white shadow">
               {scores.player}
             </span>
           </div>
@@ -875,7 +890,7 @@ export const ArenaView: React.FC<ArenaViewProps> = ({
                     <span
                       key={biome}
                       title={`${meta.name} (×${count}) — ▲ ${meta.favorsSummary} · ▼ ${meta.hindersSummary}`}
-                      className={`inline-flex items-center gap-1 px-1.5 py-0.5 border text-[10px] font-mono cursor-help ${meta.badgeClass}`}
+                      className={`organic-tag inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-mono cursor-help ${meta.badgeClass}`}
                     >
                       <BiomeIcon biome={biome} className="w-2.5 h-2.5 shrink-0" />
                       <span>{meta.shortName}</span>
@@ -939,10 +954,35 @@ export const ArenaView: React.FC<ArenaViewProps> = ({
                 />
               )}
             </div>
-            <span className="absolute -bottom-1 -left-1 w-5 h-5 rounded-[2px] bg-gradient-to-b from-[#b53a3a] to-[#691c1c] border border-[#f5a3a3] flex items-center justify-center font-mono text-[11px] font-bold tabular-nums text-white shadow">
+            <span className="organic-seal absolute -bottom-1 -left-1 w-5 h-5 bg-gradient-to-b from-[#b53a3a] to-[#691c1c] flex items-center justify-center font-mono text-[11px] font-bold tabular-nums text-white shadow">
               {scores.rival}
             </span>
           </div>
+
+          {onToggleClickToPlace && (
+            <button
+              type="button"
+              onClick={onToggleClickToPlace}
+              aria-pressed={clickToPlaceEnabled}
+              aria-label={
+                clickToPlaceEnabled
+                  ? 'Disable Click Card then Click Tile accessibility placement'
+                  : 'Enable Click Card then Click Tile accessibility placement'
+              }
+              title={
+                clickToPlaceEnabled
+                  ? 'Click-to-Place ON (Click card to select, click tile to place · Right-click or tap Eye to inspect)'
+                  : 'Accessibility: Enable Click Card → Click Tile placement (Default: Drag to Place · Click Card to Inspect)'
+              }
+              className={`w-7 h-7 lg:w-8 lg:h-8 flex items-center justify-center cursor-pointer transition-colors ${
+                clickToPlaceEnabled
+                  ? 'brass-btn text-[#1b1106]'
+                  : 'iron-btn text-[#b8a58a] hover:text-[#f2d394]'
+              }`}
+            >
+              <MousePointerClick className="w-3.5 h-3.5" />
+            </button>
+          )}
 
           {onToggleSound && (
             <button
@@ -1077,7 +1117,7 @@ export const ArenaView: React.FC<ArenaViewProps> = ({
                   const biomeMeta = cell.terrain ? BIOME_META[cell.terrain] : null;
                   const activePreviewDef =
                     phase === 'playing' && turn === 'player' && !isAnimating
-                      ? CARD_MAP[(draggingCard?.card ?? activeFocusCard)?.cardId ?? '']
+                      ? CARD_MAP[(draggingCard?.card ?? selectedHandCard)?.cardId ?? '']
                       : undefined;
                   const terrainPreview =
                     !cell.card && cell.terrain && activePreviewDef
@@ -1130,7 +1170,7 @@ export const ArenaView: React.FC<ArenaViewProps> = ({
                         {biomeMeta && (
                           <span
                             aria-label={`${biomeMeta.name} tile`}
-                            className={`pointer-events-none absolute -top-1 -left-1 z-30 w-4 h-4 sm:w-5 sm:h-5 border flex items-center justify-center shadow-md ${biomeMeta.badgeClass}`}
+                            className={`organic-seal pointer-events-none absolute -top-1 -left-1 z-30 w-4 h-4 sm:w-5 sm:h-5 flex items-center justify-center shadow-md ${biomeMeta.badgeClass}`}
                           >
                             <BiomeIcon biome={biomeMeta.id} className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
                           </span>
@@ -1244,36 +1284,6 @@ export const ArenaView: React.FC<ArenaViewProps> = ({
 
       {/* BOTTOM STAGE: FIXED-HEIGHT FANNED 7-CARD HAND (z-40 OVER BOARD RIM · ZERO LAYOUT SHIFT!) */}
       <div className="shrink-0 h-[112px] sm:h-[126px] lg:h-[168px] xl:h-[184px] w-full flex items-end justify-center pb-safe relative z-40">
-        {/* Absolutely Positioned Whisper Pill — ZERO Impact on Flex Height or Board Size! */}
-        {(activeFocusAugment || activeFocusBiomeMatchups.length > 0) && !scrubCardUid && (
-          <div className="pointer-events-none absolute -top-6 inset-x-0 z-50 flex flex-wrap items-center justify-center gap-1.5 max-w-full px-2">
-            {activeFocusAugment && (
-              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 bg-[#221528]/95 border border-violet-400/50 text-[10.5px] text-violet-100 shadow-lg">
-                <Wand2 className="w-3 h-3 text-violet-300 shrink-0" />
-                <strong className="text-violet-200">{activeFocusAugment.name}:</strong>
-                <span className="truncate max-w-[260px] sm:max-w-[380px]">
-                  {activeFocusAugment.shortTag}
-                </span>
-              </span>
-            )}
-            {activeFocusBiomeMatchups.map((m) => (
-              <span
-                key={m.biome}
-                className={`hidden sm:inline-flex items-center gap-1 px-2 py-0.5 border font-mono text-[10px] font-semibold shadow-lg ${
-                  m.isPositive
-                    ? 'bg-emerald-950/95 border-emerald-500/55 text-emerald-200'
-                    : 'bg-rose-950/95 border-rose-500/50 text-rose-200'
-                }`}
-              >
-                <BiomeIcon biome={m.biome} className="w-2.5 h-2.5 shrink-0" />
-                <span>
-                  {BIOME_META[m.biome].shortName}: {m.shortTag}
-                </span>
-              </span>
-            ))}
-          </div>
-        )}
-
         {/* Mobile Zero-Scroll Overlapping Fan (< lg) */}
         <div
           ref={mobileHandFanRef}
@@ -1290,6 +1300,10 @@ export const ArenaView: React.FC<ArenaViewProps> = ({
                 key={hCard.uid}
                 data-hand-uid={hCard.uid}
                 onPointerDown={(e) => handleMobileFanPointerDown(e, hCard)}
+                onContextMenu={(e) => {
+                  e.preventDefault();
+                  openHandCardPreview(hCard);
+                }}
                 className={`relative shrink-0 transition-transform duration-150 ${mobileHandCardClass} ${
                   isScrubbed ? 'z-40' : activeHighlight ? 'z-30' : 'z-10'
                 } ${
@@ -1308,6 +1322,22 @@ export const ArenaView: React.FC<ArenaViewProps> = ({
                     : ''
                 }`}
               >
+                {clickToPlaceEnabled && isSelected && (
+                  <button
+                    type="button"
+                    onPointerDown={(e) => e.stopPropagation()}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      openHandCardPreview(hCard);
+                    }}
+                    aria-label="Inspect full card and biome buffs"
+                    title="Inspect full card & biome buffs"
+                    className="organic-seal absolute -top-2 right-0.5 z-40 w-5 h-5 bg-[#1b130c] text-[#f2d394] flex items-center justify-center shadow-md cursor-pointer"
+                  >
+                    <Eye className="w-3 h-3" />
+                  </button>
+                )}
+
                 <GameCard
                   cardId={hCard.cardId}
                   stats={hCard.stats}
@@ -1317,6 +1347,7 @@ export const ArenaView: React.FC<ArenaViewProps> = ({
                   size="sm"
                   showName={false}
                   selected={false}
+                  disableLongPress
                   className={
                     activeHighlight
                       ? 'drop-shadow-[0_0_10px_rgba(245,190,78,0.85)]'
@@ -1324,8 +1355,12 @@ export const ArenaView: React.FC<ArenaViewProps> = ({
                   }
                   onClick={() => {
                     if (Date.now() < suppressHandClickUntilRef.current) return;
-                    sound.select();
-                    setSelectedHandUid((cur) => (cur === hCard.uid ? null : hCard.uid));
+                    if (clickToPlaceEnabled) {
+                      sound.select();
+                      setSelectedHandUid((cur) => (cur === hCard.uid ? null : hCard.uid));
+                    } else {
+                      openHandCardPreview(hCard);
+                    }
                   }}
                 />
               </div>
@@ -1357,6 +1392,10 @@ export const ArenaView: React.FC<ArenaViewProps> = ({
                 key={hCard.uid}
                 onMouseEnter={() => setHoveredDesktopHandIdx(idx)}
                 onPointerDown={(e) => handleHandCardPointerDown(e, hCard)}
+                onContextMenu={(e) => {
+                  e.preventDefault();
+                  openHandCardPreview(hCard);
+                }}
                 style={{
                   marginLeft: overlapMargin,
                   zIndex: isHovered ? 60 : lifted ? 50 : idx + 10,
@@ -1385,14 +1424,30 @@ export const ArenaView: React.FC<ArenaViewProps> = ({
               >
                 <span
                   aria-hidden="true"
-                  className={`pointer-events-none absolute top-1 left-1 z-30 w-4 h-4 border font-mono text-[9px] font-bold flex items-center justify-center shadow ${
+                  className={`organic-seal pointer-events-none absolute top-1 left-1 z-30 w-4 h-4 font-mono text-[9px] font-bold flex items-center justify-center shadow ${
                     isSelected && turn === 'player'
-                      ? 'bg-[#d8a243] border-[#fbe2a8] text-[#171008]'
-                      : 'bg-[#140f0b]/90 border-[#584531] text-[#bfa98b]'
+                      ? 'bg-[#d8a243] text-[#171008]'
+                      : 'bg-[#19120c]/95 text-[#cbb89a]'
                   }`}
                 >
                   {idx + 1}
                 </span>
+
+                {clickToPlaceEnabled && (isSelected || isHovered) && (
+                  <button
+                    type="button"
+                    onPointerDown={(e) => e.stopPropagation()}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      openHandCardPreview(hCard);
+                    }}
+                    aria-label="Inspect full card and biome buffs"
+                    title="Inspect full card & biome buffs (or Right-Click)"
+                    className="organic-seal absolute top-1 right-1 z-30 w-5 h-5 bg-[#1b130c]/95 text-[#f2d394] hover:text-white flex items-center justify-center shadow cursor-pointer"
+                  >
+                    <Eye className="w-3 h-3" />
+                  </button>
+                )}
 
                 <GameCard
                   cardId={hCard.cardId}
@@ -1403,10 +1458,15 @@ export const ArenaView: React.FC<ArenaViewProps> = ({
                   size="md"
                   showName
                   selected={false}
+                  disableLongPress
                   onClick={() => {
                     if (Date.now() < suppressHandClickUntilRef.current) return;
-                    sound.select();
-                    setSelectedHandUid((cur) => (cur === hCard.uid ? null : hCard.uid));
+                    if (clickToPlaceEnabled) {
+                      sound.select();
+                      setSelectedHandUid((cur) => (cur === hCard.uid ? null : hCard.uid));
+                    } else {
+                      openHandCardPreview(hCard);
+                    }
                   }}
                 />
               </div>
@@ -1525,7 +1585,7 @@ export const ArenaView: React.FC<ArenaViewProps> = ({
                 </div>
 
                 {scrubbedAug && (
-                  <div className="bg-[#24162b]/85 border border-violet-400/45 px-2 py-1 text-[10px] text-violet-100 flex items-center justify-center gap-1.5">
+                  <div className="organic-tag bg-[#24162b]/90 px-2.5 py-1 text-[10px] text-violet-100 flex items-center justify-center gap-1.5">
                     <Wand2 className="w-3 h-3 text-violet-300 shrink-0" />
                     <span className="truncate">
                       <strong className="text-violet-200">{scrubbedAug.name}:</strong>{' '}
@@ -1547,8 +1607,10 @@ export const ArenaView: React.FC<ArenaViewProps> = ({
 
                 <div className="text-[10px] text-[#e7c47a] font-medium">
                   {turn === 'player' && !isAnimating
-                    ? 'Slide up onto board to play · Release to select'
-                    : 'Slide across hand to inspect · Release to close'}
+                    ? clickToPlaceEnabled
+                      ? 'Slide up onto board to play · Release to select'
+                      : 'Slide up onto board to play · Tap card to inspect full buffs'
+                    : 'Slide across hand to inspect · Tap card for full details'}
                 </div>
               </div>
             </div>

@@ -492,13 +492,13 @@ export const ArenaSetupFlow: React.FC<ArenaSetupFlowProps> = ({
                       </span>
                     )}
                     {bossRuneTierLabel && (
-                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-[2px] bg-[#24162b] border border-violet-400/50 font-mono font-bold text-violet-200">
+                      <span className="organic-tag inline-flex items-center gap-1 px-2.5 py-0.5 bg-[#281832] font-mono font-bold text-violet-200">
                         <Wand2 className="w-3 h-3 text-violet-300" />
                         <span>Wields {bossRuneTierLabel}</span>
                       </span>
                     )}
                     {(profile.fighterWins?.[currentFighter.id] ?? 0) > 0 && (
-                      <span className="px-2 py-0.5 rounded-[2px] bg-emerald-950/90 border border-emerald-500/45 font-mono font-bold text-emerald-300">
+                      <span className="organic-tag px-2.5 py-0.5 bg-emerald-950/90 font-mono font-bold text-emerald-300">
                         ✓ Defeated ({profile.fighterWins?.[currentFighter.id]}W)
                       </span>
                     )}

@@ -34,8 +34,8 @@ export const BiomePill: React.FC<{
   return (
     <span
       title={tooltip}
-      className={`inline-flex items-center gap-1 rounded-md border font-semibold cursor-help select-none ${
-        compact ? 'px-1.5 py-0.5 text-[10px]' : 'px-2 py-0.5 text-[11px]'
+      className={`organic-tag inline-flex items-center gap-1 font-semibold cursor-help select-none ${
+        compact ? 'px-2 py-0.5 text-[10px]' : 'px-2.5 py-0.5 text-[11px]'
       } ${meta.badgeClass}`}
     >
       <BiomeIcon biome={biome} className={compact ? 'w-3 h-3 shrink-0' : 'w-3.5 h-3.5 shrink-0'} />
@@ -54,17 +54,17 @@ export const CardTraitPills: React.FC<{
 }> = ({ element, tribe, compact = false }) => {
   const elMeta = ELEMENT_META[element];
   const trMeta = TRIBE_META[tribe];
-  const sizeClass = compact ? 'px-1.5 py-0.5 text-[10px]' : 'px-2 py-0.5 text-[11px]';
+  const sizeClass = compact ? 'px-2 py-0.5 text-[10px]' : 'px-2.5 py-0.5 text-[11px]';
 
   return (
     <span className="inline-flex items-center gap-1 flex-wrap">
       <span
-        className={`inline-flex items-center rounded-md border font-semibold leading-none ${sizeClass} ${elMeta.badgeClass}`}
+        className={`organic-tag inline-flex items-center font-semibold leading-none ${sizeClass} ${elMeta.badgeClass}`}
       >
         {elMeta.label}
       </span>
       <span
-        className={`inline-flex items-center rounded-md border font-semibold leading-none ${sizeClass} ${trMeta.badgeClass}`}
+        className={`organic-tag inline-flex items-center font-semibold leading-none ${sizeClass} ${trMeta.badgeClass}`}
       >
         {trMeta.label}
       </span>
