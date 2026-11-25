@@ -2,6 +2,8 @@
 // Uses physical noise sculpting, resonant body filters, FM metallic partials,
 // stereo spatial panning, dynamics compression, and algorithmic sanctuary convolution reverb.
 
+import { Rarity } from '../types/game';
+
 class SoundEngine {
   private ctx: AudioContext | null = null;
   private masterGain: GainNode | null = null;
@@ -452,7 +454,218 @@ class SoundEngine {
   }
 
   /**
-   * Heavy physical card slam onto an engraved stone socket on the 4x4 board.
+   * Heavy carved stone slab slam onto the battlefield socket, scaled in seismic weight
+   * and harmonic resonance by card Rarity ('common' | 'rare' | 'epic' | 'mythic') + Power Relic chime.
+   */
+  placeSlab(rarity: Rarity = 'common', isRelic = false, pan = 0) {
+    const jitter = 0.95 + Math.random() * 0.09;
+    const clampedPan = Math.max(-0.65, Math.min(0.65, pan));
+
+    const weightGain =
+      rarity === 'mythic'
+        ? 0.42
+        : rarity === 'epic'
+        ? 0.36
+        : rarity === 'rare'
+        ? 0.32
+        : 0.28;
+    const subEndFreq =
+      rarity === 'mythic' ? 24 : rarity === 'epic' ? 27 : rarity === 'rare' ? 30 : 34;
+    const subDuration =
+      rarity === 'mythic'
+        ? 0.34
+        : rarity === 'epic'
+        ? 0.26
+        : rarity === 'rare'
+        ? 0.21
+        : 0.17;
+
+    // 1. Fast downward air-displacement whoosh right as the heavy slab drops (0 -> 20ms)
+    this.playSculptedNoise({
+      color: 'pink',
+      filterType: 'bandpass',
+      startFreq: 540 * jitter,
+      endFreq: 135,
+      q: 1.6,
+      attack: 0.003,
+      duration: 0.048,
+      gain: 0.16,
+      wet: 0.12,
+      pan: clampedPan,
+    });
+
+    // 2. Seismic monolith sub-bass chest thump (+16ms)
+    this.playImpactBody({
+      startFreq: 108 * jitter,
+      endFreq: subEndFreq,
+      duration: subDuration,
+      gain: weightGain,
+      delay: 0.016,
+      wet: rarity === 'mythic' ? 0.32 : 0.22,
+      pan: clampedPan * 0.5,
+    });
+
+    // 3. Dense granite / basalt slab-on-stone knock (+17ms)
+    this.playImpactBody({
+      startFreq: 265 * jitter,
+      endFreq: 74,
+      duration: 0.095,
+      gain: 0.24,
+      delay: 0.017,
+      wet: 0.2,
+      pan: clampedPan,
+    });
+
+    // 4. Grinding stone-on-stone grit & rock dust burst (+18ms)
+    this.playSculptedNoise({
+      color: 'pink',
+      filterType: 'bandpass',
+      startFreq: 780 * jitter,
+      endFreq: 195,
+      q: 1.25,
+      attack: 0.002,
+      duration: 0.125,
+      gain: 0.26,
+      delay: 0.018,
+      wet: 0.26,
+      pan: clampedPan,
+    });
+
+    // 5. Sharp chiseled stone-edge crack transient (+18ms)
+    this.playSculptedNoise({
+      color: 'white',
+      filterType: 'bandpass',
+      startFreq: 2650 * jitter,
+      endFreq: 880,
+      q: 2.1,
+      attack: 0.001,
+      duration: 0.045,
+      gain: 0.13,
+      delay: 0.018,
+      wet: 0.18,
+      pan: clampedPan,
+    });
+
+    // 6. Micro-pebble / stone-chip scatter clicks settling onto the table (+52ms & +84ms)
+    [0.052, 0.084].forEach((d, i) => {
+      this.playSculptedNoise({
+        color: 'white',
+        filterType: 'highpass',
+        startFreq: 3100 - i * 500,
+        endFreq: 1900,
+        q: 1.8,
+        attack: 0.001,
+        duration: 0.022,
+        gain: 0.048 - i * 0.014,
+        delay: d + Math.random() * 0.012,
+        wet: 0.16,
+        pan: clampedPan + (i === 0 ? -0.14 : 0.14),
+      });
+    });
+
+    // 7. Rarity-Specific Resonance Signature
+    if (rarity === 'common') {
+      // Grounded earthen low-stone resonance
+      this.playWarmVoice({
+        freq: 110 * jitter, // A2
+        duration: 0.19,
+        attack: 0.008,
+        gain: 0.055,
+        delay: 0.02,
+        timbre: 'cello',
+        wet: 0.28,
+        pan: clampedPan,
+      });
+    } else if (rarity === 'rare') {
+      // Crystalline sapphire frost-quartz ring
+      this.playMetallicPartials({
+        frequencies: [1318.5 * jitter, 1975.5 * jitter, 2960 * jitter],
+        duration: 0.26,
+        gain: 0.085,
+        delay: 0.022,
+        wet: 0.38,
+        pan: clampedPan,
+      });
+      this.playWarmVoice({
+        freq: 293.66, // D4
+        duration: 0.28,
+        attack: 0.008,
+        gain: 0.065,
+        delay: 0.024,
+        timbre: 'celesta',
+        wet: 0.42,
+        pan: clampedPan,
+      });
+    } else if (rarity === 'epic') {
+      // Deep amethyst arcane rift swell + dark brass fifth
+      this.playSculptedNoise({
+        color: 'pink',
+        filterType: 'bandpass',
+        startFreq: 320,
+        endFreq: 1850,
+        q: 2.6,
+        attack: 0.02,
+        duration: 0.28,
+        gain: 0.12,
+        delay: 0.024,
+        wet: 0.45,
+        pan: clampedPan,
+      });
+      [146.83, 220.0, 329.63].forEach((freq, idx) => {
+        this.playWarmVoice({
+          freq,
+          duration: 0.36,
+          attack: 0.012,
+          gain: 0.065,
+          delay: 0.024 + idx * 0.02,
+          timbre: idx === 0 ? 'brass' : 'harp',
+          wet: 0.48,
+          pan: clampedPan + (idx - 1) * 0.15,
+        });
+      });
+    } else if (rarity === 'mythic') {
+      // Sovereign gilded monolith earthshaker: sanctum bell gong + solar brass/celesta chord
+      this.playMetallicPartials({
+        frequencies: [880, 1318.5, 1760, 2637, 3520],
+        duration: 0.48,
+        gain: 0.13,
+        delay: 0.02,
+        wet: 0.55,
+        pan: clampedPan,
+      });
+      [146.83, 293.66, 440.0, 587.33, 739.99].forEach((freq, idx) => {
+        this.playWarmVoice({
+          freq,
+          duration: 0.5,
+          attack: 0.012,
+          gain: 0.072,
+          delay: 0.022 + idx * 0.018,
+          timbre: idx < 2 ? 'brass' : 'celesta',
+          wet: 0.55,
+          pan: clampedPan + ((idx % 2) * 2 - 1) * 0.2,
+        });
+      });
+    }
+
+    // 8. Optional Power Relic Totem Anchor Resonance
+    if (isRelic) {
+      [523.25, 783.99, 1046.5].forEach((freq, idx) => {
+        this.playWarmVoice({
+          freq,
+          duration: 0.38,
+          attack: 0.008,
+          gain: 0.06,
+          delay: 0.03 + idx * 0.028,
+          timbre: 'celesta',
+          wet: 0.5,
+          pan: clampedPan,
+        });
+      });
+    }
+  }
+
+  /**
+   * Heavy physical card slam onto an engraved stone socket on the board.
    */
   place() {
     const jitter = 0.96 + Math.random() * 0.08;

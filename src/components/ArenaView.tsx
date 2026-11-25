@@ -67,9 +67,11 @@ import {
   MatchSummary,
   Owner,
   PlayerProfile,
+  Rarity,
 } from '../types/game';
 import { sound } from '../utils/sound';
 import { ArenaSetupFlow, MatchMode, SetupStep } from './arena/ArenaSetupFlow';
+import { CardSlamFlare } from './arena/CardSlamFlare';
 import { MatchSpoilsModal } from './arena/MatchSpoilsModal';
 import { useBoardDrag } from './arena/useBoardDrag';
 import { BattlefieldSiegeOverlay } from './BattlefieldChrome';
@@ -180,6 +182,13 @@ export const ArenaView: React.FC<ArenaViewProps> = ({
   const [confirmingRetreat, setConfirmingRetreat] = useState(false);
   const [callout, setCallout] = useState<{ id: number; text: string } | null>(null);
   const [activeClash, setActiveClash] = useState<ClashDetail | null>(null);
+  const [activeSlam, setActiveSlam] = useState<{
+    id: number;
+    row: number;
+    col: number;
+    rarity: Rarity;
+    isRelic: boolean;
+  } | null>(null);
   const [lastBattleLog, setLastBattleLog] = useState<string>(
     'Drag a card from your right-hand fan onto any open battlefield socket · Click a card in hand to inspect full buffs.'
   );
@@ -314,6 +323,7 @@ export const ArenaView: React.FC<ArenaViewProps> = ({
       setTurn(starter);
       setSelectedHandUid(null);
       setActiveClash(null);
+      setActiveSlam(null);
       setPlayerFlipsCount(0);
       setPlayerCombosCount(0);
       setSummary(null);
@@ -480,7 +490,25 @@ export const ArenaView: React.FC<ArenaViewProps> = ({
       setConfirmingRetreat(false);
       setHoveredDesktopHandIdx(null);
       setHoveredPlacedRelicPos(null);
-      sound.place();
+
+      const slamRarity: Rarity =
+        chosenPowerDef?.rarity ?? chosenUnitDef?.rarity ?? 'common';
+      const colsCount = board[0]?.length ?? 6;
+      const slamPan = colsCount > 1 ? (col / (colsCount - 1)) * 0.7 - 0.35 : 0;
+      sound.placeSlab(slamRarity, Boolean(chosenPowerDef), slamPan);
+
+      const slamId = Date.now() + Math.random();
+      setActiveSlam({
+        id: slamId,
+        row,
+        col,
+        rarity: slamRarity,
+        isRelic: Boolean(chosenPowerDef),
+      });
+      const clearSlamTimer = window.setTimeout(() => {
+        setActiveSlam((cur) => (cur?.id === slamId ? null : cur));
+      }, 640);
+      timersRef.current.push(clearSlamTimer);
 
       const resolution = resolvePlacement(board, row, col, chosen, owner);
 
@@ -1293,23 +1321,28 @@ export const ArenaView: React.FC<ArenaViewProps> = ({
             </div>
           )}
 
-          <div className={`relative ${boardFitClass} p-1.5 sm:p-2 lg:p-3`}>
+          <div
+            className={`relative ${boardFitClass} p-1.5 sm:p-2 lg:p-3 ${
+              activeSlam ? `animate-board-shake-${activeSlam.rarity}` : ''
+            }`}
+          >
             <BattlefieldSiegeOverlay />
 
-            <div className="relative overflow-hidden bg-[#120e0a] p-1 sm:p-1.5 lg:p-2 shadow-[0_26px_64px_rgba(0,0,0,0.88),inset_0_0_24px_rgba(0,0,0,0.85)]">
+            <div className="relative bg-[#120e0a] p-1 sm:p-1.5 lg:p-2 shadow-[0_26px_64px_rgba(0,0,0,0.88),inset_0_0_24px_rgba(0,0,0,0.85)]">
               <div
                 aria-hidden="true"
-                style={{
-                  backgroundImage: `url(${NEUTRAL_TERRAIN_IMAGE})`,
-                  backgroundSize: '260px 346px',
-                  backgroundRepeat: 'repeat',
-                }}
-                className="pointer-events-none absolute inset-0 opacity-82 brightness-[0.68] contrast-[1.08]"
-              />
-              <div
-                aria-hidden="true"
-                className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_90%_90%_at_50%_50%,rgba(12,9,6,0.06)_0%,rgba(9,7,5,0.62)_100%)]"
-              />
+                className="pointer-events-none absolute inset-0 overflow-hidden"
+              >
+                <div
+                  style={{
+                    backgroundImage: `url(${NEUTRAL_TERRAIN_IMAGE})`,
+                    backgroundSize: '260px 346px',
+                    backgroundRepeat: 'repeat',
+                  }}
+                  className="absolute inset-0 opacity-82 brightness-[0.68] contrast-[1.08]"
+                />
+                <div className="absolute inset-0 bg-[radial-gradient(ellipse_90%_90%_at_50%_50%,rgba(12,9,6,0.06)_0%,rgba(9,7,5,0.62)_100%)]" />
+              </div>
 
               <div
                 ref={boardGridRef}
@@ -1342,6 +1375,8 @@ export const ArenaView: React.FC<ArenaViewProps> = ({
 
                     if (cell.card) {
                       const placedCard = cell.card;
+                      const isActiveSlamCell =
+                        activeSlam?.row === rIdx && activeSlam?.col === cIdx;
                       return (
                         <div
                           key={key}
@@ -1358,11 +1393,20 @@ export const ArenaView: React.FC<ArenaViewProps> = ({
                             }
                           }}
                           className={`relative aspect-[5/7] transition-transform ${
+                            isActiveSlamCell ? 'z-30' : ''
+                          } ${
                             isRelicAuraTarget
                               ? 'ring-2 ring-sky-300 shadow-[0_0_20px_rgba(56,189,248,0.55)] z-20 scale-[1.02]'
                               : ''
                           }`}
                         >
+                          {isActiveSlamCell && activeSlam && (
+                            <CardSlamFlare
+                              key={activeSlam.id}
+                              rarity={activeSlam.rarity}
+                              isRelic={activeSlam.isRelic}
+                            />
+                          )}
                           <GameCard
                             cardId={placedCard.cardId}
                             stats={placedCard.stats}
