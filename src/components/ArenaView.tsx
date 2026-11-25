@@ -87,6 +87,12 @@ interface ArenaViewProps {
   onClaimSpoil: (
     spoilCard: HandCard
   ) => { isNew: boolean; wasOverflow: boolean; bonusGold: number; copyCount: number };
+  onSellCardInstance: (
+    instanceUid: string
+  ) => { ok: boolean; goldEarned: number; cardName?: string; message?: string };
+  onSellExtraCopies: (
+    specificCardId?: string
+  ) => { soldCount: number; goldEarned: number };
   onGoHome: () => void;
   onGoToGallery: () => void;
   onOpenRules: () => void;
@@ -108,6 +114,8 @@ export const ArenaView: React.FC<ArenaViewProps> = ({
   onAutoBuildDeck,
   onRecordMatch,
   onClaimSpoil,
+  onSellCardInstance,
+  onSellExtraCopies,
   onGoHome,
   onGoToGallery,
   onOpenRules,
@@ -770,6 +778,8 @@ export const ArenaView: React.FC<ArenaViewProps> = ({
         onDeleteDeck={onDeleteDeck}
         onToggleDeckCard={onToggleDeckCard}
         onAutoBuildDeck={onAutoBuildDeck}
+        onSellCardInstance={onSellCardInstance}
+        onSellExtraCopies={onSellExtraCopies}
         onStartMatch={startMatch}
         onGoHome={onGoHome}
         onGoToGallery={onGoToGallery}

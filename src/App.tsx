@@ -454,6 +454,8 @@ export default function App() {
                 onAutoBuildDeck={autoBuildActiveDeck}
                 onRecordMatch={recordMatchOutcome}
                 onClaimSpoil={claimSpoilCard}
+                onSellCardInstance={sellCardInstance}
+                onSellExtraCopies={sellExtraCopies}
                 onGoHome={() => switchTab('home')}
                 onGoToGallery={() => switchTab('gallery')}
                 onOpenRules={() => setRulesOpen(true)}

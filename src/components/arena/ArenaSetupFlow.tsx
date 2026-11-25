@@ -58,6 +58,12 @@ interface ArenaSetupFlowProps {
   onDeleteDeck: (index: number) => { ok: boolean; message?: string };
   onToggleDeckCard: (uidOrCardId: string) => { ok: boolean; message?: string };
   onAutoBuildDeck: (strategy: AutoBuildStrategy, targetBiomes?: BiomeType[]) => void;
+  onSellCardInstance: (
+    instanceUid: string
+  ) => { ok: boolean; goldEarned: number; cardName?: string; message?: string };
+  onSellExtraCopies: (
+    specificCardId?: string
+  ) => { soldCount: number; goldEarned: number };
   onStartMatch: () => void;
   onGoHome: () => void;
   onGoToGallery: () => void;
@@ -87,6 +93,8 @@ export const ArenaSetupFlow: React.FC<ArenaSetupFlowProps> = ({
   onDeleteDeck,
   onToggleDeckCard,
   onAutoBuildDeck,
+  onSellCardInstance,
+  onSellExtraCopies,
   onStartMatch,
   onGoHome,
   onGoToGallery,
@@ -747,6 +755,8 @@ export const ArenaSetupFlow: React.FC<ArenaSetupFlowProps> = ({
           onDeleteDeck={onDeleteDeck}
           onToggleDeckCard={onToggleDeckCard}
           onAutoBuildDeck={onAutoBuildDeck}
+          onSellCardInstance={onSellCardInstance}
+          onSellExtraCopies={onSellExtraCopies}
           onStartMatch={onStartMatch}
           onGoToGallery={onGoToGallery}
           onOpenRules={onOpenRules}

@@ -1071,12 +1071,10 @@ export const ShopView: React.FC<ShopViewProps> = ({
 
                   <div className="flex items-center justify-between text-[11px] px-0.5">
                     <span className={`capitalize font-medium ${RARITY_COLOR[card.rarity]}`}>
-                      #{String(card.number).padStart(2, '0')} · {rangeLabel} / {arrowRangeLabel}
+                      #{String(card.number).padStart(2, '0')} · {card.rarity}
                     </span>
-                    <span className="font-mono tabular-nums text-[#dfd0b6]">
-                      {bestCopy
-                        ? `${formatTetraCode(bestCopy.stats)}·${bestCopy.arrows.length}▲`
-                        : `${formatTetraCode(card.stats)}·${card.arrows.length}▲`}
+                    <span className="font-mono text-[10.5px] text-[#9b896f]">
+                      Rolls {rangeLabel} · {arrowRangeLabel}
                     </span>
                   </div>
 

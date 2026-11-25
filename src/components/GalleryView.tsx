@@ -439,7 +439,7 @@ export const GalleryView: React.FC<GalleryViewProps> = ({
         {/* Active Deck Showcase Grid */}
         <div className="basalt-recess rounded-[4px] p-3 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-7 gap-3 sm:gap-4">
           {activeDeckInstances.map((inst) => (
-            <div key={inst.uid} className="space-y-1.5">
+            <div key={inst.uid}>
               <GameCard
                 cardId={inst.cardId}
                 stats={inst.stats}
@@ -454,12 +454,6 @@ export const GalleryView: React.FC<GalleryViewProps> = ({
                   setSelectedCopyUid(inst.uid);
                 }}
               />
-              <div className="flex items-center justify-between px-1 text-[11px] font-mono text-[#cbb89a]">
-                <span className="text-[#f0c76e] font-semibold">
-                  {formatTetraCode(inst.stats)}
-                </span>
-                <span className="text-[#e6b85c]">{inst.arrows.length}▲</span>
-              </div>
             </div>
           ))}
         </div>
@@ -677,10 +671,19 @@ export const GalleryView: React.FC<GalleryViewProps> = ({
                   <span className={RARITY_TEXT_COLOR[card.rarity]}>
                     #{String(card.number).padStart(2, '0')} · {RARITY_LABEL[card.rarity]}
                   </span>
-                  <span className="font-mono tabular-nums text-[#e5d6bc]">
-                    {bestCopy ? formatTetraCode(bestCopy.stats) : formatTetraCode(card.stats)} ·{' '}
-                    {bestCopy ? bestCopy.arrows.length : card.arrows.length}▲
-                  </span>
+                  {count > 1 && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        sound.select();
+                        setInspectedId(card.id);
+                        setSelectedCopyUid(bestCopy?.uid ?? null);
+                      }}
+                      className="font-[var(--font-display)] text-[11px] font-semibold text-[#f0c76e] hover:text-[#fde5ad] transition-colors cursor-pointer"
+                    >
+                      Compare {count} →
+                    </button>
+                  )}
                 </div>
               </div>
             );
@@ -883,6 +886,24 @@ export const GalleryView: React.FC<GalleryViewProps> = ({
                           copy.augmentId
                         );
                         const canSell = totalOwnedCopies > DECK_CAPACITY;
+                        const bestRef = inspectedCopies[0];
+                        const statDiff =
+                          copy.stats.power +
+                          copy.stats.pDef +
+                          copy.stats.mDef -
+                          (bestRef.stats.power + bestRef.stats.pDef + bestRef.stats.mDef);
+                        const arrowDiff = copy.arrows.length - bestRef.arrows.length;
+                        const deltaParts: string[] = [];
+                        if (statDiff !== 0) {
+                          deltaParts.push(
+                            `${statDiff > 0 ? `+${statDiff}` : statDiff} stat${
+                              Math.abs(statDiff) === 1 ? '' : 's'
+                            }`
+                          );
+                        }
+                        if (arrowDiff !== 0) {
+                          deltaParts.push(`${arrowDiff > 0 ? `+${arrowDiff}` : arrowDiff}▲`);
+                        }
 
                         return (
                           <div
@@ -891,18 +912,29 @@ export const GalleryView: React.FC<GalleryViewProps> = ({
                               sound.select();
                               setSelectedCopyUid(copy.uid);
                             }}
-                            className={`rounded-[3px] p-2.5 border flex items-center justify-between gap-2 transition-colors cursor-pointer ${
+                            className={`rounded-[3px] p-2.5 border flex items-center justify-between gap-2.5 transition-colors cursor-pointer ${
                               isFocused
                                 ? 'brass-plaque border-[#cf9a42]'
                                 : 'basalt-recess hover:border-[#6e522b]'
                             }`}
                           >
                             <div className="flex items-center gap-2.5 min-w-0">
-                              <span className="w-6 h-6 rounded-[2px] bg-[#16110d] border border-[#4a3a29] font-mono text-xs font-bold text-[#cbb89a] flex items-center justify-center shrink-0">
-                                #{idx + 1}
-                              </span>
+                              <div className="w-11 shrink-0">
+                                <GameCard
+                                  cardId={inspectedCard.id}
+                                  stats={copy.stats}
+                                  arrows={copy.arrows}
+                                  augmentId={copy.augmentId}
+                                  owner={isEquipped ? 'player' : 'neutral'}
+                                  size="xs"
+                                  disableLongPress
+                                />
+                              </div>
                               <div className="min-w-0">
                                 <div className="flex flex-wrap items-center gap-2">
+                                  <span className="font-mono text-xs font-bold text-[#cbb89a]">
+                                    #{idx + 1}
+                                  </span>
                                   <span className="font-mono text-sm font-bold text-[#f0c76e]">
                                     {formatTetraCode(copy.stats)}
                                   </span>
@@ -910,8 +942,19 @@ export const GalleryView: React.FC<GalleryViewProps> = ({
                                     {copy.arrows.length}▲ ({formatArrowsCompact(copy.arrows)})
                                   </span>
                                   {idx === 0 && inspectedCopies.length > 1 && (
-                                    <span className="text-[10px] font-semibold text-emerald-400">
+                                    <span className="px-1.5 py-0.5 rounded-[2px] bg-emerald-950/85 border border-emerald-400/50 font-mono text-[10px] font-semibold text-emerald-300">
                                       ★ Best Roll
+                                    </span>
+                                  )}
+                                  {idx > 0 && deltaParts.length > 0 && (
+                                    <span
+                                      className={`px-1.5 py-0.5 rounded-[2px] border font-mono text-[10px] font-semibold ${
+                                        statDiff <= 0 && arrowDiff <= 0
+                                          ? 'bg-rose-950/75 border-rose-500/45 text-rose-300'
+                                          : 'bg-sky-950/85 border-sky-400/45 text-sky-300'
+                                      }`}
+                                    >
+                                      {deltaParts.join(' · ')}
                                     </span>
                                   )}
                                   {isEquipped && (
@@ -930,7 +973,7 @@ export const GalleryView: React.FC<GalleryViewProps> = ({
                                     );
                                   })()}
                                 </div>
-                                <div className="text-[11px] text-[#9b896f]">
+                                <div className="text-[11px] text-[#9b896f] mt-0.5">
                                   Pwr {toHexDigit(copy.stats.power)} · P.Def{' '}
                                   {toHexDigit(copy.stats.pDef)} · M.Def{' '}
                                   {toHexDigit(copy.stats.mDef)}
