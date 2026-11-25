@@ -8,26 +8,40 @@
 }
 
 :root {
-  --oak-void: #0d0a08;
-  --oak-deep: #140f0b;
-  --oak-plank: #1b140f;
-  --iron-dark: #191512;
-  --iron-mid: #251f1a;
-  --basalt-well: #100d0a;
-  --brass-bright: #e0af5a;
-  --brass-mid: #b38033;
-  --brass-dim: #6e5025;
-  --iron-edge: #3e3328;
+  --earth-void: #0b0907;
+  --timber-deep: #15100b;
+  --timber-plank: #211810;
+  --moss-shadow: #1b2414;
+  --bramble-green: #4e6433;
+  --ochre-bright: #dfb059;
+  --ochre-mid: #a8762c;
   --parchment-ink: #efe3cd;
-  --parchment-body: #cbbba0;
-  --parchment-muted: #8f7e67;
-  --grain-svg: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120' viewBox='0 0 120 120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.82' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='120' height='120' filter='url(%23n)' opacity='0.055'/%3E%3C/svg%3E");
+  --parchment-body: #ccbca1;
+  --parchment-muted: #938269;
+
+  /* Organic wood & soil grain noise */
+  --grain-svg: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160' viewBox='0 0 160 160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65 0.18' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)' opacity='0.075'/%3E%3C/svg%3E");
+
+  /* 9-Slice SVG: Splintered Siege-Timber & Chipped Slate Frame (transparent outer margin -> true non-rectangular edges!) */
+  --siege-plank-9slice: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240' viewBox='0 0 240 240'%3E%3Cdefs%3E%3ClinearGradient id='bg' x1='0' y1='0' x2='0' y2='1'%3E%3Cstop offset='0%25' stop-color='%23231a12' stop-opacity='0.96'/%3E%3Cstop offset='50%25' stop-color='%2318120d' stop-opacity='0.97'/%3E%3Cstop offset='100%25' stop-color='%23110d09' stop-opacity='0.98'/%3E%3C/linearGradient%3E%3ClinearGradient id='rim' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0%25' stop-color='%23563e26'/%3E%3Cstop offset='50%25' stop-color='%233b2a1a'/%3E%3Cstop offset='100%25' stop-color='%23271b11'/%3E%3C/linearGradient%3E%3C/defs%3E%3Cpath d='M12,7 L46,4 L64,9 L96,5 L138,7 L154,3 L192,7 L229,5 L236,15 L233,52 L237,72 L233,122 L236,168 L231,184 L235,226 L225,235 L186,232 L166,237 L118,233 L74,236 L54,231 L14,235 L5,224 L8,178 L4,158 L8,108 L5,62 L9,44 L5,16 Z' fill='url(%23bg)' stroke='url(%23rim)' stroke-width='4.5' stroke-linejoin='round'/%3E%3Cpath d='M16,11 L52,9 M78,10 L144,11 M168,10 L224,10 M18,229 L88,228 M124,229 L220,228' stroke='%23785735' stroke-width='1.1' stroke-opacity='0.45' fill='none'/%3E%3Cpath d='M4,38 C12,24 22,12 38,6' stroke='%23475c2e' stroke-width='2.6' stroke-linecap='round' fill='none'/%3E%3Cpath d='M24,9 C28,2 35,3 37,8 C31,11 26,11 24,9 Z' fill='%235b753b'/%3E%3Cpath d='M204,234 C218,228 228,218 235,202' stroke='%23475c2e' stroke-width='2.6' stroke-linecap='round' fill='none'/%3E%3Cpath d='M218,230 C222,236 229,235 231,229 C225,227 220,228 218,230 Z' fill='%235b753b'/%3E%3Ccircle cx='16' cy='16' r='2.4' fill='%238c7150'/%3E%3Ccircle cx='224' cy='16' r='2.4' fill='%238c7150'/%3E%3Ccircle cx='16' cy='224' r='2.4' fill='%238c7150'/%3E%3Ccircle cx='224' cy='224' r='2.4' fill='%238c7150'/%3E%3C/svg%3E");
+
+  /* 9-Slice SVG: Overgrown Warlord Oak & Thorny Bramble Reliquary Frame */
+  --bramble-oak-9slice: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240' viewBox='0 0 240 240'%3E%3Cdefs%3E%3ClinearGradient id='bg2' x1='0' y1='0' x2='0' y2='1'%3E%3Cstop offset='0%25' stop-color='%23291e13' stop-opacity='0.97'/%3E%3Cstop offset='45%25' stop-color='%231b140d' stop-opacity='0.98'/%3E%3Cstop offset='100%25' stop-color='%23120d09' stop-opacity='0.99'/%3E%3C/linearGradient%3E%3ClinearGradient id='oak' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0%25' stop-color='%238c6430'/%3E%3Cstop offset='48%25' stop-color='%23593e1e'/%3E%3Cstop offset='100%25' stop-color='%23362512'/%3E%3C/linearGradient%3E%3C/defs%3E%3Cpath d='M14,8 L48,4 L68,10 L108,5 L148,8 L166,3 L204,8 L230,5 L236,16 L232,54 L237,76 L232,126 L236,174 L230,192 L235,226 L224,235 L184,231 L164,237 L116,232 L72,236 L52,230 L13,235 L5,224 L9,182 L4,160 L9,112 L5,66 L10,46 L5,17 Z' fill='url(%23bg2)' stroke='url(%23oak)' stroke-width='5' stroke-linejoin='round'/%3E%3Cpath d='M18,13 L92,11 M128,12 L220,11 M20,227 L108,228 M144,227 L218,226' stroke='%23cfa054' stroke-width='1' stroke-opacity='0.38' fill='none'/%3E%3Cpath d='M3,52 C9,28 18,12 46,5 C64,1 78,10 94,7' stroke='%234c6332' stroke-width='3.2' stroke-linecap='round' fill='none'/%3E%3Cpath d='M28,7 C33,0 42,1 44,7 C37,10 31,10 28,7 Z' fill='%23678343'/%3E%3Cpath d='M62,7 C67,13 75,13 78,7 C72,4 66,4 62,7 Z' fill='%23587138'/%3E%3Cpath d='M8,32 C1,29 0,21 6,18 C11,22 11,28 8,32 Z' fill='%23678343'/%3E%3Cpath d='M237,186 C231,212 220,228 192,235 C174,239 160,230 144,233' stroke='%234c6332' stroke-width='3.2' stroke-linecap='round' fill='none'/%3E%3Cpath d='M210,233 C205,240 196,239 194,233 C201,230 207,230 210,233 Z' fill='%23678343'/%3E%3Cpath d='M232,206 C239,209 240,217 234,220 C229,216 229,210 232,206 Z' fill='%23587138'/%3E%3Cpath d='M224,9 L235,9 L235,20 M6,220 L6,233 L19,233' stroke='%236b5947' stroke-width='2.5' fill='none'/%3E%3Ccircle cx='18' cy='18' r='2.5' fill='%23caa055'/%3E%3Ccircle cx='222' cy='18' r='2.5' fill='%23caa055'/%3E%3Ccircle cx='18' cy='222' r='2.5' fill='%23caa055'/%3E%3Ccircle cx='222' cy='222' r='2.5' fill='%23caa055'/%3E%3C/svg%3E");
+
+  /* 9-Slice SVG: Rough-Dug Sunken Earth & Chipped Stone Trench Well */
+  --earth-trench-9slice: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180' viewBox='0 0 180 180'%3E%3Cpath d='M8,5 L38,3 L52,7 L96,4 L138,6 L172,4 L177,12 L174,48 L178,66 L174,124 L177,168 L170,176 L132,173 L114,177 L64,174 L12,176 L4,168 L7,122 L3,104 L7,52 L4,14 Z' fill='%230d0a07' fill-opacity='0.88' stroke='%23382b1e' stroke-width='3' stroke-linejoin='round'/%3E%3Cpath d='M12,9 L166,8' stroke='%23050302' stroke-width='2.5' stroke-opacity='0.75'/%3E%3Cpath d='M12,171 L166,170' stroke='%23634c33' stroke-width='1' stroke-opacity='0.35'/%3E%3C/svg%3E");
+
+  /* Repeating Horizontal Thorny Bramble Vine Divider */
+  --bramble-divider-svg: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='16' viewBox='0 0 240 16'%3E%3Cpath d='M0,9 Q30,3 60,9 T120,8 T180,9 T240,8' fill='none' stroke='%234f3822' stroke-width='2.2'/%3E%3Cpath d='M0,8 C22,14 42,2 68,9 C94,15 116,2 144,8 C172,14 198,3 240,9' fill='none' stroke='%234a6130' stroke-width='1.9'/%3E%3Cpath d='M36,6 C40,1 47,2 48,6 C43,8 39,8 36,6 Z' fill='%23658242'/%3E%3Cpath d='M104,10 C108,15 115,14 116,10 C111,8 107,8 104,10 Z' fill='%23567037'/%3E%3Cpath d='M174,6 C178,1 185,2 186,6 C181,8 177,8 174,6 Z' fill='%23658242'/%3E%3Cpath d='M76,8 L80,3 L82,9 Z' fill='%23384924'/%3E%3Cpath d='M148,8 L152,13 L154,7 Z' fill='%23384924'/%3E%3C/svg%3E");
+
+  /* Vertical Gnarled Bark & Vine Edge for Left Navigation Post */
+  --rail-vine-edge-svg: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='18' height='220' viewBox='0 0 18 220'%3E%3Cpath d='M0,0 L9,0 L12,28 L7,44 L13,78 L8,112 L13,148 L7,172 L12,202 L9,220 L0,220 Z' fill='%2316100b'/%3E%3Cpath d='M8,0 L11,28 L6,44 L12,78 L7,112 L12,148 L6,172 L11,202 L8,220' fill='none' stroke='%234b3520' stroke-width='2.6'/%3E%3Cpath d='M10,0 C4,36 15,68 8,110 C2,148 15,182 9,220' fill='none' stroke='%23495f2f' stroke-width='2'/%3E%3Cpath d='M10,56 C16,52 17,45 12,42 C9,46 8,52 10,56 Z' fill='%23627e3f'/%3E%3Cpath d='M9,156 C15,160 16,167 11,170 C8,166 7,160 9,156 Z' fill='%23556e36'/%3E%3C/svg%3E");
 }
 
 @layer base {
   html {
     font-family: var(--font-sans);
-    background-color: var(--oak-void);
+    background-color: var(--earth-void);
     color: var(--parchment-ink);
     -webkit-tap-highlight-color: transparent;
   }
@@ -35,197 +49,430 @@
   body {
     min-height: 100dvh;
     overflow-x: hidden;
-    background-color: var(--oak-void);
+    background-color: var(--earth-void);
     background-image:
-      radial-gradient(ellipse 80% 52% at 52% 0%, rgba(186, 118, 42, 0.14), transparent 64%),
-      radial-gradient(ellipse 70% 48% at 50% 100%, rgba(120, 56, 22, 0.12), transparent 65%),
-      radial-gradient(circle at 18% 35%, rgba(56, 38, 22, 0.24), transparent 55%),
+      radial-gradient(ellipse 80% 50% at 50% 0%, rgba(112, 88, 42, 0.16), transparent 65%),
+      radial-gradient(ellipse 70% 50% at 15% 88%, rgba(56, 78, 36, 0.16), transparent 62%),
+      radial-gradient(ellipse 65% 45% at 88% 92%, rgba(108, 52, 22, 0.14), transparent 62%),
       var(--grain-svg);
   }
 }
 
 /* ============================================================================
-   WARLORD'S CAMPAIGN TABLE + CARVED BASALT SURFACE PRIMITIVES
+   SPLINTERED SIEGEWORKS & OVERGROWN BRAMBLE — NON-RECTANGULAR UI PRIMITIVES
    ============================================================================ */
 
-/* Weathered Dark Oak & Wrought-Iron Navigation Rail */
+/* Rough-Hewn Siege Timber Post Navigation Rail (with gnarled bark & vine ragged edge) */
 .war-rail {
-  background-color: #130e0a;
-  background-image:
-    repeating-linear-gradient(
-      90deg,
-      rgba(255, 224, 178, 0.018) 0px,
-      rgba(255, 224, 178, 0.018) 2px,
-      rgba(0, 0, 0, 0.14) 2px,
-      rgba(0, 0, 0, 0.14) 11px
-    ),
-    linear-gradient(180deg, #1a130e 0%, #120d09 55%, #0e0a07 100%),
-    var(--grain-svg);
-  border-color: #3f3124;
-  box-shadow:
-    inset -1px 0 0 rgba(224, 175, 90, 0.12),
-    4px 0 24px rgba(0, 0, 0, 0.65);
-}
-
-/* Campaign Table Stage Background (warm oak planks + candlelit vignette) */
-.campaign-stage {
-  background-color: #0f0b08;
-  background-image:
-    radial-gradient(ellipse 75% 58% at 50% 16%, rgba(199, 132, 48, 0.13), transparent 66%),
-    radial-gradient(ellipse 65% 45% at 50% 95%, rgba(108, 46, 18, 0.11), transparent 68%),
-    repeating-linear-gradient(
-      180deg,
-      rgba(255, 220, 170, 0.012) 0px,
-      rgba(255, 220, 170, 0.012) 1px,
-      transparent 1px,
-      transparent 44px
-    ),
-    var(--grain-svg);
-}
-
-/* Hammered Iron & Carved Basalt Panel */
-.iron-panel {
-  background-color: #18130f;
-  background-image:
-    linear-gradient(180deg, rgba(48, 38, 29, 0.45) 0%, rgba(22, 17, 13, 0.92) 100%),
-    var(--grain-svg);
-  border: 1px solid #413427;
-  box-shadow:
-    inset 0 1px 0 rgba(242, 209, 150, 0.11),
-    inset 0 -2px 0 rgba(0, 0, 0, 0.68),
-    0 12px 30px rgba(0, 0, 0, 0.56);
-}
-
-/* Emphasized Brass-Trimmed Reliquary / Spotlight Panel */
-.brass-panel {
-  background-color: #1a140f;
-  background-image:
-    radial-gradient(ellipse 90% 45% at 50% 0%, rgba(214, 154, 62, 0.13), transparent 70%),
-    linear-gradient(180deg, rgba(54, 41, 29, 0.48) 0%, rgba(20, 15, 11, 0.96) 100%),
-    var(--grain-svg);
-  border: 1px solid #6b502c;
-  box-shadow:
-    inset 0 1px 0 rgba(248, 218, 154, 0.2),
-    inset 0 0 0 1px rgba(15, 11, 8, 0.72),
-    inset 0 -2px 0 rgba(0, 0, 0, 0.75),
-    0 16px 36px rgba(0, 0, 0, 0.65);
-}
-
-/* Deeply Carved Basalt / Recessed Leather Well */
-.basalt-recess {
-  background-color: #100c09;
-  background-image:
-    linear-gradient(180deg, rgba(7, 5, 4, 0.75) 0%, rgba(20, 16, 12, 0.55) 100%),
-    var(--grain-svg);
-  border: 1px solid #2e241b;
-  box-shadow:
-    inset 0 3px 10px rgba(0, 0, 0, 0.8),
-    inset 0 -1px 0 rgba(235, 200, 145, 0.06);
-}
-
-/* Four Corner Brass Rivets (pure CSS, zero extra DOM nodes) */
-.riveted-frame {
   position: relative;
+  background-color: #150f0a;
+  background-image:
+    repeating-linear-gradient(
+      92deg,
+      rgba(255, 220, 168, 0.022) 0px,
+      rgba(255, 220, 168, 0.022) 2px,
+      rgba(0, 0, 0, 0.18) 2px,
+      rgba(0, 0, 0, 0.18) 14px
+    ),
+    radial-gradient(ellipse 120% 40% at 50% 0%, rgba(74, 94, 45, 0.14), transparent 65%),
+    linear-gradient(180deg, #1d150e 0%, #140e09 55%, #0e0a07 100%),
+    var(--grain-svg);
+  border-color: transparent !important;
+  box-shadow: 8px 0 28px rgba(0, 0, 0, 0.72);
 }
-.riveted-frame::before {
+
+@media (min-width: 768px) {
+  .war-rail::after {
+    content: "";
+    pointer-events: none;
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    right: -13px;
+    width: 18px;
+    background-image: var(--rail-vine-edge-svg);
+    background-size: 18px 220px;
+    background-repeat: repeat-y;
+    filter: drop-shadow(4px 0 8px rgba(0, 0, 0, 0.7));
+    z-index: 40;
+  }
+}
+
+/* Overgrown War-Torn Battlefield Stage (moss, trampled earth, embers, and wild shadows) */
+.campaign-stage {
+  background-color: #0d0a07;
+  background-image:
+    radial-gradient(ellipse 68% 50% at 50% 14%, rgba(168, 118, 48, 0.13), transparent 66%),
+    radial-gradient(ellipse 55% 48% at 8% 18%, rgba(62, 86, 38, 0.15), transparent 60%),
+    radial-gradient(ellipse 58% 46% at 92% 86%, rgba(58, 82, 36, 0.14), transparent 62%),
+    radial-gradient(ellipse 65% 45% at 50% 98%, rgba(96, 46, 18, 0.13), transparent 68%),
+    var(--grain-svg);
+}
+
+/* Splintered Siege-Timber & Chipped Slate Panel (9-slice organic contour — ZERO straight lines!) */
+.iron-panel {
+  position: relative;
+  isolation: isolate;
+  background: transparent !important;
+  border: none !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+}
+.iron-panel::before {
   content: "";
   pointer-events: none;
   position: absolute;
-  inset: 5px;
-  background-image:
-    radial-gradient(circle at 3px 3px, #c69648 0, #6d4d20 2.2px, transparent 2.8px),
-    radial-gradient(circle at calc(100% - 3px) 3px, #c69648 0, #6d4d20 2.2px, transparent 2.8px),
-    radial-gradient(circle at 3px calc(100% - 3px), #c69648 0, #6d4d20 2.2px, transparent 2.8px),
-    radial-gradient(circle at calc(100% - 3px) calc(100% - 3px), #c69648 0, #6d4d20 2.2px, transparent 2.8px);
-  opacity: 0.78;
+  inset: 0;
+  z-index: -1;
+  border-style: solid;
+  border-width: 22px;
+  border-image-source: var(--siege-plank-9slice);
+  border-image-slice: 56 fill;
+  border-image-width: 22px;
+  border-image-repeat: stretch;
+  filter: drop-shadow(0 12px 24px rgba(0, 0, 0, 0.65));
 }
 
-/* Stamped Antique Brass Primary CTA */
+/* Overgrown Warlord Oak & Thorny Bramble Panel (9-slice organic wood + creeping vines) */
+.brass-panel {
+  position: relative;
+  isolation: isolate;
+  background: transparent !important;
+  border: none !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+}
+.brass-panel::before {
+  content: "";
+  pointer-events: none;
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-style: solid;
+  border-width: 24px;
+  border-image-source: var(--bramble-oak-9slice);
+  border-image-slice: 58 fill;
+  border-image-width: 24px;
+  border-image-repeat: stretch;
+  filter: drop-shadow(0 16px 32px rgba(0, 0, 0, 0.75));
+}
+
+/* Rough-Dug Sunken Earth & Chipped Stone Trench Well */
+.basalt-recess {
+  position: relative;
+  isolation: isolate;
+  background: transparent !important;
+  border: none !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+}
+.basalt-recess::before {
+  content: "";
+  pointer-events: none;
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-style: solid;
+  border-width: 16px;
+  border-image-source: var(--earth-trench-9slice);
+  border-image-slice: 42 fill;
+  border-image-width: 16px;
+  border-image-repeat: stretch;
+}
+
+/* Extra Creeping Bramble & Lashings Accent on Major Spotlight Frames */
+.riveted-frame {
+  position: relative;
+}
+.riveted-frame::after {
+  content: "";
+  pointer-events: none;
+  position: absolute;
+  inset: 2px;
+  z-index: 2;
+  background-image:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='64' viewBox='0 0 64 64'%3E%3Cpath d='M2,38 C5,20 14,9 36,4' fill='none' stroke='%23567038' stroke-width='2.2' stroke-linecap='round'/%3E%3Cpath d='M18,7 C22,1 29,2 31,7 C25,9 21,9 18,7 Z' fill='%236c8a47'/%3E%3Cpath d='M6,24 C1,21 1,15 5,13 C9,16 9,21 6,24 Z' fill='%2359733a'/%3E%3C/svg%3E"),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='64' viewBox='0 0 64 64'%3E%3Cpath d='M62,26 C59,44 50,55 28,60' fill='none' stroke='%23567038' stroke-width='2.2' stroke-linecap='round'/%3E%3Cpath d='M46,57 C42,63 35,62 33,57 C39,55 43,55 46,57 Z' fill='%236c8a47'/%3E%3C/svg%3E");
+  background-position: top left, bottom right;
+  background-repeat: no-repeat;
+  background-size: 46px 46px;
+  opacity: 0.9;
+}
+
+/* Primary CTA: Hewn Oak & Burnished Bronze Shield-Plank (Notched Non-Rectangular Silhouette) */
 .brass-btn {
-  background: linear-gradient(180deg, #e5b762 0%, #c08833 52%, #92611c 100%);
-  color: #181007;
-  border: 1px solid #f0ca7d;
+  position: relative;
+  border: none !important;
+  border-radius: 0 !important;
+  background:
+    repeating-linear-gradient(
+      178deg,
+      rgba(68, 38, 8, 0.16) 0px,
+      rgba(68, 38, 8, 0.16) 2px,
+      transparent 2px,
+      transparent 7px
+    ),
+    linear-gradient(180deg, #e7ba65 0%, #bf8630 52%, #885817 100%);
+  color: #170f05;
+  clip-path: polygon(
+    6px 2px,
+    24% 0%,
+    31% 3px,
+    68% 0%,
+    76% 2px,
+    calc(100% - 7px) 1px,
+    100% 9px,
+    calc(100% - 2px) 52%,
+    100% calc(100% - 7px),
+    calc(100% - 8px) 100%,
+    72% calc(100% - 2px),
+    64% 100%,
+    29% calc(100% - 1px),
+    21% 100%,
+    5px calc(100% - 2px),
+    0% calc(100% - 9px),
+    2px 46%,
+    0% 8px
+  );
   box-shadow:
-    inset 0 1px 0 rgba(255, 244, 214, 0.65),
-    inset 0 -2px 0 rgba(74, 42, 8, 0.75),
-    0 6px 18px rgba(0, 0, 0, 0.55),
-    0 0 18px rgba(204, 138, 42, 0.22);
+    inset 0 2px 0 rgba(255, 243, 210, 0.65),
+    inset 0 -3px 0 rgba(58, 32, 6, 0.82);
+  filter: drop-shadow(0 6px 12px rgba(0, 0, 0, 0.65));
   font-family: var(--font-display);
-  letter-spacing: 0.04em;
-  text-shadow: 0 1px 0 rgba(255, 232, 182, 0.4);
-  transition: filter 150ms ease, transform 120ms ease, box-shadow 150ms ease;
+  letter-spacing: 0.045em;
+  text-shadow: 0 1px 0 rgba(255, 232, 182, 0.42);
+  transition: filter 150ms ease, transform 120ms ease;
 }
 .brass-btn:hover:not(:disabled) {
-  filter: brightness(1.08);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 246, 222, 0.8),
-    inset 0 -2px 0 rgba(74, 42, 8, 0.78),
-    0 8px 22px rgba(0, 0, 0, 0.62),
-    0 0 24px rgba(224, 165, 68, 0.34);
+  filter: brightness(1.08) drop-shadow(0 8px 16px rgba(0, 0, 0, 0.72));
+  transform: translateY(-1px);
 }
 .brass-btn:active:not(:disabled) {
   transform: translateY(1px);
-  filter: brightness(0.97);
+  filter: brightness(0.96);
 }
 .brass-btn:disabled {
   opacity: 0.45;
-  filter: grayscale(0.5);
+  filter: grayscale(0.55);
   cursor: not-allowed;
 }
 
-/* Hammered Iron Secondary Button */
+/* Secondary Button: Rough-Split Battlefield Timber Slat (Jagged Wood-Splinter Edges) */
 .iron-btn {
-  background: linear-gradient(180deg, #2a221c 0%, #1d1713 55%, #15100d 100%);
-  color: #e9dcc4;
-  border: 1px solid #4c3d2e;
+  position: relative;
+  border: none !important;
+  border-radius: 0 !important;
+  background:
+    repeating-linear-gradient(
+      182deg,
+      rgba(255, 214, 158, 0.035) 0px,
+      rgba(255, 214, 158, 0.035) 1px,
+      rgba(0, 0, 0, 0.2) 1px,
+      rgba(0, 0, 0, 0.2) 6px
+    ),
+    linear-gradient(180deg, #35271b 0%, #241a12 56%, #18110b 100%);
+  color: #eadcc3;
+  clip-path: polygon(
+    5px 1px,
+    28% 0%,
+    34% 3px,
+    74% 0%,
+    calc(100% - 5px) 2px,
+    100% 8px,
+    calc(100% - 2px) 55%,
+    100% calc(100% - 6px),
+    calc(100% - 6px) 100%,
+    67% calc(100% - 2px),
+    59% 100%,
+    22% calc(100% - 2px),
+    4px 100%,
+    0% calc(100% - 7px),
+    2px 48%,
+    0% 7px
+  );
   box-shadow:
-    inset 0 1px 0 rgba(242, 212, 162, 0.12),
-    inset 0 -2px 0 rgba(0, 0, 0, 0.7),
-    0 4px 12px rgba(0, 0, 0, 0.45);
-  transition: border-color 150ms ease, color 150ms ease, background 150ms ease;
+    inset 0 1.5px 0 rgba(222, 182, 122, 0.24),
+    inset 0 -2.5px 0 rgba(8, 5, 3, 0.88),
+    inset 2px 0 0 rgba(128, 94, 52, 0.25),
+    inset -2px 0 0 rgba(128, 94, 52, 0.25);
+  filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.52));
+  transition: filter 150ms ease, color 150ms ease, background 150ms ease, transform 120ms ease;
 }
 .iron-btn:hover:not(:disabled) {
-  border-color: #9e7538;
-  color: #fbe6ba;
-  background: linear-gradient(180deg, #332920 0%, #241c16 55%, #1a140f 100%);
+  color: #fde7ba;
+  background:
+    repeating-linear-gradient(
+      182deg,
+      rgba(255, 220, 170, 0.05) 0px,
+      rgba(255, 220, 170, 0.05) 1px,
+      rgba(0, 0, 0, 0.18) 1px,
+      rgba(0, 0, 0, 0.18) 6px
+    ),
+    linear-gradient(180deg, #443222 0%, #2e2116 56%, #1f160e 100%);
+  box-shadow:
+    inset 0 1.5px 0 rgba(242, 202, 134, 0.42),
+    inset 0 -2.5px 0 rgba(8, 5, 3, 0.9);
 }
 .iron-btn:disabled {
   opacity: 0.45;
   cursor: not-allowed;
 }
 
-/* Wax / Crimson Danger or Retreat Button */
+/* Danger / Sell / Retreat: Frayed Blood-Stained War Pennant */
 .crimson-btn {
-  background: linear-gradient(180deg, #5e1d1d 0%, #421313 60%, #2d0c0c 100%);
-  color: #f8d7d0;
-  border: 1px solid #8a3636;
+  border: none !important;
+  border-radius: 0 !important;
+  background: linear-gradient(180deg, #6b2020 0%, #4a1414 58%, #300b0b 100%);
+  color: #fadad3;
+  clip-path: polygon(
+    5px 1px,
+    36% 0%,
+    43% 3px,
+    calc(100% - 5px) 1px,
+    100% 7px,
+    calc(100% - 3px) 52%,
+    100% calc(100% - 6px),
+    calc(100% - 6px) 100%,
+    58% calc(100% - 2px),
+    49% 100%,
+    4px calc(100% - 1px),
+    0% calc(100% - 7px),
+    2px 45%,
+    0% 6px
+  );
   box-shadow:
-    inset 0 1px 0 rgba(255, 198, 190, 0.18),
-    inset 0 -2px 0 rgba(0, 0, 0, 0.72),
-    0 4px 12px rgba(0, 0, 0, 0.48);
-  transition: border-color 150ms ease, filter 150ms ease;
+    inset 0 1.5px 0 rgba(255, 196, 188, 0.25),
+    inset 0 -2px 0 rgba(15, 4, 4, 0.85);
+  filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.5));
+  transition: filter 150ms ease;
 }
 .crimson-btn:hover:not(:disabled) {
-  filter: brightness(1.12);
-  border-color: #c25151;
+  filter: brightness(1.14) drop-shadow(0 5px 12px rgba(0, 0, 0, 0.6));
 }
 
-/* Stamped Brass Plaque (Gold / Score badges) */
+/* Chipped Battlefield Rune-Slate / Split Bark Plaque (Badges, Gold, Counters) */
 .brass-plaque {
-  background: linear-gradient(180deg, #251c13 0%, #17110c 100%);
-  border: 1px solid #6e5229;
+  border: none !important;
+  border-radius: 0 !important;
+  background:
+    radial-gradient(ellipse 90% 70% at 50% 0%, rgba(188, 136, 56, 0.16), transparent 70%),
+    linear-gradient(180deg, #2b2015 0%, #19120c 100%);
+  clip-path: polygon(
+    5px 1px,
+    33% 0%,
+    40% 2px,
+    calc(100% - 6px) 0%,
+    100% 6px,
+    calc(100% - 1px) 62%,
+    100% calc(100% - 5px),
+    calc(100% - 6px) 100%,
+    62% calc(100% - 2px),
+    54% 100%,
+    5px calc(100% - 1px),
+    0% calc(100% - 6px),
+    1px 38%,
+    0% 6px
+  );
   box-shadow:
-    inset 0 1px 0 rgba(245, 208, 134, 0.18),
-    inset 0 -2px 4px rgba(0, 0, 0, 0.65);
+    inset 0 1.5px 0 rgba(236, 192, 114, 0.32),
+    inset 0 -2px 0 rgba(8, 5, 3, 0.85),
+    inset 1.5px 0 0 rgba(142, 104, 50, 0.28),
+    inset -1.5px 0 0 rgba(142, 104, 50, 0.28);
 }
 
-/* Engraved Hairline Brass Divider */
+/* Tattered Swallowtail Cloth War-Banner Tab (Navigation Rail & Challenger Tabs) */
+.war-banner-tab {
+  border: none !important;
+  border-radius: 0 !important;
+  clip-path: polygon(
+    3px 1px,
+    58% 0%,
+    65% 2px,
+    calc(100% - 2px) 1px,
+    calc(100% - 9px) 50%,
+    100% calc(100% - 1px),
+    46% 100%,
+    38% calc(100% - 2px),
+    2px 100%,
+    0% calc(100% - 6px),
+    2px 44%,
+    0% 6px
+  );
+}
+
+/* Creeping Thorny Bramble Vine & Gnarled Twig Divider (replaces straight 1px rules!) */
 .ornate-divider {
-  height: 1px;
-  background: linear-gradient(90deg, transparent 0%, rgba(168, 124, 58, 0.55) 20%, rgba(224, 175, 90, 0.78) 50%, rgba(168, 124, 58, 0.55) 80%, transparent 100%);
+  height: 14px;
+  border: none;
+  background-color: transparent;
+  background-image: var(--bramble-divider-svg);
+  background-size: 220px 14px;
+  background-repeat: repeat-x;
+  background-position: center;
+  opacity: 0.92;
 }
 
-/* Hearthstone-style tactile 3D card slam, flip, & foil shimmer animations */
+/* Subtle Battle-Worn Chipped Outer Rim for 5:7 Cards (keeps all 8 compass arrows 100% unclipped!) */
+.card-weathered-rim {
+  border-radius: 0 !important;
+  clip-path: polygon(
+    1.5% 0%,
+    23% 0%,
+    25.2% 1.1%,
+    27.4% 0%,
+    71% 0%,
+    73% 0.9%,
+    75% 0%,
+    98.5% 0%,
+    100% 1.5%,
+    100% 24%,
+    98.7% 26%,
+    100% 28%,
+    100% 72%,
+    98.8% 74%,
+    100% 76%,
+    100% 98.5%,
+    98.5% 100%,
+    76% 100%,
+    73.8% 98.9%,
+    71.6% 100%,
+    28% 100%,
+    26% 99%,
+    24% 100%,
+    1.5% 100%,
+    0% 98.5%,
+    0% 75%,
+    1.2% 73%,
+    0% 71%,
+    0% 27%,
+    1.3% 25%,
+    0% 23%,
+    0% 1.5%
+  );
+}
+
+/* Chiseled Irregular Battlefield Stone Socket for Open 4x4 Tiles */
+.battle-stone-socket {
+  border-radius: 0 !important;
+  clip-path: polygon(
+    4px 1px,
+    34% 0%,
+    41% 2px,
+    calc(100% - 5px) 0%,
+    100% 5px,
+    calc(100% - 2px) 42%,
+    100% calc(100% - 5px),
+    calc(100% - 5px) 100%,
+    64% calc(100% - 2px),
+    56% 100%,
+    4px calc(100% - 1px),
+    0% calc(100% - 5px),
+    2px 58%,
+    0% 5px
+  );
+}
+
+/* Tactile Card Slam, Flip & Foil Shimmer Animations */
 @keyframes cardFlipPulse {
   0% {
     transform: perspective(800px) rotateY(0deg) scale(1);
@@ -319,24 +566,6 @@
   animation: arrowPulse 1.4s ease-in-out infinite;
 }
 
-/* Tactile Carved Basalt & Tarnished Brass Tabletop Surface */
-.hearth-table-surface {
-  background:
-    radial-gradient(circle at 50% 45%, rgba(44, 34, 24, 0.94) 0%, rgba(18, 14, 10, 0.99) 80%),
-    linear-gradient(135deg, #271e16 0%, #120d0a 100%);
-  box-shadow:
-    inset 0 2px 18px rgba(0, 0, 0, 0.84),
-    inset 0 0 0 2px rgba(176, 128, 56, 0.36),
-    inset 0 0 0 5px rgba(14, 10, 8, 0.88),
-    0 24px 60px rgba(0, 0, 0, 0.78);
-}
-
-.hearth-tile-socket {
-  box-shadow:
-    inset 0 3px 8px rgba(0, 0, 0, 0.8),
-    inset 0 -1px 0 rgba(235, 200, 145, 0.08);
-}
-
 @keyframes previewPop {
   0% {
     transform: scale(0.86) translateY(10px);
@@ -391,7 +620,6 @@
   filter: drop-shadow(0 22px 26px rgba(0, 0, 0, 0.78));
 }
 
-/* Universal zero-scroll board stage: keeps authentic 5:7 Tarot board proportions filling 100% of available height & width */
 .mobile-board-stage,
 .desktop-board-stage {
   container-type: size;
@@ -402,24 +630,23 @@
   width: min(100cqw, calc(100cqh * 5 / 7));
 }
 
-/* Weathered iron & antique brass desktop scrollbars */
+/* Rough Timber & Bark Scrollbars */
 ::-webkit-scrollbar {
   width: 8px;
   height: 8px;
 }
 
 ::-webkit-scrollbar-track {
-  background: rgba(15, 11, 8, 0.75);
+  background: rgba(12, 9, 6, 0.8);
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(88, 69, 48, 0.7);
-  border-radius: 2px;
-  border: 1px solid rgba(28, 21, 15, 0.9);
+  background: rgba(92, 68, 42, 0.78);
+  border: 1px solid rgba(22, 16, 10, 0.95);
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(196, 144, 62, 0.75);
+  background: rgba(182, 132, 58, 0.85);
 }
 
 @media (prefers-reduced-motion: reduce) {

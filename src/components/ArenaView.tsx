@@ -62,6 +62,7 @@ import { sound } from '../utils/sound';
 import { ArenaSetupFlow, MatchMode, SetupStep } from './arena/ArenaSetupFlow';
 import { MatchSpoilsModal } from './arena/MatchSpoilsModal';
 import { useBoardDrag } from './arena/useBoardDrag';
+import { BattlefieldSiegeOverlay } from './BattlefieldChrome';
 import { BiomeIcon, CardTraitPills } from './BiomeBadge';
 import { GameCard } from './GameCard';
 import { PlayLaunchIntent } from './HomeView';
@@ -989,7 +990,7 @@ export const ArenaView: React.FC<ArenaViewProps> = ({
               </span>
             </div>
 
-            <div className="basalt-recess rounded-[3px] flex items-center justify-center py-2 min-h-[82px]">
+            <div className="flex items-center justify-center py-1 min-h-[78px]">
               {rivalHand.length === 0 ? (
                 <span className="font-[var(--font-serif)] italic text-sm text-[#7f6d58]">
                   All rival cards played
@@ -1061,16 +1062,15 @@ export const ArenaView: React.FC<ArenaViewProps> = ({
                 Click tile to inspect
               </span>
             </div>
-            <div className="flex-1 min-h-0 overflow-y-auto space-y-1.5 pr-1">
+            <div className="flex-1 min-h-0 overflow-y-auto divide-y divide-[#3a2a1b]/70 pr-1">
               {battleHistory.map((entry, idx) => (
                 <div
                   key={`${idx}-${entry.slice(0, 18)}`}
-                  className={`rounded-[3px] px-2.5 py-1.5 font-[var(--font-serif)] text-[13px] leading-snug border ${
-                    idx === 0
-                      ? 'brass-plaque text-[#f6dfb0] font-semibold'
-                      : 'basalt-recess text-[#b3a086]'
+                  className={`py-1.5 px-1 font-[var(--font-serif)] text-[13.5px] leading-snug ${
+                    idx === 0 ? 'text-[#f7e2b4] font-semibold' : 'text-[#b5a185]'
                   }`}
                 >
+                  {idx === 0 && <span className="text-[#e2b053] mr-1">✦</span>}
                   {entry}
                 </div>
               ))}
@@ -1125,23 +1125,26 @@ export const ArenaView: React.FC<ArenaViewProps> = ({
             </div>
           )}
 
-          {/* Continuous Blended Open 4x4 Aerial Battlefield Canvas in Carved Basalt Frame */}
-          <div className="relative mobile-board-fit desktop-board-fit rounded-[5px] border-2 border-[#7b5b2f] p-1.5 sm:p-2 lg:p-3 overflow-hidden bg-[#120e0a] shadow-[0_26px_64px_rgba(0,0,0,0.85),inset_0_0_0_2px_rgba(14,10,7,0.9),inset_0_0_0_3px_rgba(218,168,84,0.28)]">
-            <div
-              aria-hidden="true"
-              style={{
-                backgroundImage: `url(${NEUTRAL_TERRAIN_IMAGE})`,
-                backgroundSize: '260px 346px',
-                backgroundRepeat: 'repeat',
-              }}
-              className="pointer-events-none absolute inset-0 opacity-80 brightness-[0.68] contrast-[1.08]"
-            />
-            <div
-              aria-hidden="true"
-              className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_90%_90%_at_50%_50%,rgba(12,9,6,0.08)_0%,rgba(10,7,5,0.56)_100%)]"
-            />
+          {/* Continuous Blended Open 4x4 Aerial Battlefield Framed by Splintered Siegeworks & Bramble */}
+          <div className="relative mobile-board-fit desktop-board-fit p-1.5 sm:p-2 lg:p-3">
+            <BattlefieldSiegeOverlay />
 
-            <div ref={boardGridRef} className="relative z-10 grid grid-cols-4 gap-1.5 sm:gap-2">
+            <div className="relative overflow-hidden bg-[#120e0a] p-1 sm:p-1.5 shadow-[0_26px_64px_rgba(0,0,0,0.88),inset_0_0_24px_rgba(0,0,0,0.85)]">
+              <div
+                aria-hidden="true"
+                style={{
+                  backgroundImage: `url(${NEUTRAL_TERRAIN_IMAGE})`,
+                  backgroundSize: '260px 346px',
+                  backgroundRepeat: 'repeat',
+                }}
+                className="pointer-events-none absolute inset-0 opacity-82 brightness-[0.68] contrast-[1.08]"
+              />
+              <div
+                aria-hidden="true"
+                className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_90%_90%_at_50%_50%,rgba(12,9,6,0.06)_0%,rgba(9,7,5,0.62)_100%)]"
+              />
+
+              <div ref={boardGridRef} className="relative z-10 grid grid-cols-4 gap-1.5 sm:gap-2">
               {board.map((row, rIdx) =>
                 row.map((cell, cIdx) => {
                   const key = `${rIdx}-${cIdx}`;
@@ -1268,14 +1271,14 @@ export const ArenaView: React.FC<ArenaViewProps> = ({
                           ? `${biomeMeta.name} tile at row ${rIdx + 1}, column ${cIdx + 1}`
                           : `Stone ground tile at row ${rIdx + 1}, column ${cIdx + 1}`
                       }
-                      className={`group relative aspect-[5/7] rounded-[4px] border transition-all duration-150 overflow-hidden bg-transparent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 ${
+                      className={`battle-stone-socket group relative aspect-[5/7] border transition-all duration-150 overflow-hidden bg-transparent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 ${
                         isDropTarget
                           ? 'border-[#f3c569] ring-2 ring-[#e5b353]/80 shadow-[0_0_24px_rgba(235,176,68,0.45)] scale-[1.03] cursor-pointer z-20'
                           : isDragActive && canPlaceHere
                           ? 'border-[#d6a348]/45 bg-amber-500/[0.05]'
                           : canPlaceHere
-                          ? 'border-[#e8d5b3]/[0.15] hover:border-[#e5b55a]/75 cursor-pointer active:scale-[0.97]'
-                          : 'border-[#e8d5b3]/[0.08] cursor-default'
+                          ? 'border-[#d8c098]/[0.18] hover:border-[#e5b55a]/75 cursor-pointer active:scale-[0.97]'
+                          : 'border-[#d8c098]/[0.09] cursor-default'
                       }`}
                     >
                       {biomeMeta && (
@@ -1313,6 +1316,7 @@ export const ArenaView: React.FC<ArenaViewProps> = ({
                   );
                 })
               )}
+              </div>
             </div>
           </div>
         </div>
@@ -1464,8 +1468,8 @@ export const ArenaView: React.FC<ArenaViewProps> = ({
             })}
           </div>
 
-          {/* Desktop Full-Height Scrollable Recessed Hand Tray */}
-          <div className="hidden lg:block flex-1 min-h-0 overflow-y-auto basalt-recess rounded-[4px] p-2.5">
+          {/* Desktop Open Battlefield Hand Spread (No Nested Box) */}
+          <div className="hidden lg:block flex-1 min-h-0 overflow-y-auto px-1 py-1.5">
             <div className="grid grid-cols-2 2xl:grid-cols-3 gap-2.5">
               {playerHand.map((hCard, idx) => {
                 const isSelected = hCard.uid === selectedHandUid;

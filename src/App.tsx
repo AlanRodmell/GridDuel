@@ -174,15 +174,15 @@ export default function App() {
               onClick={() => switchTab('home')}
               className="w-full flex items-center justify-center xl:justify-start gap-2.5 px-1.5 py-1.5 rounded-[3px] hover:bg-[#231a13]/70 transition-colors cursor-pointer"
             >
-              <span className="w-9 h-9 rounded-[3px] bg-gradient-to-b from-[#e4b660] via-[#b8822e] to-[#7c5216] text-[#170f06] border border-[#f2d089]/75 flex items-center justify-center shadow-[inset_0_1px_0_rgba(255,244,210,0.6),0_4px_12px_rgba(0,0,0,0.6)] shrink-0">
+              <span className="w-9 h-9 brass-btn flex items-center justify-center shrink-0">
                 <Crown className="w-5 h-5" />
               </span>
               <div className="hidden xl:block text-left min-w-0">
                 <div className="font-[var(--font-display)] text-lg font-bold tracking-[0.1em] text-[#f2d394] leading-none drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)]">
                   GridDuel
                 </div>
-                <div className="text-[10px] font-[var(--font-display)] uppercase tracking-[0.18em] text-[#9c886c] mt-1">
-                  War Table
+                <div className="text-[10px] font-[var(--font-display)] uppercase tracking-[0.18em] text-[#8fa668] mt-1">
+                  Siege Camp
                 </div>
               </div>
             </button>
@@ -215,16 +215,16 @@ export default function App() {
 
             <div className="ornate-divider" />
 
-            {/* Primary Navigation Links */}
-            <nav className="space-y-1.5">
+            {/* Primary Navigation Links — Tattered Swallowtail Cloth War-Banners */}
+            <nav className="space-y-2">
               <button
                 type="button"
                 onClick={() => switchTab('home')}
                 title="Campaign"
-                className={`w-full min-h-[44px] px-2.5 xl:px-3 py-2 rounded-[3px] flex items-center justify-center xl:justify-start gap-3 text-[13px] font-[var(--font-display)] font-semibold tracking-wider transition-all cursor-pointer border ${
+                className={`war-banner-tab w-full min-h-[44px] px-2.5 xl:pl-3.5 xl:pr-5 py-2 flex items-center justify-center xl:justify-start gap-3 text-[13px] font-[var(--font-display)] font-semibold tracking-wider transition-all cursor-pointer ${
                   activeTab === 'home'
-                    ? 'bg-gradient-to-r from-[#2e2114] via-[#241a11] to-[#1a130d] border-[#8c6731] border-l-2 border-l-[#e5b864] text-[#f5d799] shadow-[inset_0_1px_0_rgba(245,212,145,0.14),0_4px_12px_rgba(0,0,0,0.45)]'
-                    : 'bg-transparent border-transparent text-[#a59277] hover:text-[#efe3cd] hover:bg-[#221a13]/75 hover:border-[#3d3023]'
+                    ? 'bg-gradient-to-r from-[#4a3219] via-[#342312] to-[#23170c] text-[#f7dea2] shadow-[inset_3px_0_0_#e5b864]'
+                    : 'bg-[#1b140e]/65 text-[#a89579] hover:text-[#f2e4ca] hover:bg-[#281d14]'
                 }`}
               >
                 <Home className="w-4 h-4 shrink-0" />
@@ -238,16 +238,16 @@ export default function App() {
                   launchPlayFlow('choose');
                 }}
                 title="Play Arena"
-                className={`w-full min-h-[44px] px-2.5 xl:px-3 py-2 rounded-[3px] flex items-center justify-center xl:justify-start gap-3 text-[13px] font-[var(--font-display)] font-semibold tracking-wider transition-all cursor-pointer border ${
+                className={`war-banner-tab w-full min-h-[44px] px-2.5 xl:pl-3.5 xl:pr-5 py-2 flex items-center justify-center xl:justify-start gap-3 text-[13px] font-[var(--font-display)] font-semibold tracking-wider transition-all cursor-pointer ${
                   activeTab === 'arena'
-                    ? 'bg-gradient-to-r from-[#2e2114] via-[#241a11] to-[#1a130d] border-[#8c6731] border-l-2 border-l-[#e5b864] text-[#f5d799] shadow-[inset_0_1px_0_rgba(245,212,145,0.14),0_4px_12px_rgba(0,0,0,0.45)]'
-                    : 'bg-transparent border-transparent text-[#a59277] hover:text-[#efe3cd] hover:bg-[#221a13]/75 hover:border-[#3d3023]'
+                    ? 'bg-gradient-to-r from-[#4a3219] via-[#342312] to-[#23170c] text-[#f7dea2] shadow-[inset_3px_0_0_#e5b864]'
+                    : 'bg-[#1b140e]/65 text-[#a89579] hover:text-[#f2e4ca] hover:bg-[#281d14]'
                 }`}
               >
                 <Swords className="w-4 h-4 shrink-0" />
                 <span className="hidden xl:inline flex-1 text-left">Battle</span>
                 {isMatchActive && (
-                  <span className="hidden xl:inline-flex px-1.5 py-0.5 rounded-[2px] bg-emerald-950/90 border border-emerald-500/50 text-[10px] font-mono text-emerald-300">
+                  <span className="hidden xl:inline-flex px-1.5 py-0.5 bg-emerald-950/90 border border-emerald-500/50 text-[10px] font-mono text-emerald-300">
                     LIVE
                   </span>
                 )}
@@ -257,15 +257,15 @@ export default function App() {
                 type="button"
                 onClick={() => switchTab('gallery')}
                 title={`Compendium (${ownedUniqueCount}/${totalCards})`}
-                className={`w-full min-h-[44px] px-2.5 xl:px-3 py-2 rounded-[3px] flex items-center justify-center xl:justify-start gap-3 text-[13px] font-[var(--font-display)] font-semibold tracking-wider transition-all cursor-pointer border ${
+                className={`war-banner-tab w-full min-h-[44px] px-2.5 xl:pl-3.5 xl:pr-5 py-2 flex items-center justify-center xl:justify-start gap-3 text-[13px] font-[var(--font-display)] font-semibold tracking-wider transition-all cursor-pointer ${
                   activeTab === 'gallery'
-                    ? 'bg-gradient-to-r from-[#2e2114] via-[#241a11] to-[#1a130d] border-[#8c6731] border-l-2 border-l-[#e5b864] text-[#f5d799] shadow-[inset_0_1px_0_rgba(245,212,145,0.14),0_4px_12px_rgba(0,0,0,0.45)]'
-                    : 'bg-transparent border-transparent text-[#a59277] hover:text-[#efe3cd] hover:bg-[#221a13]/75 hover:border-[#3d3023]'
+                    ? 'bg-gradient-to-r from-[#4a3219] via-[#342312] to-[#23170c] text-[#f7dea2] shadow-[inset_3px_0_0_#e5b864]'
+                    : 'bg-[#1b140e]/65 text-[#a89579] hover:text-[#f2e4ca] hover:bg-[#281d14]'
                 }`}
               >
                 <LayoutGrid className="w-4 h-4 shrink-0" />
                 <span className="hidden xl:inline flex-1 text-left">Compendium</span>
-                <span className="hidden xl:inline font-mono text-[11px] text-[#9b896e]">
+                <span className="hidden xl:inline font-mono text-[11px] text-[#b5a184]">
                   {ownedUniqueCount}/{totalCards}
                 </span>
               </button>
@@ -274,10 +274,10 @@ export default function App() {
                 type="button"
                 onClick={() => switchTab('shop')}
                 title="Merchant & Runeforge"
-                className={`w-full min-h-[44px] px-2.5 xl:px-3 py-2 rounded-[3px] flex items-center justify-center xl:justify-start gap-3 text-[13px] font-[var(--font-display)] font-semibold tracking-wider transition-all cursor-pointer border ${
+                className={`war-banner-tab w-full min-h-[44px] px-2.5 xl:pl-3.5 xl:pr-5 py-2 flex items-center justify-center xl:justify-start gap-3 text-[13px] font-[var(--font-display)] font-semibold tracking-wider transition-all cursor-pointer ${
                   activeTab === 'shop'
-                    ? 'bg-gradient-to-r from-[#2e2114] via-[#241a11] to-[#1a130d] border-[#8c6731] border-l-2 border-l-[#e5b864] text-[#f5d799] shadow-[inset_0_1px_0_rgba(245,212,145,0.14),0_4px_12px_rgba(0,0,0,0.45)]'
-                    : 'bg-transparent border-transparent text-[#a59277] hover:text-[#efe3cd] hover:bg-[#221a13]/75 hover:border-[#3d3023]'
+                    ? 'bg-gradient-to-r from-[#4a3219] via-[#342312] to-[#23170c] text-[#f7dea2] shadow-[inset_3px_0_0_#e5b864]'
+                    : 'bg-[#1b140e]/65 text-[#a89579] hover:text-[#f2e4ca] hover:bg-[#281d14]'
                 }`}
               >
                 <ShoppingBag className="w-4 h-4 shrink-0" />

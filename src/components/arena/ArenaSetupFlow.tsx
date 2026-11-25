@@ -312,12 +312,12 @@ export const ArenaSetupFlow: React.FC<ArenaSetupFlowProps> = ({
                   key={tier.tierNumber}
                   type="button"
                   onClick={() => onSelectTier(tier.tierNumber)}
-                  className={`rounded-[3px] px-2 py-2 text-left border transition-colors cursor-pointer ${
+                  className={`px-2.5 py-2 text-left transition-all cursor-pointer ${
                     isSelected
-                      ? 'brass-plaque border-[#d9a44b] text-[#f8de9f] shadow-[0_0_14px_rgba(208,148,52,0.22)]'
+                      ? 'brass-btn font-bold'
                       : unlocked
-                      ? 'iron-panel text-[#d9c8ac] hover:border-[#7a5d34]'
-                      : 'basalt-recess text-[#685a49] opacity-65'
+                      ? 'iron-btn text-[#d9c8ac]'
+                      : 'brass-plaque text-[#685a49] opacity-55'
                   }`}
                 >
                   <div className="flex items-center justify-between gap-1">
@@ -359,7 +359,7 @@ export const ArenaSetupFlow: React.FC<ArenaSetupFlowProps> = ({
             <div
               role="tablist"
               aria-label="Tier challengers"
-              className="flex items-stretch gap-1.5 px-4 sm:px-6 py-3 bg-[#110d0a]/90 border-b border-[#3f3123] overflow-x-auto"
+              className="flex items-stretch gap-2 px-4 sm:px-6 py-3 overflow-x-auto"
             >
               {currentTier.fighters.map((fighter) => {
                 const active = fighter.id === currentFighter.id;
@@ -374,10 +374,10 @@ export const ArenaSetupFlow: React.FC<ArenaSetupFlowProps> = ({
                     role="tab"
                     aria-selected={active}
                     onClick={() => onSelectFighter(fighter.id)}
-                    className={`flex-1 min-w-[126px] rounded-[3px] px-2.5 py-2 border flex items-center gap-2 text-left transition-all cursor-pointer ${
+                    className={`war-banner-tab flex-1 min-w-[132px] pl-2.5 pr-4 py-2 flex items-center gap-2 text-left transition-all cursor-pointer ${
                       active
-                        ? 'bg-gradient-to-b from-[#302316] to-[#1e160f] border-[#cf9a42] border-b-2 border-b-[#f0c76e] text-[#fae3b2] shadow-[0_4px_14px_rgba(0,0,0,0.5)]'
-                        : 'bg-[#17120e] border-[#362a20] text-[#b7a386] hover:border-[#664e2e] hover:text-[#efe3cd]'
+                        ? 'bg-gradient-to-r from-[#4b3319] via-[#342312] to-[#23170c] text-[#fae3b2] shadow-[inset_3px_0_0_#f0c76e]'
+                        : 'bg-[#17120d]/85 text-[#b7a386] hover:bg-[#261c13] hover:text-[#efe3cd]'
                     }`}
                   >
                     <div className="relative shrink-0">

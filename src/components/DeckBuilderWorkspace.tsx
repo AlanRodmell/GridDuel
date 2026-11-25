@@ -832,11 +832,7 @@ export const DeckBuilderWorkspace: React.FC<DeckBuilderWorkspaceProps> = ({
               return (
                 <div
                   key={inst.uid}
-                  className={`card-grid-item rounded-[4px] p-2 border flex flex-col gap-2 transition-colors ${
-                    inDeck
-                      ? 'brass-plaque border-[#cf9a42]'
-                      : 'basalt-recess hover:border-[#6e522b]'
-                  }`}
+                  className="card-grid-item flex flex-col gap-2"
                 >
                   <div className="relative">
                     <GameCard

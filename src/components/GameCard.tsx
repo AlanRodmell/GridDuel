@@ -267,8 +267,8 @@ const GameCardInner: React.FC<GameCardProps> = ({
           background: backTheme.bezelGradient,
           boxShadow: '0 6px 16px rgba(0, 0, 0, 0.55)',
         }}
-        className={`card-contain group relative aspect-[5/7] ${
-          variant === 'tarot' ? 'rounded-[16px] p-[3px]' : 'rounded-xl p-[2px]'
+        className={`card-contain card-weathered-rim group relative aspect-[5/7] ${
+          variant === 'tarot' ? 'p-[3px]' : 'p-[2px]'
         } w-full overflow-hidden select-none no-touch-callout transition-transform duration-150 ${
           onClick && !disabled
             ? 'cursor-pointer hover:-translate-y-1'
@@ -277,9 +277,7 @@ const GameCardInner: React.FC<GameCardProps> = ({
       >
         <div
           style={{ background: backTheme.surfaceGradient }}
-          className={`relative w-full h-full ${
-            variant === 'tarot' ? 'rounded-[13px]' : 'rounded-[10px]'
-          } flex items-center justify-center overflow-hidden`}
+          className="card-weathered-rim relative w-full h-full flex items-center justify-center overflow-hidden"
         >
           <div
             style={{ borderColor: backTheme.hairline }}
@@ -364,14 +362,14 @@ const GameCardInner: React.FC<GameCardProps> = ({
           background: theme.bezelGradient,
           boxShadow: ownerShadow,
         }}
-        className={`card-contain group relative aspect-[5/7] w-full rounded-[16px] p-[3.5px] text-left select-none no-touch-callout transition-transform duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 ${
+        className={`card-contain card-weathered-rim group relative aspect-[5/7] w-full p-[3.5px] text-left select-none no-touch-callout transition-transform duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 ${
           justPlaced ? 'animate-card-drop' : ''
         } ${className}`}
       >
         <div
           key={flipKey ?? 'steady'}
           style={{ background: theme.surfaceGradient }}
-          className={`relative w-full h-full rounded-[12.5px] overflow-hidden ${
+          className={`card-weathered-rim relative w-full h-full overflow-hidden ${
             flipKey ? 'animate-card-flip' : ''
           }`}
         >
@@ -624,7 +622,7 @@ const GameCardInner: React.FC<GameCardProps> = ({
         background: theme.bezelGradient,
         boxShadow: ownerShadow,
       }}
-      className={`card-contain group relative aspect-[5/7] w-full overflow-hidden rounded-xl p-[2px] sm:p-[2.5px] ${
+      className={`card-contain card-weathered-rim group relative aspect-[5/7] w-full overflow-hidden p-[2px] sm:p-[2.5px] ${
         hasActiveBuff
           ? 'ring-2 ring-emerald-400/90'
           : hasActiveDebuff
@@ -632,7 +630,7 @@ const GameCardInner: React.FC<GameCardProps> = ({
           : ''
       } text-left select-none no-touch-callout transition-transform duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 ${
         selected
-          ? '-translate-y-2.5 scale-[1.05] ring-2 ring-amber-300 z-20'
+          ? '-translate-y-2.5 scale-[1.05] drop-shadow-[0_0_12px_rgba(245,190,78,0.8)] z-20'
           : onClick && !disabled
           ? 'cursor-pointer hover:-translate-y-1 hover:scale-[1.02] active:scale-[0.97]'
           : ''
@@ -649,7 +647,7 @@ const GameCardInner: React.FC<GameCardProps> = ({
       <div
         key={flipKey ?? 'steady'}
         style={{ background: theme.surfaceGradient }}
-        className={`relative w-full h-full rounded-[9.5px] overflow-hidden ${
+        className={`card-weathered-rim relative w-full h-full overflow-hidden ${
           flipKey ? 'animate-card-flip' : ''
         }`}
       >

@@ -14,6 +14,7 @@ import {
 import { ALL_FIGHTERS } from '../data/ladder';
 import { PlayerProfile } from '../types/game';
 import { sound } from '../utils/sound';
+import { BrambleCrestDivider } from './BattlefieldChrome';
 import { GameCard } from './GameCard';
 
 export type PlayLaunchIntent = 'choose' | 'arena' | 'quick';
@@ -45,7 +46,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
       <section className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-8 items-center">
         {/* Left Copy & Primary CTAs */}
         <div className="lg:col-span-6 space-y-6 text-center lg:text-left">
-          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-[3px] brass-plaque text-[#e9c479] font-[var(--font-display)] text-[11px] font-semibold uppercase tracking-[0.18em]">
+          <div className="war-banner-tab inline-flex items-center gap-2 pl-3.5 pr-5 py-1.5 bg-gradient-to-r from-[#3b2915] to-[#24190d] text-[#edd08e] font-[var(--font-display)] text-[11px] font-semibold uppercase tracking-[0.18em] shadow">
             <Crown className="w-3.5 h-3.5 text-[#d8a243]" />
             <span>4×4 Tactical Biome Card War</span>
           </div>
@@ -54,7 +55,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
             <h1 className="font-[var(--font-display)] text-4xl sm:text-5xl lg:text-[58px] font-bold tracking-[0.08em] text-[#f5dfb2] leading-[1.05] drop-shadow-[0_4px_18px_rgba(0,0,0,0.85)]">
               GridDuel
             </h1>
-            <div className="ornate-divider max-w-[260px] mx-auto lg:mx-0" />
+            <BrambleCrestDivider className="max-w-[300px] mx-auto lg:mx-0" />
             <p className="font-[var(--font-serif)] italic text-xl sm:text-2xl text-[#dec391]">
               “Master the terrain, command the arrows, claim the board.”
             </p>
