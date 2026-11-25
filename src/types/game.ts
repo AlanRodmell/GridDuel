@@ -121,7 +121,8 @@ export interface RolledCardInstance {
 export interface DeckSlot {
   id: string;
   name: string;
-  cards: string[]; // Up to 7 RolledCardInstance uids for 5x5 tactical battles
+  cards: string[]; // Non-null equipped RolledCardInstance uids (up to 7)
+  slots?: (string | null)[]; // Fixed 7-slot positions [0..6]; null = empty slot outline
 }
 
 export interface HandCard {

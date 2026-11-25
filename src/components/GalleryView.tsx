@@ -4,6 +4,7 @@ import {
   Coins,
   Compass,
   Lock,
+  Plus,
   Search,
   ShoppingBag,
   Sparkles,
@@ -50,8 +51,16 @@ interface GalleryViewProps {
   onCreateDeck: (name?: string, duplicateFromIndex?: number) => { ok: boolean; message?: string };
   onRenameDeck: (index: number, newName: string) => void;
   onDeleteDeck: (index: number) => { ok: boolean; message?: string };
-  onToggleDeckCard: (uidOrCardId: string) => { ok: boolean; message?: string };
-  onAutoBuildDeck: (strategy: AutoBuildStrategy) => void;
+  onToggleDeckCard: (
+    uidOrCardId: string,
+    preferredSlotIndex?: number
+  ) => { ok: boolean; message?: string; slotIndex?: number };
+  onClearDeck: () => void;
+  onAutoBuildDeck: (
+    strategy: AutoBuildStrategy,
+    targetBiomes?: undefined,
+    onlyEmptySlots?: boolean
+  ) => void;
   onSellCardInstance: (
     instanceUid: string
   ) => { ok: boolean; goldEarned: number; cardName?: string; message?: string };
@@ -103,6 +112,7 @@ export const GalleryView: React.FC<GalleryViewProps> = ({
   onRenameDeck,
   onDeleteDeck,
   onToggleDeckCard,
+  onClearDeck,
   onAutoBuildDeck,
   onSellCardInstance,
   onSellExtraCopies,
@@ -256,17 +266,21 @@ export const GalleryView: React.FC<GalleryViewProps> = ({
     return inspectedCopies[0];
   }, [inspectedCopies, selectedCopyUid]);
 
-  const activeDeckInstances = useMemo(() => {
-    const list: RolledCardInstance[] = [];
-    for (const ref of activeDeck.cards.slice(0, DECK_CAPACITY)) {
-      if (instanceByUid[ref]) {
-        list.push(instanceByUid[ref]);
-      } else if (bestCopyByCardId[ref]) {
-        list.push(bestCopyByCardId[ref]);
-      }
-    }
-    return list;
-  }, [activeDeck.cards, bestCopyByCardId, instanceByUid]);
+  const activeDeckSlots = useMemo<(RolledCardInstance | null)[]>(() => {
+    const raw = activeDeck.slots ?? activeDeck.cards;
+    return Array.from({ length: DECK_CAPACITY }, (_, idx) => {
+      const ref = raw[idx];
+      if (!ref) return null;
+      if (instanceByUid[ref]) return instanceByUid[ref];
+      if (bestCopyByCardId[ref]) return bestCopyByCardId[ref];
+      return null;
+    });
+  }, [activeDeck.cards, activeDeck.slots, bestCopyByCardId, instanceByUid]);
+
+  const filledDeckCount = useMemo(
+    () => activeDeckSlots.filter(Boolean).length,
+    [activeDeckSlots]
+  );
 
   const pct = Math.round((ownedUniqueCount / totalCards) * 100);
 
@@ -391,37 +405,57 @@ export const GalleryView: React.FC<GalleryViewProps> = ({
         />
 
         <div className="pt-4 border-t border-[#4b3a26]/80 flex flex-col md:flex-row md:items-center justify-between gap-3">
-          <div className="text-sm font-[var(--font-display)] font-bold text-[#f3dfb6] tracking-wide">
-            Active Warband: <span className="text-[#f5d593]">{activeDeck.name}</span>{' '}
-            <span className="font-mono text-xs text-[#a69277]">
-              ({activeDeckInstances.length}/{DECK_CAPACITY})
-            </span>
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="text-sm font-[var(--font-display)] font-bold text-[#f3dfb6] tracking-wide">
+              Active Warband: <span className="text-[#f5d593]">{activeDeck.name}</span>{' '}
+              <span className="font-mono text-xs text-[#a69277]">
+                ({filledDeckCount}/{DECK_CAPACITY})
+              </span>
+            </div>
+            {filledDeckCount > 0 && (
+              <button
+                type="button"
+                onClick={onClearDeck}
+                className="iron-btn px-2.5 py-1 font-[var(--font-display)] text-xs text-[#cbb89a] hover:text-rose-300 cursor-pointer"
+              >
+                Clear Slots
+              </button>
+            )}
           </div>
 
           {/* One-Tap Smart Auto-Builders */}
           <div className="flex flex-wrap items-center gap-2">
+            {filledDeckCount > 0 && filledDeckCount < DECK_CAPACITY && (
+              <button
+                type="button"
+                onClick={() => onAutoBuildDeck('power', undefined, true)}
+                className="iron-btn min-h-[36px] px-3 py-1 font-[var(--font-display)] text-xs font-bold text-emerald-300 whitespace-nowrap cursor-pointer"
+              >
+                Fill {DECK_CAPACITY - filledDeckCount} Empty
+              </button>
+            )}
             <span className="font-[var(--font-display)] text-xs text-[#a69277] flex items-center gap-1">
               <Sparkles className="w-3.5 h-3.5 text-[#e2b053]" />
-              Auto-Forge {DECK_CAPACITY}-Card Deck:
+              Auto-Forge:
             </span>
             <button
               type="button"
               onClick={() => onAutoBuildDeck('power')}
-              className="iron-btn min-h-[36px] px-3 py-1 rounded-[3px] font-[var(--font-display)] text-xs whitespace-nowrap cursor-pointer"
+              className="iron-btn min-h-[36px] px-3 py-1 font-[var(--font-display)] text-xs whitespace-nowrap cursor-pointer"
             >
               Highest Rolled Stats
             </button>
             <button
               type="button"
               onClick={() => onAutoBuildDeck('arrows')}
-              className="iron-btn min-h-[36px] px-3 py-1 rounded-[3px] font-[var(--font-display)] text-xs whitespace-nowrap cursor-pointer"
+              className="iron-btn min-h-[36px] px-3 py-1 font-[var(--font-display)] text-xs whitespace-nowrap cursor-pointer"
             >
               8-Way Arrows
             </button>
             <button
               type="button"
               onClick={() => onAutoBuildDeck('augments')}
-              className="min-h-[36px] px-3 py-1 rounded-[3px] bg-[#24162b] hover:bg-[#311d3a] border border-violet-500/45 text-violet-200 font-[var(--font-display)] text-xs flex items-center gap-1 transition-colors whitespace-nowrap cursor-pointer"
+              className="min-h-[36px] px-3 py-1 bg-[#24162b] hover:bg-[#311d3a] border border-violet-500/45 text-violet-200 font-[var(--font-display)] text-xs flex items-center gap-1 transition-colors whitespace-nowrap cursor-pointer"
             >
               <Wand2 className="w-3 h-3" />
               <span>Augment Synergy</span>
@@ -429,33 +463,58 @@ export const GalleryView: React.FC<GalleryViewProps> = ({
             <button
               type="button"
               onClick={() => onAutoBuildDeck('assault')}
-              className="iron-btn min-h-[36px] px-3 py-1 rounded-[3px] font-[var(--font-display)] text-xs whitespace-nowrap cursor-pointer"
+              className="iron-btn min-h-[36px] px-3 py-1 font-[var(--font-display)] text-xs whitespace-nowrap cursor-pointer"
             >
               X &amp; A Specialists
             </button>
           </div>
         </div>
 
-        {/* Active Deck Showcase Grid */}
-        <div className="basalt-recess rounded-[4px] p-3 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-7 gap-3 sm:gap-4">
-          {activeDeckInstances.map((inst) => (
-            <div key={inst.uid}>
-              <GameCard
-                cardId={inst.cardId}
-                stats={inst.stats}
-                arrows={inst.arrows}
-                augmentId={inst.augmentId}
-                owner="player"
-                size="md"
-                showName
-                onClick={() => {
-                  sound.select();
-                  setInspectedId(inst.cardId);
-                  setSelectedCopyUid(inst.uid);
-                }}
-              />
-            </div>
-          ))}
+        {/* Fixed 7-Slot Active Deck Grid (with Dashed Empty Card Outlines!) */}
+        <div className="basalt-recess p-3 grid grid-cols-2 sm:grid-cols-4 md:grid-cols-7 gap-3 sm:gap-3.5">
+          {activeDeckSlots.map((inst, slotIdx) => {
+            if (!inst) {
+              return (
+                <div
+                  key={`compendium-empty-${slotIdx}`}
+                  className="relative aspect-[5/7] border-2 border-dashed border-[#5c4732] bg-[#110c08]/65 flex flex-col items-center justify-center p-2 text-center"
+                >
+                  <span className="absolute top-1.5 left-1.5 font-mono text-[10px] font-bold text-[#8c775c]">
+                    #{slotIdx + 1}
+                  </span>
+                  <Plus className="w-5 h-5 text-[#7c6850] mb-1" />
+                  <span className="font-[var(--font-display)] text-[10px] uppercase tracking-wider text-[#9c886c]">
+                    Empty Slot
+                  </span>
+                </div>
+              );
+            }
+
+            return (
+              <div key={`compendium-slot-${slotIdx}-${inst.uid}`} className="group relative">
+                <span className="pointer-events-none absolute top-1 left-1 z-30 px-1 py-[1px] bg-[#140f0b]/90 border border-[#584531] font-mono text-[9px] font-bold text-[#d8c4a3] shadow">
+                  #{slotIdx + 1}
+                </span>
+                <GameCard
+                  cardId={inst.cardId}
+                  stats={inst.stats}
+                  arrows={inst.arrows}
+                  augmentId={inst.augmentId}
+                  owner="player"
+                  size="md"
+                  showName
+                  onClick={() => {
+                    sound.select();
+                    onToggleDeckCard(inst.uid);
+                  }}
+                />
+                <span className="pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity absolute -top-1.5 -right-1.5 z-40 px-1.5 py-0.5 bg-[#7c1f1f] border border-rose-300 text-[9.5px] font-[var(--font-display)] font-bold text-white shadow-lg flex items-center gap-0.5">
+                  <X className="w-2.5 h-2.5 stroke-[3]" />
+                  <span>Remove</span>
+                </span>
+              </div>
+            );
+          })}
         </div>
       </section>
 

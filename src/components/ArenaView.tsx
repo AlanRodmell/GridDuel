@@ -75,8 +75,16 @@ interface ArenaViewProps {
   onCreateDeck: (name?: string, duplicateFromIndex?: number) => { ok: boolean; message?: string };
   onRenameDeck: (index: number, newName: string) => void;
   onDeleteDeck: (index: number) => { ok: boolean; message?: string };
-  onToggleDeckCard: (uidOrCardId: string) => { ok: boolean; message?: string };
-  onAutoBuildDeck: (strategy: AutoBuildStrategy, targetBiomes?: BiomeType[]) => void;
+  onToggleDeckCard: (
+    uidOrCardId: string,
+    preferredSlotIndex?: number
+  ) => { ok: boolean; message?: string; slotIndex?: number };
+  onClearDeck: () => void;
+  onAutoBuildDeck: (
+    strategy: AutoBuildStrategy,
+    targetBiomes?: BiomeType[],
+    onlyEmptySlots?: boolean
+  ) => void;
   onRecordMatch: (params: {
     fighterId: string;
     winner: 'player' | 'rival' | 'draw';
@@ -111,6 +119,7 @@ export const ArenaView: React.FC<ArenaViewProps> = ({
   onRenameDeck,
   onDeleteDeck,
   onToggleDeckCard,
+  onClearDeck,
   onAutoBuildDeck,
   onRecordMatch,
   onClaimSpoil,
@@ -234,6 +243,7 @@ export const ArenaView: React.FC<ArenaViewProps> = ({
     (fighterIdToStart: string) => {
       const fighter = FIGHTER_MAP[fighterIdToStart] ?? currentFighter;
       if (!isTierUnlocked(fighter.tierNumber, profile.fighterWins ?? {})) return;
+      if (activeDeck.cards.length < HAND_SIZE) return;
 
       clearTimers();
       setConfirmingRetreat(false);
@@ -766,6 +776,7 @@ export const ArenaView: React.FC<ArenaViewProps> = ({
         onRenameDeck={onRenameDeck}
         onDeleteDeck={onDeleteDeck}
         onToggleDeckCard={onToggleDeckCard}
+        onClearDeck={onClearDeck}
         onAutoBuildDeck={onAutoBuildDeck}
         onSellCardInstance={onSellCardInstance}
         onSellExtraCopies={onSellExtraCopies}

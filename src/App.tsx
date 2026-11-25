@@ -61,6 +61,7 @@ export default function App() {
     renameDeck,
     deleteDeck,
     toggleDeckCard,
+    clearActiveDeck,
     autoBuildActiveDeck,
     buyCard,
     openBoosterPack,
@@ -451,6 +452,7 @@ export default function App() {
                 onRenameDeck={renameDeck}
                 onDeleteDeck={deleteDeck}
                 onToggleDeckCard={toggleDeckCard}
+                onClearDeck={clearActiveDeck}
                 onAutoBuildDeck={autoBuildActiveDeck}
                 onRecordMatch={recordMatchOutcome}
                 onClaimSpoil={claimSpoilCard}
@@ -477,6 +479,7 @@ export default function App() {
                 onRenameDeck={renameDeck}
                 onDeleteDeck={deleteDeck}
                 onToggleDeckCard={toggleDeckCard}
+                onClearDeck={clearActiveDeck}
                 onAutoBuildDeck={autoBuildActiveDeck}
                 onSellCardInstance={sellCardInstance}
                 onSellExtraCopies={sellExtraCopies}

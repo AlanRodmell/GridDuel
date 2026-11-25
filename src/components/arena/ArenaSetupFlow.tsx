@@ -56,8 +56,16 @@ interface ArenaSetupFlowProps {
   onCreateDeck: (name?: string, duplicateFromIndex?: number) => { ok: boolean; message?: string };
   onRenameDeck: (index: number, newName: string) => void;
   onDeleteDeck: (index: number) => { ok: boolean; message?: string };
-  onToggleDeckCard: (uidOrCardId: string) => { ok: boolean; message?: string };
-  onAutoBuildDeck: (strategy: AutoBuildStrategy, targetBiomes?: BiomeType[]) => void;
+  onToggleDeckCard: (
+    uidOrCardId: string,
+    preferredSlotIndex?: number
+  ) => { ok: boolean; message?: string; slotIndex?: number };
+  onClearDeck: () => void;
+  onAutoBuildDeck: (
+    strategy: AutoBuildStrategy,
+    targetBiomes?: BiomeType[],
+    onlyEmptySlots?: boolean
+  ) => void;
   onSellCardInstance: (
     instanceUid: string
   ) => { ok: boolean; goldEarned: number; cardName?: string; message?: string };
@@ -92,6 +100,7 @@ export const ArenaSetupFlow: React.FC<ArenaSetupFlowProps> = ({
   onRenameDeck,
   onDeleteDeck,
   onToggleDeckCard,
+  onClearDeck,
   onAutoBuildDeck,
   onSellCardInstance,
   onSellExtraCopies,
@@ -133,12 +142,14 @@ export const ArenaSetupFlow: React.FC<ArenaSetupFlowProps> = ({
 
   return (
     <div
-      className={`w-full ${
-        setupStep === 'deck' ? 'max-w-none' : 'max-w-6xl'
-      } mx-auto px-4 sm:px-6 lg:px-8 py-5 sm:py-6 space-y-5 sm:space-y-6`}
+      className={`w-full mx-auto px-4 sm:px-6 lg:px-8 ${
+        setupStep === 'deck'
+          ? 'max-w-none py-2.5 lg:py-3 space-y-2.5 lg:h-full lg:flex lg:flex-col lg:overflow-hidden'
+          : 'max-w-6xl py-5 sm:py-6 space-y-5 sm:space-y-6'
+      }`}
     >
       {/* Rugged Forged-Iron Breadcrumb & Back Bar */}
-      <div className="flex flex-wrap items-center justify-between gap-3">
+      <div className="shrink-0 flex flex-wrap items-center justify-between gap-3">
         <button
           type="button"
           onClick={handleStepBack}
@@ -746,7 +757,6 @@ export const ArenaSetupFlow: React.FC<ArenaSetupFlowProps> = ({
         <DeckBuilderWorkspace
           profile={profile}
           activeDeck={activeDeck}
-          previewDeckHand={previewDeckHand}
           currentFighter={currentFighter}
           gameMode={gameMode}
           onSelectDeckSlot={onSelectDeckSlot}
@@ -754,6 +764,7 @@ export const ArenaSetupFlow: React.FC<ArenaSetupFlowProps> = ({
           onRenameDeck={onRenameDeck}
           onDeleteDeck={onDeleteDeck}
           onToggleDeckCard={onToggleDeckCard}
+          onClearDeck={onClearDeck}
           onAutoBuildDeck={onAutoBuildDeck}
           onSellCardInstance={onSellCardInstance}
           onSellExtraCopies={onSellExtraCopies}
