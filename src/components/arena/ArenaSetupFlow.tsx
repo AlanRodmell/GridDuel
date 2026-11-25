@@ -5,10 +5,13 @@ import {
   ChevronRight,
   Crown,
   Dices,
+  LayoutGrid,
   Lock,
+  Sparkles,
   Trophy,
   Wand2,
 } from 'lucide-react';
+import { useCardPreview } from '../../context/cardPreviewContext';
 import { CARD_MAP, getCardThumbUrl } from '../../data/cards';
 import {
   ALL_FIGHTERS,
@@ -18,10 +21,19 @@ import {
   getTierProgress,
   isTierUnlocked,
 } from '../../data/ladder';
-import { HAND_SIZE } from '../../engine/triadEngine';
+import {
+  getPowerCardsForTier,
+  isCampaignTierCleared,
+} from '../../data/powerCards';
+import {
+  ALL_BOARD_SCALES,
+  BOARD_SCALES,
+  getBoardScaleSpec,
+} from '../../engine/triadEngine';
 import { AutoBuildStrategy } from '../../store/useProfile';
 import {
   BiomeType,
+  BoardScale,
   DeckSlot,
   HandCard,
   LadderFighter,
@@ -49,6 +61,7 @@ interface ArenaSetupFlowProps {
   unlockedLadderTiers: LadderTier[];
   unlockedFighters: LadderFighter[];
   previewDeckHand: HandCard[];
+  onSelectBoardScale: (scale: BoardScale) => void;
   onSelectTier: (tierNum: number) => void;
   onSelectFighter: (fighterId: string) => void;
   onRollRandomFighter: (excludeId?: string) => LadderFighter;
@@ -56,6 +69,7 @@ interface ArenaSetupFlowProps {
   onCreateDeck: (name?: string, duplicateFromIndex?: number) => { ok: boolean; message?: string };
   onRenameDeck: (index: number, newName: string) => void;
   onDeleteDeck: (index: number) => { ok: boolean; message?: string };
+  onSetDeckPowerCard: (powerCardId: string | null) => { ok: boolean; message?: string };
   onToggleDeckCard: (
     uidOrCardId: string,
     preferredSlotIndex?: number
@@ -91,7 +105,7 @@ export const ArenaSetupFlow: React.FC<ArenaSetupFlowProps> = ({
   totalConqueredFighters,
   unlockedLadderTiers,
   unlockedFighters,
-  previewDeckHand,
+  onSelectBoardScale,
   onSelectTier,
   onSelectFighter,
   onRollRandomFighter,
@@ -99,6 +113,7 @@ export const ArenaSetupFlow: React.FC<ArenaSetupFlowProps> = ({
   onCreateDeck,
   onRenameDeck,
   onDeleteDeck,
+  onSetDeckPowerCard,
   onToggleDeckCard,
   onClearDeck,
   onAutoBuildDeck,
@@ -109,12 +124,26 @@ export const ArenaSetupFlow: React.FC<ArenaSetupFlowProps> = ({
   onGoToGallery,
   onOpenRules,
 }) => {
+  const { openPreview } = useCardPreview();
+  const activeScale = profile.boardScale ?? '6x3';
+  const scaleSpec = getBoardScaleSpec(activeScale);
   const rivalAvatarCard = CARD_MAP[currentFighter.avatarCardId] ?? CARD_MAP['ember-imp'];
-  const currentTierUnlocked = isTierUnlocked(currentTier.tierNumber, profile.fighterWins ?? {});
-  const currentTierProg = getTierProgress(currentTier.tierNumber, profile.fighterWins ?? {});
+  const currentTierUnlocked = isTierUnlocked(
+    currentTier.tierNumber,
+    profile.fighterWins ?? {}
+  );
+  const currentTierProg = getTierProgress(
+    currentTier.tierNumber,
+    profile.fighterWins ?? {}
+  );
+  const currentTierCleared = isCampaignTierCleared(
+    currentTier.tierNumber,
+    profile.fighterWins
+  );
+  const tierPowerRelics = getPowerCardsForTier(currentTier.tierNumber);
 
   const stepOrder: { id: SetupStep; num: number; label: string }[] = [
-    { id: 'mode', num: 1, label: 'Mode' },
+    { id: 'mode', num: 1, label: 'Mode & Scale' },
     { id: 'details', num: 2, label: gameMode === 'quick' ? 'Random Rival' : 'Challenger' },
     { id: 'deck', num: 3, label: 'Deck' },
   ];
@@ -148,7 +177,7 @@ export const ArenaSetupFlow: React.FC<ArenaSetupFlowProps> = ({
           : 'max-w-6xl py-5 sm:py-6 space-y-5 sm:space-y-6'
       }`}
     >
-      {/* Rugged Forged-Iron Breadcrumb & Back Bar */}
+      {/* Breadcrumb & Back Bar */}
       <div className="shrink-0 flex flex-wrap items-center justify-between gap-3">
         <button
           type="button"
@@ -160,7 +189,7 @@ export const ArenaSetupFlow: React.FC<ArenaSetupFlowProps> = ({
             {setupStep === 'mode'
               ? 'Campaign'
               : setupStep === 'details'
-              ? 'Choose Mode'
+              ? 'Mode & Scale'
               : 'Change Opponent'}
           </span>
         </button>
@@ -200,21 +229,69 @@ export const ArenaSetupFlow: React.FC<ArenaSetupFlowProps> = ({
         </nav>
       </div>
 
-      {/* STEP 1: MODE SELECTION */}
+      {/* STEP 1: MODE & BATTLEFIELD SCALE SELECTION */}
       {setupStep === 'mode' && (
         <div className="space-y-6">
-          <div className="text-center space-y-2 max-w-xl mx-auto">
+          <div className="text-center space-y-2 max-w-2xl mx-auto">
             <h1 className="font-[var(--font-display)] text-2xl sm:text-3xl font-bold text-[#f3dfb6] tracking-[0.08em]">
-              Choose Battle Mode
+              Choose Battle Mode &amp; Scale
             </h1>
-            <div className="ornate-divider max-w-[200px] mx-auto" />
+            <div className="ornate-divider max-w-[220px] mx-auto" />
             <p className="font-[var(--font-serif)] text-base sm:text-lg text-[#bfa98b]">
-              Climb the ranked 10-Tier Arena ladder or jump straight into a one-off exhibition
-              against a random opponent.
+              Pick your preferred battlefield grid scale, then climb the 10-Tier Arena ladder to
+              unlock Power Relics or jump into a random exhibition.
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-5 max-w-4xl mx-auto pt-2">
+          {/* Battlefield Scale Selector (6x3 / 7x3 / 6x4) */}
+          <div className="max-w-4xl mx-auto brass-panel p-4 sm:p-5 space-y-3">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div className="flex items-center gap-2">
+                <LayoutGrid className="w-4 h-4 text-[#e2b053]" />
+                <span className="font-[var(--font-display)] text-xs sm:text-sm font-bold uppercase tracking-[0.14em] text-[#f5dfb2]">
+                  Battlefield Scale
+                </span>
+              </div>
+              <span className="font-[var(--font-serif)] italic text-xs sm:text-sm text-[#b7a285]">
+                Applies to both Championship Arena &amp; Quick Duels
+              </span>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              {ALL_BOARD_SCALES.map((sc) => {
+                const s = BOARD_SCALES[sc];
+                const isSelected = sc === activeScale;
+                return (
+                  <button
+                    key={sc}
+                    type="button"
+                    onClick={() => onSelectBoardScale(sc)}
+                    className={`p-3.5 text-left flex flex-col justify-between gap-2 transition-transform cursor-pointer ${
+                      isSelected
+                        ? 'brass-btn font-bold'
+                        : 'iron-btn text-[#e5d5b7] hover:-translate-y-0.5'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="font-[var(--font-display)] text-sm sm:text-base font-bold">
+                        {s.name}
+                      </span>
+                      {isSelected && <Check className="w-4 h-4 shrink-0" />}
+                    </div>
+                    <div
+                      className={`font-mono text-[11px] ${
+                        isSelected ? 'text-[#251707]' : 'text-[#cbb89a]'
+                      }`}
+                    >
+                      {s.rows * s.cols} Tiles · {s.unitSlots} Units + 1 Relic · {s.biomeCount} Biomes
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5 max-w-4xl mx-auto">
             <button
               type="button"
               onClick={() => {
@@ -229,7 +306,7 @@ export const ArenaSetupFlow: React.FC<ArenaSetupFlowProps> = ({
                   <div className="w-12 h-12 rounded-[3px] brass-plaque flex items-center justify-center text-[#eab95d]">
                     <Trophy className="w-6 h-6" />
                   </div>
-                  <span className="px-2.5 py-1 rounded-[2px] brass-plaque font-mono text-xs font-bold text-[#f0c76e]">
+                  <span className="organic-tag px-2.5 py-1 bg-[#1e150c] font-mono text-xs font-bold text-[#f0c76e]">
                     {totalConqueredFighters}/{ALL_FIGHTERS.length} Conquered
                   </span>
                 </div>
@@ -239,8 +316,8 @@ export const ArenaSetupFlow: React.FC<ArenaSetupFlowProps> = ({
                     Championship Arena
                   </h2>
                   <p className="font-[var(--font-serif)] text-base text-[#cbb89a] leading-relaxed">
-                    Progress through 10 themed sanctuaries on an open 5×3 landscape biome grid,
-                    defeat rune-wielding tier bosses, and unlock Mythic drops.
+                    Conquer 10 themed sanctuaries on a {scaleSpec.shortLabel} battlefield, clear full
+                    tiers to unlock 12 directional Power Relics, and hunt Mythic drops.
                   </p>
                 </div>
               </div>
@@ -266,8 +343,8 @@ export const ArenaSetupFlow: React.FC<ArenaSetupFlowProps> = ({
                   <div className="w-12 h-12 rounded-[3px] brass-plaque flex items-center justify-center text-[#d8a752]">
                     <Dices className="w-6 h-6" />
                   </div>
-                  <span className="px-2.5 py-1 rounded-[2px] basalt-recess font-mono text-xs font-bold text-[#dfcca9]">
-                    5×3 Skirmish
+                  <span className="organic-tag px-2.5 py-1 bg-[#18120c] font-mono text-xs font-bold text-[#dfcca9]">
+                    {scaleSpec.name}
                   </span>
                 </div>
 
@@ -276,8 +353,8 @@ export const ArenaSetupFlow: React.FC<ArenaSetupFlowProps> = ({
                     Quick Random Duel
                   </h2>
                   <p className="font-[var(--font-serif)] text-base text-[#cbb89a] leading-relaxed">
-                    Draw a surprise opponent from your unlocked ladder tiers for a brisk 5×3 duel
-                    with Gold &amp; Spoil rewards.
+                    Draw a surprise opponent from your unlocked ladder tiers for a brisk{' '}
+                    {scaleSpec.shortLabel} duel with Gold &amp; Spoil rewards.
                   </p>
                 </div>
               </div>
@@ -300,14 +377,19 @@ export const ArenaSetupFlow: React.FC<ArenaSetupFlowProps> = ({
                 Championship Arena
               </h1>
               <p className="font-[var(--font-serif)] text-base text-[#b7a285] mt-0.5">
-                Choose a tier and challenger tab, then muster your warband.
+                Clear all 5 challengers in a tier to unlock its signature Power Relic(s).
               </p>
             </div>
-            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-[3px] brass-plaque text-xs">
-              <Crown className="w-4 h-4 text-[#e2b053]" />
-              <span className="font-mono font-bold text-[#f0c76e]">
-                {totalConqueredFighters}/{ALL_FIGHTERS.length} Conquered
+            <div className="flex items-center gap-2">
+              <span className="organic-tag px-3 py-1.5 bg-[#1b140d] font-mono text-xs font-bold text-[#e5cfa4]">
+                {scaleSpec.name}
               </span>
+              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-[3px] brass-plaque text-xs">
+                <Crown className="w-4 h-4 text-[#e2b053]" />
+                <span className="font-mono font-bold text-[#f0c76e]">
+                  {totalConqueredFighters}/{ALL_FIGHTERS.length} Conquered
+                </span>
+              </div>
             </div>
           </div>
 
@@ -360,11 +442,40 @@ export const ArenaSetupFlow: React.FC<ArenaSetupFlowProps> = ({
                   {currentTier.regionSubtitle}
                 </p>
               </div>
-              <span
-                className={`px-2.5 py-1 rounded-[2px] basalt-recess font-mono text-xs font-semibold ${currentTier.accentColor}`}
-              >
-                {currentTier.cardRangeLabel}
-              </span>
+              <div className="flex flex-wrap items-center gap-1.5">
+                {tierPowerRelics.map((relic) => (
+                  <button
+                    key={relic.id}
+                    type="button"
+                    onClick={() => {
+                      sound.select();
+                      openPreview({
+                        cardId: relic.id,
+                        arrows: relic.dirs,
+                        owner: currentTierCleared ? 'player' : 'neutral',
+                      });
+                    }}
+                    title="Click to inspect Tier-Clear Power Relic reward"
+                    className={`organic-tag inline-flex items-center gap-1.5 px-2.5 py-1 text-[11px] font-[var(--font-display)] font-bold cursor-pointer ${
+                      currentTierCleared
+                        ? 'bg-sky-950/95 text-sky-200'
+                        : 'bg-[#1a1410] text-[#cbb89a] hover:text-sky-200'
+                    }`}
+                  >
+                    <Sparkles className="w-3 h-3 text-sky-300 shrink-0" />
+                    <span>
+                      {currentTierCleared
+                        ? `✓ ${relic.name}`
+                        : `Tier Clear: ${relic.name}`}
+                    </span>
+                  </button>
+                ))}
+                <span
+                  className={`organic-tag px-2.5 py-1 bg-[#16110c] font-mono text-xs font-semibold ${currentTier.accentColor}`}
+                >
+                  {currentTier.cardRangeLabel}
+                </span>
+              </div>
             </div>
 
             <div
@@ -393,7 +504,7 @@ export const ArenaSetupFlow: React.FC<ArenaSetupFlowProps> = ({
                   >
                     <div className="relative shrink-0">
                       <div
-                        className={`w-8 h-8 rounded-[2px] overflow-hidden border ${
+                        className={`w-8 h-8 card-weathered-rim overflow-hidden border ${
                           isConquered
                             ? 'border-emerald-500'
                             : active
@@ -414,7 +525,7 @@ export const ArenaSetupFlow: React.FC<ArenaSetupFlowProps> = ({
                         )}
                       </div>
                       {isConquered && (
-                        <span className="absolute -top-1 -right-1 w-3.5 h-3.5 rounded-[2px] bg-emerald-600 text-[#0d0a08] flex items-center justify-center border border-emerald-200">
+                        <span className="organic-seal absolute -top-1 -right-1 w-3.5 h-3.5 bg-emerald-600 text-[#0d0a08] flex items-center justify-center">
                           <Check className="w-2.5 h-2.5 stroke-[3]" />
                         </span>
                       )}
@@ -445,7 +556,7 @@ export const ArenaSetupFlow: React.FC<ArenaSetupFlowProps> = ({
 
             <div className="p-5 sm:p-6 space-y-5">
               {!currentTierUnlocked && (
-                <div className="rounded-[3px] bg-[#2a1a10]/85 border border-[#8e5c26] px-4 py-3 flex flex-wrap items-center justify-between gap-3 text-xs text-[#f2cfa0]">
+                <div className="organic-tag bg-[#2a1a10]/90 px-4 py-3 flex flex-wrap items-center justify-between gap-3 text-xs text-[#f2cfa0]">
                   <span>
                     Defeat{' '}
                     <strong>
@@ -460,7 +571,7 @@ export const ArenaSetupFlow: React.FC<ArenaSetupFlowProps> = ({
                   <button
                     type="button"
                     onClick={() => onSelectTier(currentTier.tierNumber - 1)}
-                    className="brass-btn px-3 py-1 rounded-[2px] text-xs font-bold shrink-0 cursor-pointer"
+                    className="brass-btn px-3 py-1 text-xs font-bold shrink-0 cursor-pointer"
                   >
                     Go to Tier {currentTier.tierNumber - 1}
                   </button>
@@ -468,7 +579,7 @@ export const ArenaSetupFlow: React.FC<ArenaSetupFlowProps> = ({
               )}
 
               <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 text-center sm:text-left">
-                <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-[3px] overflow-hidden border-2 border-[#b98739] shrink-0 shadow-[0_8px_22px_rgba(0,0,0,0.7)]">
+                <div className="w-20 h-20 sm:w-24 sm:h-24 card-weathered-rim overflow-hidden border-2 border-[#b98739] shrink-0 shadow-[0_8px_22px_rgba(0,0,0,0.7)]">
                   {rivalAvatarCard && (
                     <img
                       src={getCardThumbUrl(rivalAvatarCard.image)}
@@ -487,8 +598,14 @@ export const ArenaSetupFlow: React.FC<ArenaSetupFlowProps> = ({
                       Challenger #{currentFighter.orderInTier}
                     </span>
                     {currentFighter.isBoss && (
-                      <span className="px-2 py-0.5 rounded-[2px] brass-plaque font-[var(--font-display)] font-bold uppercase text-[#f4d084]">
+                      <span className="px-2 py-0.5 brass-plaque font-[var(--font-display)] font-bold uppercase text-[#f4d084]">
                         Tier Boss
+                      </span>
+                    )}
+                    {(currentFighter.isBoss || currentFighter.tierNumber >= 2) && (
+                      <span className="organic-tag inline-flex items-center gap-1 px-2.5 py-0.5 bg-sky-950/90 font-mono font-bold text-sky-200">
+                        <Sparkles className="w-3 h-3 text-sky-300" />
+                        <span>Deploys Power Relic</span>
                       </span>
                     )}
                     {bossRuneTierLabel && (
@@ -507,8 +624,7 @@ export const ArenaSetupFlow: React.FC<ArenaSetupFlowProps> = ({
                     {currentFighter.name}
                   </h3>
                   <p className="font-[var(--font-serif)] text-base text-[#cbb89a]">
-                    {currentFighter.title}{' '}
-                    <span className="text-[#6d5b46]">·</span>{' '}
+                    {currentFighter.title} <span className="text-[#6d5b46]">·</span>{' '}
                     <span className="text-[#ebc77e] italic font-semibold">
                       {currentFighter.specialty}
                     </span>
@@ -517,7 +633,7 @@ export const ArenaSetupFlow: React.FC<ArenaSetupFlowProps> = ({
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 text-xs">
-                <div className="basalt-recess rounded-[3px] px-3.5 py-2.5 flex items-center justify-between gap-2">
+                <div className="basalt-recess px-3.5 py-2.5 flex items-center justify-between gap-2">
                   <span className="font-[var(--font-display)] uppercase tracking-wider text-[11px] text-[#9b886e]">
                     Victory Payout
                   </span>
@@ -532,7 +648,7 @@ export const ArenaSetupFlow: React.FC<ArenaSetupFlowProps> = ({
                   </span>
                 </div>
 
-                <div className="basalt-recess rounded-[3px] px-3.5 py-2.5 flex items-center justify-between gap-2">
+                <div className="basalt-recess px-3.5 py-2.5 flex items-center justify-between gap-2">
                   <span className="font-[var(--font-display)] uppercase tracking-wider text-[11px] text-[#9b886e]">
                     Spoils Card Pool
                   </span>
@@ -541,7 +657,7 @@ export const ArenaSetupFlow: React.FC<ArenaSetupFlowProps> = ({
                   </span>
                 </div>
 
-                <div className="basalt-recess rounded-[3px] px-3.5 py-2.5 flex items-center justify-between gap-2">
+                <div className="basalt-recess px-3.5 py-2.5 flex items-center justify-between gap-2">
                   <span className="font-[var(--font-display)] uppercase tracking-wider text-[11px] text-[#9b886e] shrink-0">
                     Signature Cards
                   </span>
@@ -553,9 +669,9 @@ export const ArenaSetupFlow: React.FC<ArenaSetupFlowProps> = ({
                   </span>
                 </div>
 
-                <div className="basalt-recess rounded-[3px] px-3.5 py-2.5 flex items-center justify-between gap-2">
+                <div className="basalt-recess px-3.5 py-2.5 flex items-center justify-between gap-2">
                   <span className="font-[var(--font-display)] uppercase tracking-wider text-[11px] text-[#9b886e] shrink-0">
-                    Arena Biomes
+                    Arena Biomes ({scaleSpec.biomeCount} tiles)
                   </span>
                   <div className="flex flex-wrap items-center justify-end gap-1">
                     {getFighterBiomes(currentFighter.id).map((b) => (
@@ -565,7 +681,7 @@ export const ArenaSetupFlow: React.FC<ArenaSetupFlowProps> = ({
                 </div>
 
                 {(currentFighter.mythicDropChance ?? 0) > 0 && (
-                  <div className="sm:col-span-2 rounded-[3px] brass-plaque px-3.5 py-2.5 flex items-center justify-between gap-2">
+                  <div className="sm:col-span-2 brass-plaque px-3.5 py-2.5 flex items-center justify-between gap-2">
                     <span className="font-[var(--font-display)] uppercase tracking-wider text-[11px] text-[#e9c479] font-semibold">
                       Mythic Bonus Drop
                     </span>
@@ -584,7 +700,7 @@ export const ArenaSetupFlow: React.FC<ArenaSetupFlowProps> = ({
                     sound.select();
                     setSetupStep('deck');
                   }}
-                  className={`w-full min-h-[52px] rounded-[3px] font-bold text-sm sm:text-base flex items-center justify-center gap-2 ${
+                  className={`w-full min-h-[52px] font-bold text-sm sm:text-base flex items-center justify-center gap-2 ${
                     currentTierUnlocked
                       ? 'brass-btn cursor-pointer'
                       : 'basalt-recess text-[#6e5f4c] font-[var(--font-display)] cursor-not-allowed'
@@ -592,7 +708,9 @@ export const ArenaSetupFlow: React.FC<ArenaSetupFlowProps> = ({
                 >
                   {currentTierUnlocked ? (
                     <>
-                      <span>Challenge {currentFighter.name} · Build Deck</span>
+                      <span>
+                        Challenge {currentFighter.name} ({scaleSpec.shortLabel}) · Build Deck
+                      </span>
                       <ChevronRight className="w-4 h-4" />
                     </>
                   ) : (
@@ -604,11 +722,9 @@ export const ArenaSetupFlow: React.FC<ArenaSetupFlowProps> = ({
                 </button>
 
                 <div className="font-[var(--font-serif)] text-sm text-[#a69277] text-center">
-                  {currentTier.tierNumber < 10
-                    ? `Tier Progress: ${currentTierProg.defeated}/${currentTier.requiredWinsToUnlockNext} wins to unlock Tier ${
-                        currentTier.tierNumber + 1
-                      }`
-                    : `Final Sanctum: ${currentTierProg.defeated}/${currentTier.fighters.length} defeated`}
+                  {currentTierCleared
+                    ? `★ Tier ${currentTier.tierNumber} Fully Cleared (5/5) — Power Relic Unlocked!`
+                    : `Tier Clear Progress: ${currentTierProg.defeated}/${currentTier.fighters.length} defeated (${currentTier.requiredWinsToUnlockNext} unlocks next tier · 5/5 unlocks Power Relic)`}
                 </div>
               </div>
             </div>
@@ -620,18 +736,18 @@ export const ArenaSetupFlow: React.FC<ArenaSetupFlowProps> = ({
       {setupStep === 'details' && gameMode === 'quick' && (
         <div className="max-w-2xl mx-auto space-y-5">
           <div className="text-center space-y-1.5">
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-[2px] brass-plaque text-[#e9c479] font-[var(--font-display)] uppercase tracking-[0.16em] text-[11px] font-semibold">
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 brass-plaque text-[#e9c479] font-[var(--font-display)] uppercase tracking-[0.16em] text-[11px] font-semibold">
               <Dices className="w-3.5 h-3.5 text-[#d8a243]" />
-              <span>Quick Random Duel</span>
+              <span>Quick Random Duel · {scaleSpec.name}</span>
             </div>
             <h1 className="font-[var(--font-display)] text-2xl sm:text-3xl font-bold text-[#f3dfb6] tracking-wide">
               Your Random Challenger
             </h1>
           </div>
 
-          <div className="brass-panel riveted-frame rounded-[4px] p-6 sm:p-7 space-y-6">
+          <div className="brass-panel riveted-frame p-6 sm:p-7 space-y-6">
             <div className="flex flex-wrap items-center justify-between gap-3">
-              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-[3px] basalt-recess text-xs">
+              <div className="inline-flex items-center gap-2 px-3 py-1.5 basalt-recess text-xs">
                 <Lock className="w-3.5 h-3.5 text-[#d8a64c] shrink-0" />
                 <span className="text-[#cbb89a]">
                   Pool:{' '}
@@ -650,7 +766,7 @@ export const ArenaSetupFlow: React.FC<ArenaSetupFlowProps> = ({
                   sound.select();
                   onRollRandomFighter(currentFighter.id);
                 }}
-                className="iron-btn inline-flex items-center gap-1.5 min-h-[36px] px-3.5 py-1.5 rounded-[3px] font-[var(--font-display)] text-xs font-semibold tracking-wide cursor-pointer"
+                className="iron-btn inline-flex items-center gap-1.5 min-h-[36px] px-3.5 py-1.5 font-[var(--font-display)] text-xs font-semibold tracking-wide cursor-pointer"
               >
                 <Dices className="w-3.5 h-3.5 text-[#e2b053]" />
                 <span>Re-roll Opponent</span>
@@ -658,7 +774,7 @@ export const ArenaSetupFlow: React.FC<ArenaSetupFlowProps> = ({
             </div>
 
             <div className="flex flex-col sm:flex-row items-center sm:items-start gap-5 text-center sm:text-left">
-              <div className="w-24 h-24 rounded-[3px] overflow-hidden border-2 border-[#b98739] shadow-[0_8px_22px_rgba(0,0,0,0.7)] shrink-0">
+              <div className="w-24 h-24 card-weathered-rim overflow-hidden border-2 border-[#b98739] shadow-[0_8px_22px_rgba(0,0,0,0.7)] shrink-0">
                 {rivalAvatarCard && (
                   <img
                     src={getCardThumbUrl(rivalAvatarCard.image)}
@@ -674,11 +790,11 @@ export const ArenaSetupFlow: React.FC<ArenaSetupFlowProps> = ({
 
               <div className="space-y-2 flex-1 min-w-0">
                 <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2 text-xs">
-                  <span className="px-2 py-0.5 rounded-[2px] brass-plaque font-mono font-bold text-[#e9c479]">
+                  <span className="px-2 py-0.5 brass-plaque font-mono font-bold text-[#e9c479]">
                     Tier {currentFighter.tierNumber} · {currentTier.name}
                   </span>
                   {currentFighter.isBoss && (
-                    <span className="px-2 py-0.5 rounded-[2px] bg-[#3b2210] border border-[#c88c38] font-[var(--font-display)] font-bold text-[#f7d894]">
+                    <span className="organic-tag px-2.5 py-0.5 bg-[#3b2210] font-[var(--font-display)] font-bold text-[#f7d894]">
                       Tier Boss
                     </span>
                   )}
@@ -694,21 +810,23 @@ export const ArenaSetupFlow: React.FC<ArenaSetupFlowProps> = ({
             </div>
 
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 text-center text-xs">
-              <div className="basalt-recess rounded-[3px] p-3">
+              <div className="basalt-recess p-3">
                 <div className="font-[var(--font-display)] uppercase tracking-wider text-[10px] text-[#9b886e]">
                   Board
                 </div>
-                <div className="font-mono font-bold text-[#efe3cd] mt-0.5">5×3 Open</div>
+                <div className="font-mono font-bold text-[#efe3cd] mt-0.5">
+                  {scaleSpec.shortLabel} ({scaleSpec.rows * scaleSpec.cols} Tiles)
+                </div>
               </div>
-              <div className="basalt-recess rounded-[3px] p-3">
+              <div className="basalt-recess p-3">
                 <div className="font-[var(--font-display)] uppercase tracking-wider text-[10px] text-[#9b886e]">
-                  Hands
+                  Deck Scale
                 </div>
                 <div className="font-mono font-bold text-[#efe3cd] mt-0.5">
-                  {HAND_SIZE} Cards Each
+                  {scaleSpec.unitSlots} Units + Relic
                 </div>
               </div>
-              <div className="basalt-recess rounded-[3px] p-3">
+              <div className="basalt-recess p-3">
                 <div className="font-[var(--font-display)] uppercase tracking-wider text-[10px] text-[#9b886e]">
                   Victory Purse
                 </div>
@@ -716,7 +834,7 @@ export const ArenaSetupFlow: React.FC<ArenaSetupFlowProps> = ({
                   +{currentFighter.winGold}g
                 </div>
               </div>
-              <div className="basalt-recess rounded-[3px] p-3">
+              <div className="basalt-recess p-3">
                 <div className="font-[var(--font-display)] uppercase tracking-wider text-[10px] text-[#9b886e]">
                   Spoils Pool
                 </div>
@@ -726,9 +844,9 @@ export const ArenaSetupFlow: React.FC<ArenaSetupFlowProps> = ({
               </div>
             </div>
 
-            <div className="basalt-recess rounded-[3px] px-3.5 py-2.5 flex flex-wrap items-center justify-between gap-2 text-xs">
+            <div className="basalt-recess px-3.5 py-2.5 flex flex-wrap items-center justify-between gap-2 text-xs">
               <span className="font-[var(--font-display)] uppercase tracking-wider text-[11px] text-[#9b886e]">
-                Arena Biomes (4 tiles spawned)
+                Arena Biomes ({scaleSpec.biomeCount} tiles spawned)
               </span>
               <div className="flex flex-wrap items-center gap-1.5">
                 {getFighterBiomes(currentFighter.id).map((b) => (
@@ -743,7 +861,7 @@ export const ArenaSetupFlow: React.FC<ArenaSetupFlowProps> = ({
                 sound.select();
                 setSetupStep('deck');
               }}
-              className="brass-btn w-full min-h-[52px] rounded-[3px] font-bold text-base flex items-center justify-center gap-2 cursor-pointer"
+              className="brass-btn w-full min-h-[52px] font-bold text-base flex items-center justify-center gap-2 cursor-pointer"
             >
               <span>Confirm Match · Build Deck</span>
               <ChevronRight className="w-4 h-4" />
@@ -759,10 +877,12 @@ export const ArenaSetupFlow: React.FC<ArenaSetupFlowProps> = ({
           activeDeck={activeDeck}
           currentFighter={currentFighter}
           gameMode={gameMode}
+          onSelectBoardScale={onSelectBoardScale}
           onSelectDeckSlot={onSelectDeckSlot}
           onCreateDeck={onCreateDeck}
           onRenameDeck={onRenameDeck}
           onDeleteDeck={onDeleteDeck}
+          onSetDeckPowerCard={onSetDeckPowerCard}
           onToggleDeckCard={onToggleDeckCard}
           onClearDeck={onClearDeck}
           onAutoBuildDeck={onAutoBuildDeck}

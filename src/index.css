@@ -729,15 +729,25 @@ select.organic-control {
   filter: drop-shadow(0 22px 26px rgba(0, 0, 0, 0.78));
 }
 
-/* Landscape 5x3 board stage: 5 cols x 3 rows of 5:7 Tarot cards => 25:21 landscape ratio */
+/* Dynamic Battlefield Scale Stages (5:7 Tarot card sockets)
+   - 6x3: (6 * 5) : (3 * 7) = 30 : 21
+   - 7x3: (7 * 5) : (3 * 7) = 35 : 21
+   - 6x4: (6 * 5) : (4 * 7) = 30 : 28 */
 .mobile-board-stage,
 .desktop-board-stage {
   container-type: size;
 }
 
-.mobile-board-fit,
-.desktop-board-fit {
-  width: min(100cqw, calc(100cqh * 25 / 21));
+.board-fit-6x3 {
+  width: min(100cqw, calc(100cqh * 30 / 21));
+}
+
+.board-fit-7x3 {
+  width: min(100cqw, calc(100cqh * 35 / 21));
+}
+
+.board-fit-6x4 {
+  width: min(100cqw, calc(100cqh * 30 / 28));
 }
 
 /* Rough Timber & Bark Scrollbars */

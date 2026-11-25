@@ -27,6 +27,34 @@ export type BiomeType =
   | 'shadow'
   | 'highland';
 
+export type BoardScale = '6x3' | '7x3' | '6x4';
+
+export interface PowerTargetOffset {
+  dr: number;
+  dc: number;
+}
+
+export interface PowerCardDef {
+  id: string;
+  number: number; // 1 to 12
+  code: string; // P01 to P12
+  name: string;
+  unlockTier: number; // 1 to 10 (cleared all 5 fighters in tier)
+  rarity: Rarity;
+  element: CardElement;
+  dirs: ArrowDir[];
+  offsets: PowerTargetOffset[];
+  patternLabel: string;
+  badgeLabel: string;
+  shortTag: string;
+  description: string;
+  allyDelta: { power: number; pDef: number; mDef: number };
+  rivalDelta: { power: number; pDef: number; mDef: number };
+  image: string;
+  artFilter?: string;
+  accentGradient: string;
+}
+
 export interface TetraStats {
   power: number;   // 0 - 15 (0-9, A-F in hex)
   type: AttackType; // P (Physical), M (Magical), X (Flexible), A (Assault)
@@ -121,8 +149,9 @@ export interface RolledCardInstance {
 export interface DeckSlot {
   id: string;
   name: string;
-  cards: string[]; // Non-null equipped RolledCardInstance uids (up to 7)
-  slots?: (string | null)[]; // Fixed 7-slot positions [0..6]; null = empty slot outline
+  cards: string[]; // Non-null equipped RolledCardInstance uids (up to 10)
+  slots?: (string | null)[]; // Fixed unit slot positions [0..9]; null = empty slot outline
+  powerSlot?: string | null; // Dedicated Power Relic card ID (unlocked by clearing Tiers 1–10)
 }
 
 export interface HandCard {
@@ -131,6 +160,7 @@ export interface HandCard {
   stats: TetraStats;
   arrows: ArrowDir[];
   augmentId?: string;
+  isPowerCard?: boolean;
 }
 
 export interface PlacedCard {
@@ -138,13 +168,26 @@ export interface PlacedCard {
   cardId: string;
   owner: Owner;
   stats: TetraStats;
-  baseStats: TetraStats; // Original rolled stats before terrain & board augments
+  baseStats: TetraStats; // Original rolled stats before terrain, augments & relic auras
   arrows: ArrowDir[];
   augmentId?: string;
+  isRelic?: boolean;
   justPlaced?: boolean;
   lastFlippedAt?: number;
+  augmentDelta?: {
+    power: number;
+    pDef: number;
+    mDef: number;
+  };
   terrainMod?: {
     biome: BiomeType;
+    powerDelta: number;
+    pDefDelta: number;
+    mDefDelta: number;
+    label: string;
+    isPositive: boolean;
+  };
+  relicAuraMod?: {
     powerDelta: number;
     pDefDelta: number;
     mDefDelta: number;
@@ -209,11 +252,13 @@ export type MatchPhase = 'setup' | 'playing' | 'finished';
 
 export interface MatchSummary {
   fighterId: string;
+  boardScale?: BoardScale;
   winner: Owner | 'draw';
   playerScore: number;
   rivalScore: number;
   isPerfect: boolean;
   isFirstVictory: boolean;
+  newlyUnlockedPowerIds?: string[];
   baseGold: number;
   firstWinBonus: number;
   dominanceBonus: number;
@@ -233,6 +278,7 @@ export interface PlayerProfile {
   inventory: Record<string, RolledCardInstance[]>;
   decks: DeckSlot[];
   activeDeckIndex: number;
+  boardScale?: BoardScale;
   wins: number;
   losses: number;
   draws: number;

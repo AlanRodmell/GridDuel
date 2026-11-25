@@ -15,7 +15,19 @@ import {
   sortCardCopies,
 } from '../data/cards';
 import {
+  POWER_CARD_MAP,
+  getUnlockedPowerCardIdSet,
+  getUnlockedPowerCards,
+  isPowerCardId,
+} from '../data/powerCards';
+import {
+  BOARD_SCALES,
+  DEFAULT_BOARD_SCALE,
+  getBoardScaleSpec,
+} from '../engine/triadEngine';
+import {
   BiomeType,
+  BoardScale,
   CardDef,
   DeckSlot,
   HandCard,
@@ -26,14 +38,18 @@ import {
 import { sound } from '../utils/sound';
 
 const STORAGE_KEY = 'aether_triad_profile_v1';
-export const DECK_CAPACITY = 7;
+export const MAX_UNIT_CAPACITY = 10;
+export const DECK_CAPACITY = BOARD_SCALES['6x3'].unitSlots; // Default 6x3 unit capacity (8)
 export const MAX_DECK_SLOTS = 9;
+
+export function getUnitCapacityForScale(scale?: BoardScale): number {
+  return getBoardScaleSpec(scale).unitSlots;
+}
 
 function createStarterInventory(): Record<string, RolledCardInstance[]> {
   const inv: Record<string, RolledCardInstance[]> = {};
   for (const id of STARTER_CARD_IDS) {
     if (CARD_MAP[id]) {
-      // Guarantee starter cards never roll below baseline stats or lose arrows
       inv[id] = [
         rollCardInstance(id, {
           minStatDelta: 0,
@@ -83,13 +99,17 @@ function buildDefaultDecksFromInventory(
       (a.stats.mDef + (a.stats.type === 'M' ? 4 : 0))
   );
 
-  const makeFullDeck = (id: string, name: string, ordered: RolledCardInstance[]): DeckSlot => {
-    const cards = ordered.slice(0, DECK_CAPACITY).map((c) => c.uid);
+  const makeFullDeck = (
+    id: string,
+    name: string,
+    ordered: RolledCardInstance[]
+  ): DeckSlot => {
+    const cards = ordered.slice(0, MAX_UNIT_CAPACITY).map((c) => c.uid);
     const slots: (string | null)[] = Array.from(
-      { length: DECK_CAPACITY },
+      { length: MAX_UNIT_CAPACITY },
       (_, idx) => cards[idx] ?? null
     );
-    return { id, name, cards, slots };
+    return { id, name, cards, slots, powerSlot: null };
   };
 
   return [
@@ -108,6 +128,7 @@ const DEFAULT_PROFILE: PlayerProfile = {
   inventory: DEFAULT_INVENTORY,
   decks: buildDefaultDecksFromInventory(DEFAULT_INVENTORY),
   activeDeckIndex: 0,
+  boardScale: DEFAULT_BOARD_SCALE,
   wins: 0,
   losses: 0,
   draws: 0,
@@ -121,14 +142,13 @@ const DEFAULT_PROFILE: PlayerProfile = {
 };
 
 /**
- * Normalizes a deck's 7 fixed slots [0..6], preserving exact slot indices and null gaps
- * without ever silently backfilling random unchosen cards!
+ * Normalizes a deck's fixed unit slots [0..MAX_UNIT_CAPACITY-1], preserving exact slot indices and null gaps!
  */
 function normalizeDeckSlots(
   rawSlots: (string | null)[] | undefined,
   rawCards: string[],
   inventory: Record<string, RolledCardInstance[]>,
-  backfillIfLegacyFull = false
+  backfillCount = 0
 ): { slots: (string | null)[]; cards: string[] } {
   const allInstances = Object.values(inventory).flat();
   const byUid = new Map<string, RolledCardInstance>();
@@ -138,29 +158,32 @@ function normalizeDeckSlots(
 
   const used = new Set<string>();
   const source: (string | null | undefined)[] = Array.isArray(rawSlots)
-    ? rawSlots.slice(0, DECK_CAPACITY)
-    : rawCards.slice(0, DECK_CAPACITY);
+    ? rawSlots.slice(0, MAX_UNIT_CAPACITY)
+    : rawCards.slice(0, MAX_UNIT_CAPACITY);
 
-  const slots: (string | null)[] = Array.from({ length: DECK_CAPACITY }, (_, idx) => {
-    const ref = source[idx];
-    if (!ref) return null;
-    if (byUid.has(ref) && !used.has(ref)) {
-      used.add(ref);
-      return ref;
+  const slots: (string | null)[] = Array.from(
+    { length: MAX_UNIT_CAPACITY },
+    (_, idx) => {
+      const ref = source[idx];
+      if (!ref || isPowerCardId(ref)) return null;
+      if (byUid.has(ref) && !used.has(ref)) {
+        used.add(ref);
+        return ref;
+      }
+      const copies = (inventory[ref] ?? []).filter((c) => !used.has(c.uid));
+      if (copies.length > 0) {
+        const best = sortCardCopies(copies)[0];
+        used.add(best.uid);
+        return best.uid;
+      }
+      return null;
     }
-    const copies = (inventory[ref] ?? []).filter((c) => !used.has(c.uid));
-    if (copies.length > 0) {
-      const best = sortCardCopies(copies)[0];
-      used.add(best.uid);
-      return best.uid;
-    }
-    return null;
-  });
+  );
 
-  if (backfillIfLegacyFull && !Array.isArray(rawSlots) && used.size < DECK_CAPACITY) {
+  if (backfillCount > 0 && used.size < backfillCount) {
     const remaining = sortCardCopies(allInstances.filter((c) => !used.has(c.uid)));
     let rIdx = 0;
-    for (let i = 0; i < DECK_CAPACITY && rIdx < remaining.length; i++) {
+    for (let i = 0; i < backfillCount && rIdx < remaining.length; i++) {
       if (slots[i] === null) {
         slots[i] = remaining[rIdx].uid;
         used.add(remaining[rIdx].uid);
@@ -196,7 +219,9 @@ function parseAndSanitizeProfile(raw: string): PlayerProfile | null {
           .filter((item) => item && typeof item.uid === 'string' && item.stats)
           .slice(0, MAX_COPIES_PER_CARD)
           .map((item) => {
-            let arrows = Array.isArray(item.arrows) ? [...item.arrows] : rollCardArrows(cardDef, false);
+            let arrows = Array.isArray(item.arrows)
+              ? [...item.arrows]
+              : rollCardArrows(cardDef, false);
             const sig = [...arrows].sort().join(',');
             if (seenArrowSigs.has(sig)) {
               for (let attempt = 0; attempt < 5; attempt++) {
@@ -227,7 +252,6 @@ function parseAndSanitizeProfile(raw: string): PlayerProfile | null {
       }
     }
 
-    // Ensure every card marked owned in legacy `owned` has matching rolled instances up to MAX_COPIES_PER_CARD
     for (const [cardId, count] of Object.entries(rawOwned)) {
       if (!CARD_MAP[cardId] || count <= 0) continue;
       const clampedCount = Math.min(MAX_COPIES_PER_CARD, count);
@@ -243,27 +267,46 @@ function parseAndSanitizeProfile(raw: string): PlayerProfile | null {
     }
 
     const owned = syncOwnedCounts(inventory);
+    const fighterWins = parsed.fighterWins ?? {};
+    const unlockedPowerSet = getUnlockedPowerCardIdSet(fighterWins);
+    const validScale: BoardScale =
+      parsed.boardScale && BOARD_SCALES[parsed.boardScale]
+        ? parsed.boardScale
+        : DEFAULT_BOARD_SCALE;
 
     let decks: DeckSlot[];
     if (Array.isArray(parsed.decks) && parsed.decks.length >= 1) {
       decks = parsed.decks.slice(0, MAX_DECK_SLOTS).map((d, idx) => {
+        // If migrating from an older 7-slot save (`slots.length === 7` and all 7 filled),
+        // gently top up slot #8 so their existing active deck stays match-ready on 6x3 without scrambling slots 1..7!
+        const wasFullLegacy7 =
+          Array.isArray(d.slots) &&
+          d.slots.length === 7 &&
+          d.slots.every((s) => Boolean(s));
         const norm = normalizeDeckSlots(
           Array.isArray(d.slots) ? d.slots : undefined,
           Array.isArray(d.cards) ? d.cards : [],
           inventory,
-          !Array.isArray(d.slots)
+          !Array.isArray(d.slots) || wasFullLegacy7 ? DECK_CAPACITY : 0
         );
+        const validPower =
+          typeof d.powerSlot === 'string' &&
+          POWER_CARD_MAP[d.powerSlot] &&
+          unlockedPowerSet.has(d.powerSlot)
+            ? d.powerSlot
+            : null;
         return {
           id: d.id || `deck-${idx + 1}`,
           name: (d.name && d.name.trim()) || `Deck ${idx + 1}`,
           cards: norm.cards,
           slots: norm.slots,
+          powerSlot: validPower,
         };
       });
     } else {
       const defaults = buildDefaultDecksFromInventory(inventory);
       if (Array.isArray(parsed.deck) && parsed.deck.length > 0) {
-        const norm = normalizeDeckSlots(undefined, parsed.deck, inventory, true);
+        const norm = normalizeDeckSlots(undefined, parsed.deck, inventory, DECK_CAPACITY);
         defaults[0].cards = norm.cards;
         defaults[0].slots = norm.slots;
       }
@@ -280,12 +323,16 @@ function parseAndSanitizeProfile(raw: string): PlayerProfile | null {
     return {
       ...DEFAULT_PROFILE,
       ...parsed,
-      gold: typeof parsed.gold === 'number' && Number.isFinite(parsed.gold) ? Math.max(0, Math.floor(parsed.gold)) : DEFAULT_PROFILE.gold,
+      gold:
+        typeof parsed.gold === 'number' && Number.isFinite(parsed.gold)
+          ? Math.max(0, Math.floor(parsed.gold))
+          : DEFAULT_PROFILE.gold,
       owned,
       inventory,
       decks,
       activeDeckIndex,
-      fighterWins: parsed.fighterWins ?? {},
+      boardScale: validScale,
+      fighterWins,
       clickToPlace: Boolean(parsed.clickToPlace),
     };
   } catch {
@@ -315,7 +362,6 @@ export interface PackRevealItem {
 export type AutoBuildStrategy = 'power' | 'arrows' | 'assault' | 'augments' | 'biome';
 
 function rollCardByWeights(weights: Record<Rarity, number>, minRarity?: Rarity): CardDef {
-  // Mythics are strictly excluded from shop booster packs (earned only via High-Tier RNG or Bosses)
   const rarityOrder: Rarity[] = ['common', 'rare', 'epic'];
   const minIdx = minRarity ? Math.max(0, rarityOrder.indexOf(minRarity)) : 0;
   const allowedRarities = rarityOrder.slice(minIdx);
@@ -390,6 +436,15 @@ export function useProfile() {
     sound.select();
   }, []);
 
+  const setBoardScale = useCallback((scale: BoardScale) => {
+    if (!BOARD_SCALES[scale]) return;
+    setProfile((prev) => {
+      if (prev.boardScale === scale) return prev;
+      return { ...prev, boardScale: scale };
+    });
+    sound.select();
+  }, []);
+
   const selectDeckSlot = useCallback((index: number) => {
     setProfile((prev) => {
       if (index < 0 || index >= prev.decks.length) return prev;
@@ -397,10 +452,6 @@ export function useProfile() {
     });
   }, []);
 
-  /**
-   * Creates a new Hearthstone-style saved deck slot (up to MAX_DECK_SLOTS = 9).
-   * If duplicateFromIndex is given, copies that deck's card list; otherwise seeds with strongest owned copies.
-   */
   const createDeck = useCallback(
     (customName?: string, duplicateFromIndex?: number): { ok: boolean; message?: string } => {
       let result: { ok: boolean; message?: string } = { ok: true };
@@ -417,14 +468,16 @@ export function useProfile() {
           typeof duplicateFromIndex === 'number' ? prev.decks[duplicateFromIndex] : null;
         let slots: (string | null)[];
         let cards: string[];
+        let powerSlot: string | null = null;
         if (sourceDeck) {
           const norm = normalizeDeckSlots(sourceDeck.slots, sourceDeck.cards, prev.inventory);
           slots = norm.slots;
           cards = norm.cards;
+          powerSlot = sourceDeck.powerSlot ?? null;
         } else {
-          // New custom decks start with 7 clean empty slots ready to fill!
-          slots = Array.from({ length: DECK_CAPACITY }, () => null);
+          slots = Array.from({ length: MAX_UNIT_CAPACITY }, () => null);
           cards = [];
+          powerSlot = null;
         }
 
         const nextNum = prev.decks.length + 1;
@@ -436,6 +489,7 @@ export function useProfile() {
           name: baseName.slice(0, 28),
           cards,
           slots,
+          powerSlot,
         };
 
         const nextDecks = [...prev.decks, newDeck];
@@ -492,16 +546,86 @@ export function useProfile() {
   }, []);
 
   /**
-   * Equips or unequips a specific rolled card instance (by uid) or cardId across the active deck's
-   * 7 fixed slots [0..6].
-   * - Removing a card sets its exact slot to `null` (leaving a dashed empty card outline without shifting other cards!).
-   * - Adding a card places it into `preferredSlotIndex` (if provided) or the first empty `null` slot.
-   * - If all 7 slots are full and no `preferredSlotIndex` is targeted, never reorders or ejects cards behind your back!
+   * Equips or unequips a Tier-unlocked Power Relic into the active deck's dedicated `powerSlot`.
+   */
+  const setDeckPowerCard = useCallback(
+    (powerCardId: string | null): { ok: boolean; message?: string } => {
+      let result: { ok: boolean; message?: string } = { ok: true };
+      setProfile((prev) => {
+        const idx = prev.activeDeckIndex;
+        const current = prev.decks[idx];
+        if (!current) return prev;
+
+        if (powerCardId === null) {
+          const nextDecks = prev.decks.map((d, i) =>
+            i === idx ? { ...d, powerSlot: null } : d
+          );
+          return { ...prev, decks: nextDecks };
+        }
+
+        const pDef = POWER_CARD_MAP[powerCardId];
+        if (!pDef) {
+          result = { ok: false, message: 'Power Relic not found.' };
+          return prev;
+        }
+        const unlocked = getUnlockedPowerCardIdSet(prev.fighterWins);
+        if (!unlocked.has(powerCardId)) {
+          result = {
+            ok: false,
+            message: `Clear all 5 challengers in Tier ${pDef.unlockTier} to unlock ${pDef.name}.`,
+          };
+          return prev;
+        }
+
+        const nextPower = current.powerSlot === powerCardId ? null : powerCardId;
+        const nextDecks = prev.decks.map((d, i) =>
+          i === idx ? { ...d, powerSlot: nextPower } : d
+        );
+        return { ...prev, decks: nextDecks };
+      });
+      return result;
+    },
+    []
+  );
+
+  /**
+   * Equips or unequips a Unit card copy across the active deck's fixed unit slots [0..activeUnitCap-1],
+   * or toggles a Power Relic if `uidOrCardId` is a Power Card ID!
    */
   const toggleDeckCard = useCallback(
-    (uidOrCardId: string, preferredSlotIndex?: number): { ok: boolean; message?: string; slotIndex?: number } => {
+    (
+      uidOrCardId: string,
+      preferredSlotIndex?: number
+    ): { ok: boolean; message?: string; slotIndex?: number } => {
+      if (isPowerCardId(uidOrCardId)) {
+        let powerRes: { ok: boolean; message?: string } = { ok: true };
+        setProfile((prev) => {
+          const idx = prev.activeDeckIndex;
+          const current = prev.decks[idx];
+          if (!current) return prev;
+          const pDef = POWER_CARD_MAP[uidOrCardId];
+          const unlocked = getUnlockedPowerCardIdSet(prev.fighterWins);
+          if (!pDef || !unlocked.has(uidOrCardId)) {
+            powerRes = {
+              ok: false,
+              message: pDef
+                ? `Clear Tier ${pDef.unlockTier} to unlock ${pDef.name}.`
+                : 'Power Relic locked.',
+            };
+            return prev;
+          }
+          const nextPower = current.powerSlot === uidOrCardId ? null : uidOrCardId;
+          const nextDecks = prev.decks.map((d, i) =>
+            i === idx ? { ...d, powerSlot: nextPower } : d
+          );
+          return { ...prev, decks: nextDecks };
+        });
+        return powerRes;
+      }
+
       let result: { ok: boolean; message?: string; slotIndex?: number } = { ok: true };
       setProfile((prev) => {
+        const activeCap = getUnitCapacityForScale(prev.boardScale);
         const allInstances = Object.values(prev.inventory).flat();
         const byUid = new Map(allInstances.map((i) => [i.uid, i]));
 
@@ -519,35 +643,43 @@ export function useProfile() {
             return prev;
           }
           const unequipped = sortCardCopies(
-            copies.filter((c) => !nextSlots.includes(c.uid))
+            copies.filter((c) => !nextSlots.slice(0, activeCap).includes(c.uid))
           )[0];
           targetInst = unequipped ?? copies[0];
         }
 
         const existingSlotIdx = nextSlots.indexOf(targetInst.uid);
 
-        if (existingSlotIdx !== -1) {
-          // Remove in place — leaves a clean `null` gap at `existingSlotIdx` without moving any other slot!
+        if (existingSlotIdx !== -1 && existingSlotIdx < activeCap) {
           nextSlots[existingSlotIdx] = null;
           result = { ok: true, slotIndex: existingSlotIdx };
-        } else if (
-          typeof preferredSlotIndex === 'number' &&
-          preferredSlotIndex >= 0 &&
-          preferredSlotIndex < DECK_CAPACITY
-        ) {
-          nextSlots[preferredSlotIndex] = targetInst.uid;
-          result = { ok: true, slotIndex: preferredSlotIndex };
         } else {
-          const firstEmptyIdx = nextSlots.findIndex((s) => s === null);
-          if (firstEmptyIdx === -1) {
-            result = {
-              ok: false,
-              message: 'Deck full (7/7) — click a card in your deck above to open a slot.',
-            };
-            return prev;
+          // If the instance was sitting in an inactive high slot (e.g. slot 9 while in 6x3), clear that first
+          if (existingSlotIdx >= activeCap) {
+            nextSlots[existingSlotIdx] = null;
           }
-          nextSlots[firstEmptyIdx] = targetInst.uid;
-          result = { ok: true, slotIndex: firstEmptyIdx };
+
+          if (
+            typeof preferredSlotIndex === 'number' &&
+            preferredSlotIndex >= 0 &&
+            preferredSlotIndex < activeCap
+          ) {
+            nextSlots[preferredSlotIndex] = targetInst.uid;
+            result = { ok: true, slotIndex: preferredSlotIndex };
+          } else {
+            const firstEmptyIdx = nextSlots.findIndex(
+              (s, sIdx) => sIdx < activeCap && s === null
+            );
+            if (firstEmptyIdx === -1) {
+              result = {
+                ok: false,
+                message: `Unit slots full (${activeCap}/${activeCap}) — click a unit in your deck above to open a slot.`,
+              };
+              return prev;
+            }
+            nextSlots[firstEmptyIdx] = targetInst.uid;
+            result = { ok: true, slotIndex: firstEmptyIdx };
+          }
         }
 
         const nextCards = nextSlots.filter((s): s is string => Boolean(s));
@@ -563,9 +695,14 @@ export function useProfile() {
 
   const clearActiveDeck = useCallback(() => {
     setProfile((prev) => {
-      const emptySlots: (string | null)[] = Array.from({ length: DECK_CAPACITY }, () => null);
+      const emptySlots: (string | null)[] = Array.from(
+        { length: MAX_UNIT_CAPACITY },
+        () => null
+      );
       const nextDecks = prev.decks.map((d, i) =>
-        i === prev.activeDeckIndex ? { ...d, slots: emptySlots, cards: [] } : d
+        i === prev.activeDeckIndex
+          ? { ...d, slots: emptySlots, cards: [], powerSlot: null }
+          : d
       );
       return { ...prev, decks: nextDecks };
     });
@@ -573,8 +710,13 @@ export function useProfile() {
   }, []);
 
   const autoBuildActiveDeck = useCallback(
-    (strategy: AutoBuildStrategy, targetBiomes?: BiomeType[], onlyEmptySlots = false) => {
+    (
+      strategy: AutoBuildStrategy,
+      targetBiomes?: BiomeType[],
+      onlyEmptySlots = false
+    ) => {
       setProfile((prev) => {
+        const activeCap = getUnitCapacityForScale(prev.boardScale);
         const allInstances = Object.values(prev.inventory).flat();
         let ordered: RolledCardInstance[];
 
@@ -634,23 +776,41 @@ export function useProfile() {
         if (onlyEmptySlots && current) {
           const norm = normalizeDeckSlots(current.slots, current.cards, prev.inventory);
           nextSlots = [...norm.slots];
-          const used = new Set(norm.cards);
+          const used = new Set(nextSlots.slice(0, activeCap).filter(Boolean) as string[]);
           const candidates = ordered.filter((c) => !used.has(c.uid));
           let cIdx = 0;
-          for (let i = 0; i < DECK_CAPACITY && cIdx < candidates.length; i++) {
+          for (let i = 0; i < activeCap && cIdx < candidates.length; i++) {
             if (nextSlots[i] === null) {
               nextSlots[i] = candidates[cIdx].uid;
               cIdx++;
             }
           }
+          // Ensure no duplicate uid sits in higher slots 8..9
+          const activeSet = new Set(nextSlots.slice(0, activeCap).filter(Boolean));
+          for (let i = activeCap; i < MAX_UNIT_CAPACITY; i++) {
+            if (nextSlots[i] && activeSet.has(nextSlots[i]!)) {
+              nextSlots[i] = null;
+            }
+          }
         } else {
-          const picked = ordered.slice(0, DECK_CAPACITY).map((c) => c.uid);
-          nextSlots = Array.from({ length: DECK_CAPACITY }, (_, idx) => picked[idx] ?? null);
+          const picked = ordered.slice(0, MAX_UNIT_CAPACITY).map((c) => c.uid);
+          nextSlots = Array.from(
+            { length: MAX_UNIT_CAPACITY },
+            (_, idx) => picked[idx] ?? null
+          );
+        }
+
+        const unlockedRelics = getUnlockedPowerCards(prev.fighterWins);
+        let nextPowerSlot = current?.powerSlot ?? null;
+        if (unlockedRelics.length > 0 && (!onlyEmptySlots || !nextPowerSlot)) {
+          nextPowerSlot = unlockedRelics[unlockedRelics.length - 1].id;
         }
 
         const nextCards = nextSlots.filter((s): s is string => Boolean(s));
         const nextDecks = prev.decks.map((d, i) =>
-          i === prev.activeDeckIndex ? { ...d, slots: nextSlots, cards: nextCards } : d
+          i === prev.activeDeckIndex
+            ? { ...d, slots: nextSlots, cards: nextCards, powerSlot: nextPowerSlot }
+            : d
         );
         return { ...prev, decks: nextDecks };
       });
@@ -659,54 +819,48 @@ export function useProfile() {
     []
   );
 
-  /**
-   * Buys a new rolled copy of a card in the Shop (up to MAX_COPIES_PER_CARD = 5 copies).
-   * Returns the newly rolled instance so the UI can show its rolled stats & arrows!
-   */
-  const buyCard = useCallback((cardId: string): RolledCardInstance | null => {
-    const card = CARD_MAP[cardId];
-    if (!card || card.rarity === 'mythic' || card.price <= 0) return null;
-    const currentCopies = profile.inventory[cardId] ?? [];
-    if (profile.gold < card.price || currentCopies.length >= MAX_COPIES_PER_CARD) {
-      return null;
-    }
+  const buyCard = useCallback(
+    (cardId: string): RolledCardInstance | null => {
+      const card = CARD_MAP[cardId];
+      if (!card || card.rarity === 'mythic' || card.price <= 0) return null;
+      const currentCopies = profile.inventory[cardId] ?? [];
+      if (profile.gold < card.price || currentCopies.length >= MAX_COPIES_PER_CARD) {
+        return null;
+      }
 
-    // Ensure new roll has a fresh arrow layout compared to existing owned copies when possible
-    let rolled = rollCardInstance(cardId, false);
-    const existingArrowSigs = new Set(
-      currentCopies.map((c) => [...c.arrows].sort().join(','))
-    );
-    for (let attempt = 0; attempt < 6; attempt++) {
-      const sig = [...rolled.arrows].sort().join(',');
-      if (!existingArrowSigs.has(sig)) break;
-      rolled = {
-        ...rolled,
-        arrows: rollCardArrows(card, false),
-      };
-    }
+      let rolled = rollCardInstance(cardId, false);
+      const existingArrowSigs = new Set(
+        currentCopies.map((c) => [...c.arrows].sort().join(','))
+      );
+      for (let attempt = 0; attempt < 6; attempt++) {
+        const sig = [...rolled.arrows].sort().join(',');
+        if (!existingArrowSigs.has(sig)) break;
+        rolled = {
+          ...rolled,
+          arrows: rollCardArrows(card, false),
+        };
+      }
 
-    setProfile((prev) => {
-      const existing = prev.inventory[cardId] ?? [];
-      if (prev.gold < card.price || existing.length >= MAX_COPIES_PER_CARD) return prev;
-      const nextInv = {
-        ...prev.inventory,
-        [cardId]: sortCardCopies([...existing, rolled]),
-      };
-      return {
-        ...prev,
-        gold: prev.gold - card.price,
-        inventory: nextInv,
-        owned: syncOwnedCounts(nextInv),
-      };
-    });
-    sound.coin();
-    return rolled;
-  }, [profile.gold, profile.inventory]);
+      setProfile((prev) => {
+        const existing = prev.inventory[cardId] ?? [];
+        if (prev.gold < card.price || existing.length >= MAX_COPIES_PER_CARD) return prev;
+        const nextInv = {
+          ...prev.inventory,
+          [cardId]: sortCardCopies([...existing, rolled]),
+        };
+        return {
+          ...prev,
+          gold: prev.gold - card.price,
+          inventory: nextInv,
+          owned: syncOwnedCounts(nextInv),
+        };
+      });
+      sound.coin();
+      return rolled;
+    },
+    [profile.gold, profile.inventory]
+  );
 
-  /**
-   * Sells a specific rolled card instance for Gold.
-   * Prevents selling if it is the player's last remaining 7 cards total across the entire collection.
-   */
   const sellCardInstance = useCallback(
     (
       instanceUid: string
@@ -719,17 +873,22 @@ export function useProfile() {
         (sum, arr) => sum + arr.length,
         0
       );
-      if (totalOwnedInstances <= DECK_CAPACITY) {
+      if (totalOwnedInstances <= MAX_UNIT_CAPACITY) {
         return {
           ok: false,
           goldEarned: 0,
-          message: `You must keep at least ${DECK_CAPACITY} cards in your collection for 5×3 battle.`,
+          message: `Keep at least ${MAX_UNIT_CAPACITY} unit cards in your collection for Grand Siege decks.`,
         };
       }
 
       const card = CARD_MAP[target.cardId];
       if (!card) return { ok: false, goldEarned: 0 };
-      const goldEarned = getCardSellValue(card, target.stats, target.arrows, target.augmentId);
+      const goldEarned = getCardSellValue(
+        card,
+        target.stats,
+        target.arrows,
+        target.augmentId
+      );
 
       setProfile((prev) => {
         const copies = prev.inventory[target.cardId] ?? [];
@@ -768,14 +927,8 @@ export function useProfile() {
     [instanceMap, profile.inventory]
   );
 
-  /**
-   * Bulk-sells all extra copies across the collection (or for a specific cardId),
-   * keeping the highest-scored copy, all equipped copies, AND any copy with a crafted Runeforge augment.
-   */
   const sellExtraCopies = useCallback(
-    (
-      specificCardId?: string
-    ): { soldCount: number; goldEarned: number } => {
+    (specificCardId?: string): { soldCount: number; goldEarned: number } => {
       const equippedUids = new Set(profile.decks.flatMap((d) => d.cards));
       const cardIdsToCheck = specificCardId
         ? [specificCardId]
@@ -797,7 +950,7 @@ export function useProfile() {
         for (const inst of sorted) {
           if (inst.uid === bestUid) continue;
           if (equippedUids.has(inst.uid)) continue;
-          if (inst.augmentId) continue; // Protect Runeforged copies from bulk-sell!
+          if (inst.augmentId) continue;
           uidsToSell.add(inst.uid);
           soldCount += 1;
           goldEarned += getCardSellValue(card, inst.stats, inst.arrows, inst.augmentId);
@@ -862,7 +1015,12 @@ export function useProfile() {
         const isNewUnlock = existing.length === 0;
 
         if (existing.length >= MAX_COPIES_PER_CARD) {
-          const overflowGold = getCardSellValue(card, instance.stats, instance.arrows, instance.augmentId);
+          const overflowGold = getCardSellValue(
+            card,
+            instance.stats,
+            instance.arrows,
+            instance.augmentId
+          );
           overflowTotal += overflowGold;
           return {
             card,
@@ -912,9 +1070,12 @@ export function useProfile() {
         const nextFighterWins = { ...(prev.fighterWins ?? {}) };
         if (params.winner === 'player') {
           for (const id of params.usedCardIds) {
-            nextCardWins[id] = (nextCardWins[id] ?? 0) + 1;
+            if (!isPowerCardId(id)) {
+              nextCardWins[id] = (nextCardWins[id] ?? 0) + 1;
+            }
           }
-          nextFighterWins[params.fighterId] = (nextFighterWins[params.fighterId] ?? 0) + 1;
+          nextFighterWins[params.fighterId] =
+            (nextFighterWins[params.fighterId] ?? 0) + 1;
         }
         return {
           ...prev,
@@ -933,11 +1094,6 @@ export function useProfile() {
     []
   );
 
-  /**
-   * Claims a specific rolled HandCard spoil from a defeated rival (or RNG Mythic drop).
-   * Adds the exact rolled instance (including any Boss Runeforge augment!) to your inventory,
-   * or auto-sells for Gold if already at 5/5 copies!
-   */
   const claimSpoilCard = useCallback(
     (
       spoilCard: HandCard
@@ -955,7 +1111,9 @@ export function useProfile() {
         : 0;
 
       const newInstance: RolledCardInstance = {
-        uid: `inst-${card.id}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`,
+        uid: `inst-${card.id}-${Date.now().toString(36)}-${Math.random()
+          .toString(36)
+          .slice(2, 7)}`,
         cardId: card.id,
         stats: { ...spoilCard.stats },
         arrows: [...spoilCard.arrows],
@@ -992,10 +1150,6 @@ export function useProfile() {
     [profile.inventory]
   );
 
-  /**
-   * Crafts and imbues a chosen Augment Rune onto a specific owned card copy using Gold.
-   * Replaces any previously crafted augment on that copy; innate Mythic traits are preserved.
-   */
   const craftAugmentOnCopy = useCallback(
     (
       instanceUid: string,
@@ -1091,9 +1245,15 @@ export function useProfile() {
   const importSaveJson = useCallback(
     (rawJson: string): { ok: boolean; message: string } => {
       try {
-        const wrapper = JSON.parse(rawJson) as { profile?: unknown } & Record<string, unknown>;
+        const wrapper = JSON.parse(rawJson) as { profile?: unknown } & Record<
+          string,
+          unknown
+        >;
         const candidateRaw =
-          wrapper && typeof wrapper === 'object' && wrapper.profile && typeof wrapper.profile === 'object'
+          wrapper &&
+          typeof wrapper === 'object' &&
+          wrapper.profile &&
+          typeof wrapper.profile === 'object'
             ? JSON.stringify(wrapper.profile)
             : rawJson;
         const sanitized = parseAndSanitizeProfile(candidateRaw);
@@ -1121,12 +1281,13 @@ export function useProfile() {
       inventory: freshInv,
       decks: buildDefaultDecksFromInventory(freshInv),
       activeDeckIndex: 0,
+      boardScale: profile.boardScale ?? DEFAULT_BOARD_SCALE,
       soundEnabled: profile.soundEnabled,
       clickToPlace: Boolean(profile.clickToPlace),
     };
     setProfile(freshProfile);
     sound.select();
-  }, [profile.clickToPlace, profile.soundEnabled]);
+  }, [profile.boardScale, profile.clickToPlace, profile.soundEnabled]);
 
   const ownedUniqueCount = CARDS.filter((c) => (profile.owned[c.id] ?? 0) > 0).length;
   const totalCopiesCount = Object.values(profile.inventory).reduce(
@@ -1144,10 +1305,12 @@ export function useProfile() {
     totalCards: CARDS.length,
     toggleSound,
     toggleClickToPlace,
+    setBoardScale,
     selectDeckSlot,
     createDeck,
     renameDeck,
     deleteDeck,
+    setDeckPowerCard,
     toggleDeckCard,
     clearActiveDeck,
     autoBuildActiveDeck,

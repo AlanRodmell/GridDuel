@@ -8,13 +8,14 @@ export interface ArenaBiomeCount {
 
 export interface CardPreviewData {
   cardId: string;
-  stats: TetraStats;
+  stats?: TetraStats;
   baseStats?: TetraStats;
-  arrows: ArrowDir[];
+  arrows?: ArrowDir[];
   augmentId?: string;
   owner?: Owner | 'neutral';
   terrain?: BiomeType | null;
   terrainMod?: PlacedCard['terrainMod'];
+  relicAuraMod?: PlacedCard['relicAuraMod'];
   arenaBiomes?: ArenaBiomeCount[];
   lastAugmented?: {
     label: string;

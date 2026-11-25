@@ -3,6 +3,7 @@ import {
   Check,
   Coins,
   Compass,
+  Eye,
   Lock,
   Plus,
   Search,
@@ -12,6 +13,7 @@ import {
   Wand2,
   X,
 } from 'lucide-react';
+import { useCardPreview } from '../context/cardPreviewContext';
 import { ALL_ELEMENTS, ALL_TRIBES, ELEMENT_META, TRIBE_META } from '../data/biomes';
 import {
   CARD_MAP,
@@ -26,9 +28,20 @@ import {
   sortCardCopies,
   toHexDigit,
 } from '../data/cards';
-import { AutoBuildStrategy, DECK_CAPACITY } from '../store/useProfile';
+import {
+  POWER_CARDS,
+  POWER_CARD_MAP,
+  getUnlockedPowerCardIdSet,
+} from '../data/powerCards';
+import { ALL_BOARD_SCALES, BOARD_SCALES } from '../engine/triadEngine';
+import {
+  AutoBuildStrategy,
+  MAX_UNIT_CAPACITY,
+  getUnitCapacityForScale,
+} from '../store/useProfile';
 import {
   AttackType,
+  BoardScale,
   CardDef,
   CardElement,
   CardTribe,
@@ -47,10 +60,12 @@ interface GalleryViewProps {
   activeDeck: DeckSlot;
   ownedUniqueCount: number;
   totalCards: number;
+  onSelectBoardScale: (scale: BoardScale) => void;
   onSelectDeckSlot: (index: number) => void;
   onCreateDeck: (name?: string, duplicateFromIndex?: number) => { ok: boolean; message?: string };
   onRenameDeck: (index: number, newName: string) => void;
   onDeleteDeck: (index: number) => { ok: boolean; message?: string };
+  onSetDeckPowerCard: (powerCardId: string | null) => { ok: boolean; message?: string };
   onToggleDeckCard: (
     uidOrCardId: string,
     preferredSlotIndex?: number
@@ -107,10 +122,12 @@ export const GalleryView: React.FC<GalleryViewProps> = ({
   activeDeck,
   ownedUniqueCount,
   totalCards,
+  onSelectBoardScale,
   onSelectDeckSlot,
   onCreateDeck,
   onRenameDeck,
   onDeleteDeck,
+  onSetDeckPowerCard,
   onToggleDeckCard,
   onClearDeck,
   onAutoBuildDeck,
@@ -118,6 +135,19 @@ export const GalleryView: React.FC<GalleryViewProps> = ({
   onSellExtraCopies,
   onGoToShop,
 }) => {
+  const { openPreview } = useCardPreview();
+  const activeScale = profile.boardScale ?? '6x3';
+  const unitCapacity = getUnitCapacityForScale(activeScale);
+  const unlockedPowerSet = useMemo(
+    () => getUnlockedPowerCardIdSet(profile.fighterWins),
+    [profile.fighterWins]
+  );
+  const equippedPowerDef =
+    activeDeck.powerSlot &&
+    POWER_CARD_MAP[activeDeck.powerSlot] &&
+    unlockedPowerSet.has(activeDeck.powerSlot)
+      ? POWER_CARD_MAP[activeDeck.powerSlot]
+      : null;
   const [ownershipFilter, setOwnershipFilter] = useState<OwnershipFilter>('all');
   const [rarityFilter, setRarityFilter] = useState<RarityFilter>('all');
   const [typeFilter, setTypeFilter] = useState<TypeFilter>('all');
@@ -268,14 +298,14 @@ export const GalleryView: React.FC<GalleryViewProps> = ({
 
   const activeDeckSlots = useMemo<(RolledCardInstance | null)[]>(() => {
     const raw = activeDeck.slots ?? activeDeck.cards;
-    return Array.from({ length: DECK_CAPACITY }, (_, idx) => {
+    return Array.from({ length: unitCapacity }, (_, idx) => {
       const ref = raw[idx];
       if (!ref) return null;
       if (instanceByUid[ref]) return instanceByUid[ref];
       if (bestCopyByCardId[ref]) return bestCopyByCardId[ref];
       return null;
     });
-  }, [activeDeck.cards, activeDeck.slots, bestCopyByCardId, instanceByUid]);
+  }, [activeDeck.cards, activeDeck.slots, bestCopyByCardId, instanceByUid, unitCapacity]);
 
   const filledDeckCount = useMemo(
     () => activeDeckSlots.filter(Boolean).length,
@@ -389,6 +419,7 @@ export const GalleryView: React.FC<GalleryViewProps> = ({
         <DeckShelf
           decks={profile.decks}
           activeDeckIndex={profile.activeDeckIndex}
+          boardScale={activeScale}
           inventory={profile.inventory}
           onSelectDeck={onSelectDeckSlot}
           onCreateDeck={(name, dupIdx) => {
@@ -409,10 +440,25 @@ export const GalleryView: React.FC<GalleryViewProps> = ({
             <div className="text-sm font-[var(--font-display)] font-bold text-[#f3dfb6] tracking-wide">
               Active Warband: <span className="text-[#f5d593]">{activeDeck.name}</span>{' '}
               <span className="font-mono text-xs text-[#a69277]">
-                ({filledDeckCount}/{DECK_CAPACITY})
+                ({filledDeckCount}/{unitCapacity} Units
+                {equippedPowerDef ? ` + ${equippedPowerDef.code}` : ''})
               </span>
             </div>
-            {filledDeckCount > 0 && (
+            <div className="inline-flex items-center gap-1">
+              {ALL_BOARD_SCALES.map((sc) => (
+                <button
+                  key={sc}
+                  type="button"
+                  onClick={() => onSelectBoardScale(sc)}
+                  className={`px-2 py-0.5 text-[11px] font-mono font-bold cursor-pointer ${
+                    sc === activeScale ? 'brass-btn' : 'iron-btn text-[#c9b79b]'
+                  }`}
+                >
+                  {BOARD_SCALES[sc].shortLabel}
+                </button>
+              ))}
+            </div>
+            {(filledDeckCount > 0 || equippedPowerDef) && (
               <button
                 type="button"
                 onClick={onClearDeck}
@@ -425,13 +471,13 @@ export const GalleryView: React.FC<GalleryViewProps> = ({
 
           {/* One-Tap Smart Auto-Builders */}
           <div className="flex flex-wrap items-center gap-2">
-            {filledDeckCount > 0 && filledDeckCount < DECK_CAPACITY && (
+            {filledDeckCount > 0 && filledDeckCount < unitCapacity && (
               <button
                 type="button"
                 onClick={() => onAutoBuildDeck('power', undefined, true)}
                 className="iron-btn min-h-[36px] px-3 py-1 font-[var(--font-display)] text-xs font-bold text-emerald-300 whitespace-nowrap cursor-pointer"
               >
-                Fill {DECK_CAPACITY - filledDeckCount} Empty
+                Fill {unitCapacity - filledDeckCount} Empty
               </button>
             )}
             <span className="font-[var(--font-display)] text-xs text-[#a69277] flex items-center gap-1">
@@ -470,8 +516,16 @@ export const GalleryView: React.FC<GalleryViewProps> = ({
           </div>
         </div>
 
-        {/* Fixed 7-Slot Active Deck Grid (with Hand-Carved Empty Card Imprints!) */}
-        <div className="basalt-recess p-3 grid grid-cols-2 sm:grid-cols-4 md:grid-cols-7 gap-3 sm:gap-3.5">
+        {/* Fixed Unit Slots + Dedicated Power Relic Slot */}
+        <div
+          className={`basalt-recess p-3 grid ${
+            unitCapacity === 10
+              ? 'grid-cols-2 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-11'
+              : unitCapacity === 9
+              ? 'grid-cols-2 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-10'
+              : 'grid-cols-2 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-9'
+          } gap-2.5 sm:gap-3`}
+        >
           {activeDeckSlots.map((inst, slotIdx) => {
             if (!inst) {
               return (
@@ -484,7 +538,7 @@ export const GalleryView: React.FC<GalleryViewProps> = ({
                   </span>
                   <Plus className="w-5 h-5 text-[#7c6850] mb-1" />
                   <span className="font-[var(--font-display)] text-[10px] uppercase tracking-wider text-[#9c886c]">
-                    Empty Slot
+                    Unit Slot
                   </span>
                 </div>
               );
@@ -501,7 +555,7 @@ export const GalleryView: React.FC<GalleryViewProps> = ({
                   arrows={inst.arrows}
                   augmentId={inst.augmentId}
                   owner="player"
-                  size="md"
+                  size="sm"
                   showName
                   onClick={() => {
                     sound.select();
@@ -512,6 +566,133 @@ export const GalleryView: React.FC<GalleryViewProps> = ({
                   <X className="w-2.5 h-2.5 stroke-[3]" />
                   <span>Remove</span>
                 </span>
+              </div>
+            );
+          })}
+
+          {/* Dedicated Power Relic Slot */}
+          {unlockedPowerSet.size === 0 ? (
+            <div className="empty-card-imprint relative aspect-[5/7] flex flex-col items-center justify-center p-2 text-center opacity-75">
+              <span className="organic-tag absolute top-1.5 inset-x-2 bg-sky-950/85 py-[1px] font-[var(--font-display)] text-[8.5px] font-bold uppercase tracking-wider text-sky-300">
+                Relic Slot
+              </span>
+              <Lock className="w-4 h-4 text-sky-300/70 mb-1 mt-2" />
+              <span className="font-[var(--font-display)] text-[9.5px] uppercase tracking-wider text-sky-200/80">
+                Clear Tier 1
+              </span>
+            </div>
+          ) : !equippedPowerDef ? (
+            <div className="empty-card-imprint relative aspect-[5/7] flex flex-col items-center justify-center p-2 text-center">
+              <span className="organic-tag absolute top-1.5 inset-x-2 bg-sky-950/90 py-[1px] font-[var(--font-display)] text-[8.5px] font-bold uppercase tracking-wider text-sky-200">
+                Relic Slot
+              </span>
+              <Sparkles className="w-4 h-4 text-sky-300 mb-1 mt-2" />
+              <span className="font-[var(--font-display)] text-[9.5px] uppercase tracking-wider text-sky-200">
+                Pick Relic Below
+              </span>
+            </div>
+          ) : (
+            <div className="group relative">
+              <span className="organic-tag pointer-events-none absolute top-1 left-1 z-30 px-1.5 py-[1px] bg-sky-950/95 font-mono text-[8.5px] font-bold text-sky-200 shadow">
+                {equippedPowerDef.code}
+              </span>
+              <GameCard
+                cardId={equippedPowerDef.id}
+                arrows={equippedPowerDef.dirs}
+                owner="player"
+                size="sm"
+                showName
+                onClick={() => {
+                  sound.select();
+                  onSetDeckPowerCard(null);
+                }}
+              />
+              <span className="organic-tag pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity absolute -top-1.5 -right-1.5 z-40 px-2 py-0.5 bg-[#7c1f1f] text-[9.5px] font-[var(--font-display)] font-bold text-white shadow-lg flex items-center gap-0.5">
+                <X className="w-2.5 h-2.5 stroke-[3]" />
+                <span>Remove</span>
+              </span>
+            </div>
+          )}
+        </div>
+      </section>
+
+      {/* 12 Tier-Unlocked Power Relics Showcase */}
+      <section className="iron-panel p-4 sm:p-5 space-y-3.5">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div>
+            <h2 className="font-[var(--font-display)] text-base sm:text-lg font-bold text-sky-200 tracking-wide flex items-center gap-2">
+              <Sparkles className="w-4 h-4 text-sky-300" />
+              <span>
+                Campaign Power Relics ({unlockedPowerSet.size}/{POWER_CARDS.length} Unlocked)
+              </span>
+            </h2>
+            <p className="font-[var(--font-serif)] text-xs sm:text-sm text-[#b7a285]">
+              Conquer all 5 challengers in each Campaign Tier (Tiers 1–10) to unlock un-flippable
+              directional Totems for your Dedicated Relic Slot.
+            </p>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3.5">
+          {POWER_CARDS.map((pCard) => {
+            const isUnlocked = unlockedPowerSet.has(pCard.id);
+            const isEquipped = equippedPowerDef?.id === pCard.id;
+            return (
+              <div
+                key={pCard.id}
+                className={`flex flex-col gap-1.5 ${!isUnlocked ? 'opacity-65' : ''}`}
+              >
+                <div className="relative">
+                  <GameCard
+                    cardId={pCard.id}
+                    arrows={pCard.dirs}
+                    owner={isEquipped ? 'player' : 'neutral'}
+                    size="sm"
+                    showName
+                    onClick={() => {
+                      sound.select();
+                      if (!isUnlocked) {
+                        openPreview({
+                          cardId: pCard.id,
+                          arrows: pCard.dirs,
+                          owner: 'neutral',
+                        });
+                        return;
+                      }
+                      const res = onSetDeckPowerCard(isEquipped ? null : pCard.id);
+                      if (!res.ok && res.message) showToast(res.message);
+                    }}
+                  />
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      sound.select();
+                      openPreview({
+                        cardId: pCard.id,
+                        arrows: pCard.dirs,
+                        owner: isEquipped ? 'player' : 'neutral',
+                      });
+                    }}
+                    aria-label={`Inspect ${pCard.name}`}
+                    className="organic-seal absolute top-1.5 left-1.5 z-20 w-5 h-5 bg-[#141c24]/95 text-sky-200 flex items-center justify-center cursor-pointer"
+                  >
+                    <Eye className="w-3 h-3" />
+                  </button>
+                  {isEquipped ? (
+                    <span className="organic-tag pointer-events-none absolute top-1.5 right-1.5 z-20 px-2 py-0.5 bg-sky-400 text-[#071521] text-[9px] font-[var(--font-display)] font-bold">
+                      Equipped
+                    </span>
+                  ) : !isUnlocked ? (
+                    <span className="organic-tag pointer-events-none absolute top-1.5 right-1.5 z-20 px-2 py-0.5 bg-[#1a130d]/95 text-[#cbb89a] text-[9px] font-mono font-bold flex items-center gap-0.5">
+                      <Lock className="w-2.5 h-2.5 text-amber-400" />
+                      <span>T{pCard.unlockTier}</span>
+                    </span>
+                  ) : null}
+                </div>
+                <div className="text-center text-[10px] font-mono text-sky-200 truncate px-0.5">
+                  {pCard.shortTag}
+                </div>
               </div>
             );
           })}
@@ -944,7 +1125,7 @@ export const GalleryView: React.FC<GalleryViewProps> = ({
                           copy.arrows,
                           copy.augmentId
                         );
-                        const canSell = totalOwnedCopies > DECK_CAPACITY;
+                        const canSell = totalOwnedCopies > MAX_UNIT_CAPACITY;
                         const bestRef = inspectedCopies[0];
                         const statDiff =
                           copy.stats.power +
@@ -1080,7 +1261,7 @@ export const GalleryView: React.FC<GalleryViewProps> = ({
                                 title={
                                   canSell
                                     ? `Sell this copy for +${sellGold}g`
-                                    : `Keep at least ${DECK_CAPACITY} cards total in your collection`
+                                    : `Keep at least ${MAX_UNIT_CAPACITY} cards total in your collection`
                                 }
                                 className={`min-h-[34px] px-2.5 py-1 rounded-[2px] text-xs font-mono font-semibold flex items-center gap-1 transition-colors ${
                                   canSell

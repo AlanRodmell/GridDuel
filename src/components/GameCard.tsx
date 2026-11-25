@@ -8,6 +8,7 @@ import {
   resolveCardAugment,
   toHexDigit,
 } from '../data/cards';
+import { POWER_CARD_MAP } from '../data/powerCards';
 import { ArrowDir, AttackType, Owner, TetraStats } from '../types/game';
 import { sound } from '../utils/sound';
 import { useCardPreview } from '../context/cardPreviewContext';
@@ -139,6 +140,7 @@ const GameCardInner: React.FC<GameCardProps> = ({
   const suppressClickUntilRef = useRef<number>(0);
 
   const card = CARD_MAP[cardId];
+  const powerCard = POWER_CARD_MAP[cardId];
 
   useEffect(() => {
     setImgStage(variant === 'tarot' ? 'full' : 'thumb');
@@ -159,6 +161,360 @@ const GameCardInner: React.FC<GameCardProps> = ({
       }
     };
   }, []);
+
+  if (!card && !powerCard) return null;
+
+  if (powerCard) {
+    const pTheme = CARD_RARITY_THEMES[powerCard.rarity];
+    const relicArrowSet = new Set(powerCard.dirs);
+    const pHighlightSet = highlightArrows.length > 0 ? new Set(highlightArrows) : null;
+    const pImgSrc =
+      imgStage === 'thumb' ? getCardThumbUrl(powerCard.image) : powerCard.image;
+    const handleRelicImgError = () => {
+      setImgStage((prev) => (prev === 'thumb' ? 'full' : 'failed'));
+    };
+
+    const handleRelicPointerDown = (e: React.PointerEvent) => {
+      setOrbTip(null);
+      if (faceDown || disableLongPress) return;
+      if (e.pointerType === 'mouse' && e.button !== 0) return;
+      clearLongPress();
+      pressStartRef.current = { x: e.clientX, y: e.clientY, pointerId: e.pointerId };
+      longPressTimerRef.current = window.setTimeout(() => {
+        longPressTimerRef.current = null;
+        pressStartRef.current = null;
+        suppressClickUntilRef.current = Date.now() + 450;
+        sound.select();
+        openPreview({
+          cardId: powerCard.id,
+          arrows: powerCard.dirs,
+          owner,
+        });
+      }, LONG_PRESS_MS);
+    };
+
+    const handleRelicPointerMove = (e: React.PointerEvent) => {
+      const start = pressStartRef.current;
+      if (!start || start.pointerId !== e.pointerId) return;
+      if (Math.hypot(e.clientX - start.x, e.clientY - start.y) > MOVE_CANCEL_PX) {
+        clearLongPress();
+      }
+    };
+
+    const handleRelicClick = (e: React.MouseEvent) => {
+      if (Date.now() < suppressClickUntilRef.current) {
+        e.preventDefault();
+        e.stopPropagation();
+        return;
+      }
+      if (!disabled && onClick) {
+        onClick();
+      }
+    };
+
+    const relicShadow =
+      owner === 'player'
+        ? '0 0 0 2px rgba(56, 189, 248, 0.92), 0 6px 18px rgba(14, 165, 233, 0.4)'
+        : owner === 'rival'
+        ? '0 0 0 2px rgba(244, 114, 182, 0.92), 0 6px 18px rgba(225, 29, 72, 0.4)'
+        : '0 0 0 1.5px rgba(56, 189, 248, 0.65), 0 8px 20px rgba(0, 0, 0, 0.7)';
+
+    const relicWash =
+      owner === 'player'
+        ? 'radial-gradient(ellipse 100% 90% at 50% 0%, rgba(14, 165, 233, 0.3) 0%, rgba(2, 132, 199, 0.14) 55%, rgba(15, 23, 42, 0.14) 100%)'
+        : owner === 'rival'
+        ? 'radial-gradient(ellipse 100% 90% at 50% 0%, rgba(236, 72, 153, 0.3) 0%, rgba(159, 18, 57, 0.14) 55%, rgba(15, 23, 42, 0.14) 100%)'
+        : 'radial-gradient(ellipse 100% 90% at 50% 0%, rgba(56, 189, 248, 0.18) 0%, rgba(15, 23, 42, 0.15) 100%)';
+
+    const RelicTag = onClick ? 'button' : 'div';
+
+    if (variant === 'tarot') {
+      return (
+        <RelicTag
+          type={onClick ? 'button' : undefined}
+          disabled={onClick ? disabled : undefined}
+          onClick={onClick ? handleRelicClick : undefined}
+          onPointerDown={handleRelicPointerDown}
+          onPointerMove={handleRelicPointerMove}
+          onPointerUp={clearLongPress}
+          onPointerCancel={clearLongPress}
+          onPointerLeave={clearLongPress}
+          onContextMenu={(e) => {
+            if (!disableLongPress) e.preventDefault();
+          }}
+          aria-label={`${powerCard.name}, Power Relic (${powerCard.code}), ${powerCard.description}`}
+          style={{
+            background: pTheme.bezelGradient,
+            boxShadow: relicShadow,
+          }}
+          className={`card-contain card-weathered-rim group relative aspect-[5/7] w-full p-[3.5px] text-left select-none no-touch-callout transition-transform duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400 ${
+            justPlaced ? 'animate-card-drop' : ''
+          } ${className}`}
+        >
+          <div
+            style={{ background: pTheme.surfaceGradient }}
+            className="card-weathered-rim relative w-full h-full overflow-hidden"
+          >
+            <div
+              className="pointer-events-none absolute inset-0 z-0"
+              style={{ background: relicWash }}
+            />
+
+            <div className="pointer-events-none absolute inset-0 z-20 overflow-hidden opacity-35">
+              <div
+                className={`animate-foil-shimmer absolute -inset-y-16 w-1/2 bg-gradient-to-r from-transparent ${pTheme.foilVia} to-transparent`}
+              />
+            </div>
+
+            {showArrows && (
+              <svg
+                aria-hidden="true"
+                viewBox="0 0 300 420"
+                className="pointer-events-none absolute inset-0 w-full h-full z-20"
+              >
+                {ALL_ARROW_DIRS.map((dir) => {
+                  const isActive = relicArrowSet.has(dir);
+                  const isHighlighted = pHighlightSet?.has(dir) ?? false;
+                  return (
+                    <polygon
+                      key={dir}
+                      points={TAROT_ARROW_POLYGONS[dir]}
+                      fill={
+                        isHighlighted
+                          ? '#34f5a8'
+                          : isActive
+                          ? '#38bdf8'
+                          : 'rgba(255, 255, 255, 0.12)'
+                      }
+                      stroke={isActive || isHighlighted ? '#041322' : undefined}
+                      strokeWidth={isActive || isHighlighted ? 2.4 : undefined}
+                      strokeLinejoin="round"
+                    />
+                  );
+                })}
+              </svg>
+            )}
+
+            <div className="relative z-10 h-full w-full px-[7.6%] py-[6%]">
+              <div
+                style={{ borderColor: 'rgba(125, 211, 252, 0.5)' }}
+                className="h-full w-full rounded-[4px] border px-2.5 py-2 flex flex-col justify-between gap-1.5"
+              >
+                <div className="organic-tag bg-black/45 px-2.5 py-1 text-center shrink-0">
+                  <div
+                    style={{ color: pTheme.titleColor }}
+                    className="font-[var(--font-display)] text-[13px] sm:text-[14.5px] font-bold uppercase tracking-[0.09em] leading-[1.15] [text-wrap:balance]"
+                  >
+                    {powerCard.name}
+                  </div>
+                  <div className="font-[var(--font-serif)] italic text-[11px] sm:text-[12px] text-sky-200 leading-tight truncate">
+                    {powerCard.code} · Tier {powerCard.unlockTier} Relic Totem
+                  </div>
+                </div>
+
+                <div
+                  style={{
+                    borderColor: 'rgba(125, 211, 252, 0.55)',
+                    background: pTheme.archBackdrop,
+                  }}
+                  className="relative flex-1 min-h-0 w-full overflow-hidden rounded-t-[999px] rounded-b-[4px] border-[1.5px]"
+                >
+                  {imgStage !== 'failed' ? (
+                    <img
+                      src={pImgSrc}
+                      alt={powerCard.name}
+                      width={1024}
+                      height={1024}
+                      loading="eager"
+                      decoding="async"
+                      onError={handleRelicImgError}
+                      className={`w-full h-full object-cover object-top pointer-events-none no-touch-callout ${
+                        powerCard.artFilter ?? ''
+                      }`}
+                      draggable={false}
+                    />
+                  ) : (
+                    <div
+                      className={`w-full h-full bg-gradient-to-br ${powerCard.accentGradient} flex items-center justify-center`}
+                    >
+                      <Sparkles className="w-10 h-10 text-sky-300/85" />
+                    </div>
+                  )}
+                  <div className="pointer-events-none absolute inset-x-0 bottom-0 h-10 bg-gradient-to-t from-black/75 to-transparent flex items-end justify-center pb-1">
+                    <span className="organic-tag px-2.5 py-0.5 bg-sky-950/95 text-[10px] font-mono font-bold text-sky-200">
+                      {powerCard.patternLabel}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2 shrink-0 px-0.5">
+                  <span className="h-px flex-1 bg-sky-400/35" />
+                  <span className="font-[var(--font-display)] text-[8.5px] sm:text-[9.5px] font-bold uppercase tracking-[0.16em] text-sky-200 whitespace-nowrap">
+                    Power Relic · {pTheme.tierLabel}
+                  </span>
+                  <span className="h-px flex-1 bg-sky-400/35" />
+                </div>
+
+                <div className="organic-tag bg-black/45 px-2.5 py-1.5 text-center space-y-0.5 shrink-0">
+                  <p className="font-[var(--font-serif)] text-[11px] sm:text-[12px] leading-[1.25] text-slate-100/95">
+                    {powerCard.description}
+                  </p>
+                </div>
+
+                <div className="organic-tag bg-sky-950/85 px-3 py-1.5 flex items-center justify-between gap-2 shrink-0">
+                  <span className="inline-flex items-center gap-1 font-[var(--font-display)] text-[10px] font-bold uppercase tracking-wider text-sky-200">
+                    <Sparkles className="w-3.5 h-3.5 text-sky-300 shrink-0" />
+                    <span>Un-Flippable Totem</span>
+                  </span>
+                  <span className="font-mono text-[11px] font-bold text-amber-200">
+                    {powerCard.badgeLabel}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </RelicTag>
+      );
+    }
+
+    const pInnerInset = size === 'xs' ? 'p-[5px]' : 'px-[8.4%] py-[7%]';
+    const pNameText =
+      size === 'sm'
+        ? 'text-[6.5px] sm:text-[8px] lg:text-[9px]'
+        : size === 'lg'
+        ? 'text-[9px] sm:text-[10.5px]'
+        : 'text-[8px] sm:text-[9px]';
+
+    return (
+      <RelicTag
+        type={onClick ? 'button' : undefined}
+        disabled={onClick ? disabled : undefined}
+        onClick={onClick ? handleRelicClick : undefined}
+        onPointerDown={handleRelicPointerDown}
+        onPointerMove={handleRelicPointerMove}
+        onPointerUp={clearLongPress}
+        onPointerCancel={clearLongPress}
+        onPointerLeave={clearLongPress}
+        onContextMenu={(e) => {
+          if (!disableLongPress) e.preventDefault();
+        }}
+        aria-label={`${powerCard.name}, Power Relic, ${powerCard.shortTag}`}
+        style={{
+          background: pTheme.bezelGradient,
+          boxShadow: relicShadow,
+        }}
+        className={`card-contain card-weathered-rim group relative aspect-[5/7] w-full overflow-hidden p-[2px] sm:p-[2.5px] text-left select-none no-touch-callout transition-transform duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400 ${
+          selected
+            ? '-translate-y-2.5 scale-[1.05] drop-shadow-[0_0_12px_rgba(56,189,248,0.85)] z-20'
+            : onClick && !disabled
+            ? 'cursor-pointer hover:-translate-y-1 hover:scale-[1.02] active:scale-[0.97]'
+            : ''
+        } ${disabled ? 'opacity-50 cursor-not-allowed' : ''} ${
+          justPlaced ? 'animate-card-drop' : ''
+        } ${className}`}
+      >
+        <div
+          style={{ background: pTheme.surfaceGradient }}
+          className="card-weathered-rim relative w-full h-full overflow-hidden"
+        >
+          <div
+            className="pointer-events-none absolute inset-0 z-0"
+            style={{ background: relicWash }}
+          />
+
+          <div className={`relative z-10 w-full h-full ${pInnerInset}`}>
+            <div
+              style={{ borderColor: 'rgba(125, 211, 252, 0.55)' }}
+              className="relative w-full h-full rounded-[4px] border flex flex-col items-center justify-between p-[3px] sm:p-[4px] gap-[2px] sm:gap-[3px] bg-black/25"
+            >
+              {showName && size !== 'xs' && (
+                <div className="organic-tag w-full bg-sky-950/80 px-1.5 py-[1.5px] text-center shrink-0">
+                  <div
+                    style={{ color: pTheme.titleColor }}
+                    className={`font-[var(--font-display)] font-bold uppercase tracking-[0.04em] leading-[1.12] [text-wrap:balance] break-words ${pNameText}`}
+                  >
+                    {powerCard.name}
+                  </div>
+                </div>
+              )}
+
+              <div
+                style={{
+                  borderColor: 'rgba(125, 211, 252, 0.6)',
+                  background: pTheme.archBackdrop,
+                }}
+                className="relative flex-1 min-h-0 w-full overflow-hidden rounded-t-[999px] rounded-b-[3px] border"
+              >
+                {imgStage !== 'failed' ? (
+                  <img
+                    src={pImgSrc}
+                    alt={powerCard.name}
+                    width={320}
+                    height={320}
+                    loading="lazy"
+                    decoding="async"
+                    onError={handleRelicImgError}
+                    className={`w-full h-full object-cover object-top pointer-events-none no-touch-callout ${
+                      powerCard.artFilter ?? ''
+                    }`}
+                    draggable={false}
+                  />
+                ) : (
+                  <div
+                    className={`w-full h-full bg-gradient-to-br ${powerCard.accentGradient} flex items-center justify-center p-1`}
+                  >
+                    <Sparkles className="w-5 h-5 text-sky-300" />
+                  </div>
+                )}
+
+                <div className="pointer-events-none absolute top-1 inset-x-1 flex justify-center">
+                  <span className="organic-tag px-1.5 py-[1px] bg-sky-950/95 text-[6.5px] sm:text-[7.5px] font-[var(--font-display)] font-bold uppercase tracking-wider text-sky-200">
+                    Relic
+                  </span>
+                </div>
+              </div>
+
+              <div className="organic-tag w-full bg-sky-950/95 px-1 py-[2px] text-center shrink-0 flex items-center justify-center gap-0.5">
+                <Sparkles className="w-2.5 h-2.5 text-sky-300 shrink-0 hidden sm:inline" />
+                <span className="font-mono text-[7px] sm:text-[8.5px] font-bold text-amber-200 truncate">
+                  {powerCard.badgeLabel}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {showArrows && (
+            <svg
+              aria-hidden="true"
+              viewBox="0 0 100 140"
+              className="pointer-events-none absolute inset-0 w-full h-full z-20"
+            >
+              {ALL_ARROW_DIRS.map((dir) => {
+                const isActive = relicArrowSet.has(dir);
+                const isHighlighted = pHighlightSet?.has(dir) ?? false;
+                return (
+                  <polygon
+                    key={dir}
+                    points={CARD_ARROW_POLYGONS[dir]}
+                    fill={
+                      isHighlighted
+                        ? '#34f5a8'
+                        : isActive
+                        ? '#38bdf8'
+                        : 'rgba(255, 255, 255, 0.12)'
+                    }
+                    stroke={isActive || isHighlighted ? '#041322' : undefined}
+                    strokeWidth={isActive || isHighlighted ? 1.15 : undefined}
+                    strokeLinejoin="round"
+                  />
+                );
+              })}
+            </svg>
+          )}
+        </div>
+      </RelicTag>
+    );
+  }
 
   if (!card) return null;
 

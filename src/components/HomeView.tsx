@@ -12,6 +12,7 @@ import {
   Trophy,
 } from 'lucide-react';
 import { ALL_FIGHTERS } from '../data/ladder';
+import { POWER_CARDS, getUnlockedPowerCards } from '../data/powerCards';
 import { PlayerProfile } from '../types/game';
 import { sound } from '../utils/sound';
 import { BrambleCrestDivider } from './BattlefieldChrome';
@@ -39,6 +40,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
   onOpenRules,
 }) => {
   const conqueredCount = Object.values(profile.fighterWins ?? {}).filter((w) => w > 0).length;
+  const unlockedRelicsCount = getUnlockedPowerCards(profile.fighterWins).length;
 
   return (
     <div className="w-full max-w-[1680px] mx-auto px-5 sm:px-8 lg:px-10 py-8 lg:py-12 space-y-10 lg:space-y-12">
@@ -48,7 +50,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
         <div className="lg:col-span-6 space-y-6 text-center lg:text-left">
           <div className="war-banner-tab inline-flex items-center gap-2 pl-3.5 pr-5 py-1.5 bg-gradient-to-r from-[#3b2915] to-[#24190d] text-[#edd08e] font-[var(--font-display)] text-[11px] font-semibold uppercase tracking-[0.18em] shadow">
             <Crown className="w-3.5 h-3.5 text-[#d8a243]" />
-            <span>5×3 Tactical Biome Card War</span>
+            <span>6×3 · 7×3 · 6×4 Tactical Biome &amp; Relic War</span>
           </div>
 
           <div className="space-y-3">
@@ -57,12 +59,11 @@ export const HomeView: React.FC<HomeViewProps> = ({
             </h1>
             <BrambleCrestDivider className="max-w-[300px] mx-auto lg:mx-0" />
             <p className="font-[var(--font-serif)] italic text-xl sm:text-2xl text-[#dec391]">
-              “Master the terrain, command the arrows, claim the board.”
+              “Master the terrain, anchor your Relics, claim the board.”
             </p>
             <p className="font-[var(--font-serif)] text-base sm:text-lg text-[#c7b69a] leading-relaxed max-w-xl mx-auto lg:mx-0">
-              Outflank rivals across an open 5×3 landscape biome battlefield using 8-way compass
-              arrows, elemental &amp; tribal terrain shifts, combo chains, and forged Runeforge
-              augments.
+              Outflank rivals across selectable 6×3, 7×3, and 6×4 biome battlefields using 8-way
+              compass arrows, combo chains, forged Runes, and 12 Tier-unlocked Power Relic Totems.
             </p>
           </div>
 
@@ -231,6 +232,12 @@ export const HomeView: React.FC<HomeViewProps> = ({
             Arena Conquered:{' '}
             <strong className="font-mono text-sm text-[#f0c76e]">
               {conqueredCount}/{ALL_FIGHTERS.length}
+            </strong>
+          </span>
+          <span className="font-[var(--font-display)] tracking-wide text-xs uppercase">
+            Power Relics:{' '}
+            <strong className="font-mono text-sm text-sky-300">
+              {unlockedRelicsCount}/{POWER_CARDS.length}
             </strong>
           </span>
           <span className="font-[var(--font-display)] tracking-wide text-xs uppercase">

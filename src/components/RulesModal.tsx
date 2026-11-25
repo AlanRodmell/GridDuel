@@ -1,5 +1,5 @@
 import React from 'react';
-import { Map, Wand2, X } from 'lucide-react';
+import { Map, Sparkles, Wand2, X } from 'lucide-react';
 import { ALL_BIOMES, BIOME_META } from '../data/biomes';
 import { BiomeIcon } from './BiomeBadge';
 
@@ -43,31 +43,49 @@ export const RulesModal: React.FC<RulesModalProps> = ({ open, onClose }) => {
         </div>
 
         <div className="overflow-y-auto px-5 py-4 space-y-5 font-[var(--font-serif)] text-[15.5px] text-[#cbb89a] leading-relaxed">
-          {/* 1. Open 5x3 Landscape Battlefield & 7-Card Hands */}
+          {/* 1. Selectable Battlefield Scales & Right-Hand Fan */}
           <section className="space-y-1.5">
             <h3 className="font-[var(--font-display)] text-xs font-bold uppercase tracking-wider text-[#e6b85c]">
-              1. Open 5×3 Landscape Battlefield &amp; 7-Card Hands
+              1. Three Battlefield Scales &amp; Right-Hand Fan
             </h3>
             <p>
-              Each duel is played on a wide <strong className="text-[#f3dfb6]">5×3 landscape grid (15 playable tiles)</strong>{' '}
-              seeded with <strong className="text-[#f3dfb6]">4 tactical Biome tiles</strong> based on the arena region. You and
-              your rival each play <strong className="text-[#f3dfb6]">7 cards</strong> (14 total, leaving 1 tile open at match
-              end), so even the final turn preserves a tactical placement choice. Control the most
-              cards (Blue vs Crimson) after all 14 cards are played to win!
+              Choose your preferred battlefield scale before any Arena or Quick match:{' '}
+              <strong className="text-[#f3dfb6]">6×3 Skirmish</strong> (18 tiles · 8 Units + 1 Relic),{' '}
+              <strong className="text-[#f3dfb6]">7×3 Vanguard</strong> (21 tiles · 9 Units + 1 Relic), or{' '}
+              <strong className="text-[#f3dfb6]">6×4 Grand Siege</strong> (24 tiles · 10 Units + 1 Relic).
+              Drag cards from your right-hand fan onto any open socket, or click any card in your
+              hand to inspect its full stats, Biome matchups, and Relic aura specifics. Control the
+              most Unit cards (Blue vs Crimson) when all hands are played to win!
             </p>
           </section>
 
-          {/* 2. Biome Terrain & Elemental/Tribal Matchups */}
+          {/* 2. Tier-Unlocked Power Relic Totems */}
+          <section className="space-y-1.5 border-t border-[#4b3a26]/70 pt-4">
+            <h3 className="font-[var(--font-display)] text-xs font-bold uppercase tracking-wider text-sky-300 flex items-center gap-1.5">
+              <Sparkles className="w-3.5 h-3.5" />
+              <span>2. Power Relic Totems (12 Tier-Clear Rewards)</span>
+            </h3>
+            <p>
+              Conquering all <strong className="text-[#f3dfb6]">5 challengers</strong> in each Campaign Tier
+              (Tiers 1–10) unlocks <strong className="text-[#f3dfb6]">12 unique Power Relics (P01–P12)</strong>{' '}
+              and opens your deck’s <strong className="text-[#f3dfb6]">Dedicated Relic Slot</strong>. When
+              placed onto an open board socket, a Power Relic anchors as an{' '}
+              <strong className="text-[#f3dfb6]">un-flippable Totem</strong> that blocks space and projects a
+              persistent directional buff/debuff aura onto its target tiles—empowering units already
+              there <em>and</em> any units deployed or flipped onto those tiles later in the match!
+            </p>
+          </section>
+
+          {/* 3. Biome Terrain & Elemental/Tribal Matchups */}
           <section className="space-y-2 border-t border-[#4b3a26]/70 pt-4">
             <h3 className="font-[var(--font-display)] text-xs font-bold uppercase tracking-wider text-emerald-400 flex items-center gap-1.5">
               <Map className="w-3.5 h-3.5" />
-              <span>2. Biome Terrain Tiles (Avoid or Capitalize)</span>
+              <span>3. Biome Terrain Tiles (Avoid or Capitalize)</span>
             </h3>
             <p>
-              Every card carries an <strong className="text-[#f3dfb6]">Element</strong> (Fire, Water, Nature, Storm, Light,
-              Shadow, Steel) and a <strong className="text-[#f3dfb6]">Tribe</strong> (Mortal, Fey, Undead, Construct, Beast).
-              Deploying onto a Biome tile immediately applies its stat boost or penalty before
-              clashes resolve—hover any biome tile on the board to inspect its exact matchup:
+              Every Unit card carries an <strong className="text-[#f3dfb6]">Element</strong> and a{' '}
+              <strong className="text-[#f3dfb6]">Tribe</strong>. Deploying onto a Biome tile immediately
+              applies its stat boost or penalty before clashes resolve:
             </p>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 font-sans text-xs pt-1">
               {ALL_BIOMES.map((biomeId) => {
@@ -79,7 +97,7 @@ export const RulesModal: React.FC<RulesModalProps> = ({ open, onClose }) => {
                   >
                     <div className="flex items-center gap-1.5 font-semibold">
                       <span
-                        className={`w-5 h-5 rounded-[2px] border flex items-center justify-center shrink-0 ${b.badgeClass}`}
+                        className={`organic-seal w-5 h-5 flex items-center justify-center shrink-0 ${b.badgeClass}`}
                       >
                         <BiomeIcon biome={biomeId} className="w-3 h-3" />
                       </span>
@@ -95,89 +113,42 @@ export const RulesModal: React.FC<RulesModalProps> = ({ open, onClose }) => {
             </div>
           </section>
 
-          {/* 3. Card Arrows & Captures */}
+          {/* 4. Card Arrows & Captures */}
           <section className="space-y-1.5 border-t border-[#4b3a26]/70 pt-4">
             <h3 className="font-[var(--font-display)] text-xs font-bold uppercase tracking-wider text-[#e6b85c]">
-              3. Arrows, Clashes &amp; Combos
+              4. Arrows, Clashes &amp; Combos
             </h3>
-            <p>
-              Every rolled card copy has its own blazing orange arrows around its 8 edges and
-              corners:
-            </p>
             <ul className="space-y-1.5 list-disc pl-5 text-[#cbb89a]">
               <li>
-                <strong className="text-[#f3dfb6]">Unopposed Capture:</strong> Point an arrow at an
-                adjacent rival card that has <em>no arrow pointing back</em> to capture it
-                instantly without a battle.
+                <strong className="text-[#f3dfb6]">Unopposed Capture:</strong> Point an orange unit
+                arrow at an adjacent rival unit card that has <em>no arrow pointing back</em> to
+                capture it instantly without a battle.
               </li>
               <li>
-                <strong className="text-[#f3dfb6]">Arrow Clash:</strong> When your card’s arrow
-                points at a rival card that points an arrow <em>back at yours</em>, a Card Clash
-                erupts using their effective (rolled + terrain + augmented) stats.
+                <strong className="text-[#f3dfb6]">Arrow Clash:</strong> When your unit’s arrow
+                points at a rival unit that points an arrow <em>back at yours</em>, a Clash erupts
+                using effective stats (rolled + Biome + Runes + Power Relic auras).
               </li>
               <li>
-                <strong className="text-[#f3dfb6]">Combo Chain:</strong> Any card won in an Arrow
-                Clash immediately captures all adjacent enemy cards that <em>its</em> arrows point
-                toward!
+                <strong className="text-[#f3dfb6]">Combo Chain:</strong> Any unit won in an Arrow
+                Clash immediately captures all adjacent enemy unit cards that <em>its</em> arrows
+                point toward!
               </li>
             </ul>
           </section>
 
-          {/* 4. Battlefield Augments & Runeforge Crafting */}
-          <section className="space-y-1.5 border-t border-[#4b3a26]/70 pt-4">
+          {/* 5. Battlefield Augments & Hex Stat Codes */}
+          <section className="space-y-2 border-t border-[#4b3a26]/70 pt-4">
             <h3 className="font-[var(--font-display)] text-xs font-bold uppercase tracking-wider text-violet-300 flex items-center gap-1.5">
               <Wand2 className="w-3.5 h-3.5" />
-              <span>4. Battlefield Augments &amp; Runeforge</span>
+              <span>5. Runeforge Augments &amp; Hex Stat Codes</span>
             </h3>
             <p>
-              Augments are rare battlefield powers that trigger when a card is placed on the 5×3
-              grid. Only <strong className="text-[#f3dfb6]">5 Mythic Legendaries</strong> carry innate traits—for every other
-              card, visit the <strong className="text-[#f3dfb6]">Runeforge</strong> tab in the <strong className="text-[#f3dfb6]">Vault &amp; Forge</strong> to spend
-              Gold and imbue a custom Rune onto your best card copies.
+              Visit the <strong className="text-[#f3dfb6]">Runeforge</strong> in the Vault &amp; Forge to
+              imbue custom Runes onto your best rolled Unit copies. Every Unit copy rolls 4 hex
+              values (<span className="font-mono text-sm text-[#f0c76e]">ATK · TYPE (P/M/X/A) · P.DEF · M.DEF</span>)
+              from <span className="font-mono text-sm text-[#f0c76e]">0–F</span>.
             </p>
-          </section>
-
-          {/* 5. The 4-Character Stat Code */}
-          <section className="space-y-2 border-t border-[#4b3a26]/70 pt-4">
-            <h3 className="font-[var(--font-display)] text-xs font-bold uppercase tracking-wider text-[#e6b85c]">
-              5. Rolled Hex Stat Codes (Max 5 Copies)
-            </h3>
-            <p>
-              Every card copy rolls hexadecimal stats (
-              <span className="font-mono text-sm text-[#f0c76e]">0–9, A–F</span>) within its rarity tier and
-              an 8-way arrow layout. Hover any of the 4 circular orbs on a card to see its exact
-              stat label:
-            </p>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 font-sans text-xs pt-1">
-              <div className="rounded-[3px] basalt-recess p-3">
-                <div className="font-[var(--font-display)] font-semibold text-[#f3dfb6]">1st · Attack Power</div>
-                <p className="text-[#a69277] mt-0.5">
-                  Your offensive strength when initiating or defending an Arrow Clash.
-                </p>
-              </div>
-              <div className="rounded-[3px] basalt-recess p-3">
-                <div className="font-[var(--font-display)] font-semibold text-[#f3dfb6]">2nd · Attack Type (P / M / X / A)</div>
-                <p className="text-[#a69277] mt-0.5">
-                  <strong className="text-[#f0c76e]">P</strong> hits Physical Def (3rd) ·{' '}
-                  <strong className="text-sky-300">M</strong> hits Magical Def (4th) ·{' '}
-                  <strong className="text-emerald-300">X</strong> hits their lowest defense ·{' '}
-                  <strong className="text-rose-300">A</strong> attacks their lowest stat with your
-                  highest stat.
-                </p>
-              </div>
-              <div className="rounded-[3px] basalt-recess p-3">
-                <div className="font-[var(--font-display)] font-semibold text-[#f3dfb6]">3rd · Physical Defense</div>
-                <p className="text-[#a69277] mt-0.5">
-                  Guards against <strong className="text-[#f0c76e]">P</strong> (Physical) attacks.
-                </p>
-              </div>
-              <div className="rounded-[3px] basalt-recess p-3">
-                <div className="font-[var(--font-display)] font-semibold text-[#f3dfb6]">4th · Magical Defense</div>
-                <p className="text-[#a69277] mt-0.5">
-                  Guards against <strong className="text-sky-300">M</strong> (Magical) attacks.
-                </p>
-              </div>
-            </div>
           </section>
         </div>
 

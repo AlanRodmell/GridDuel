@@ -16,6 +16,8 @@ import {
   MAX_COPIES_PER_CARD,
   formatTetraCode,
 } from '../../data/cards';
+import { POWER_CARD_MAP } from '../../data/powerCards';
+import { getBoardScaleSpec } from '../../engine/triadEngine';
 import {
   HandCard,
   LadderFighter,
@@ -217,7 +219,8 @@ export const MatchSpoilsModal: React.FC<MatchSpoilsModalProps> = ({
                 <span className="font-[var(--font-serif)] text-sm text-[#b39e81]">
                   {gameMode === 'quick'
                     ? 'Quick Random Duel'
-                    : `Tier ${currentFighter.tierNumber} Championship`}
+                    : `Tier ${currentFighter.tierNumber} Championship`}{' '}
+                  · {getBoardScaleSpec(summary.boardScale).shortLabel}
                 </span>
                 {summary.isFirstVictory && (
                   <span className="inline-flex items-center gap-1 font-semibold text-emerald-400">
@@ -276,6 +279,56 @@ export const MatchSpoilsModal: React.FC<MatchSpoilsModalProps> = ({
 
           {summary.winner === 'player' && (
             <div className="space-y-4">
+              {summary.newlyUnlockedPowerIds && summary.newlyUnlockedPowerIds.length > 0 && (
+                <div className="brass-panel p-4 sm:p-5 space-y-3 border border-sky-400/55 shadow-[0_0_28px_rgba(56,189,248,0.22)]">
+                  <div className="flex items-center gap-2 text-sky-200">
+                    <Sparkles className="w-5 h-5 text-sky-300 shrink-0" />
+                    <span className="font-[var(--font-display)] text-sm sm:text-base font-bold tracking-wide">
+                      Tier {currentFighter.tierNumber} Fully Conquered — Power Relic
+                      {summary.newlyUnlockedPowerIds.length > 1 ? 's' : ''} Unlocked!
+                    </span>
+                  </div>
+                  <p className="font-[var(--font-serif)] text-xs sm:text-sm text-[#dfd0b6]">
+                    Your Dedicated Power Relic Slot can now equip{' '}
+                    {summary.newlyUnlockedPowerIds.length > 1 ? 'these Relics' : 'this Relic'} in
+                    the Deck Builder:
+                  </p>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {summary.newlyUnlockedPowerIds.map((pid) => {
+                      const pDef = POWER_CARD_MAP[pid];
+                      if (!pDef) return null;
+                      return (
+                        <div
+                          key={pid}
+                          className="basalt-recess p-3 flex items-center gap-3"
+                        >
+                          <div className="w-16 shrink-0">
+                            <GameCard
+                              cardId={pDef.id}
+                              arrows={pDef.dirs}
+                              owner="player"
+                              size="sm"
+                              showName={false}
+                            />
+                          </div>
+                          <div className="min-w-0 space-y-1">
+                            <div className="font-[var(--font-display)] text-sm font-bold text-sky-200">
+                              {pDef.code} · {pDef.name}
+                            </div>
+                            <div className="font-mono text-xs font-semibold text-amber-200">
+                              {pDef.shortTag}
+                            </div>
+                            <p className="text-xs text-[#cbb89a] leading-snug">
+                              {pDef.description}
+                            </p>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
               {summary.bonusMythicDrop && (
                 <div className="rounded-[3px] brass-plaque border-[#d9a243] px-4 py-3 flex items-center gap-2.5 text-xs sm:text-sm text-[#f7dca2] shadow-lg">
                   <Crown className="w-5 h-5 text-[#eab859] shrink-0" />

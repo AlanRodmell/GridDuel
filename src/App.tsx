@@ -58,10 +58,12 @@ export default function App() {
     totalCards,
     toggleSound,
     toggleClickToPlace,
+    setBoardScale,
     selectDeckSlot,
     createDeck,
     renameDeck,
     deleteDeck,
+    setDeckPowerCard,
     toggleDeckCard,
     clearActiveDeck,
     autoBuildActiveDeck,
@@ -474,10 +476,12 @@ export default function App() {
                 activeDeck={activeDeck}
                 initialIntent={playIntent}
                 launchNonce={playLaunchNonce}
+                onSelectBoardScale={setBoardScale}
                 onSelectDeckSlot={selectDeckSlot}
                 onCreateDeck={createDeck}
                 onRenameDeck={renameDeck}
                 onDeleteDeck={deleteDeck}
+                onSetDeckPowerCard={setDeckPowerCard}
                 onToggleDeckCard={toggleDeckCard}
                 onClearDeck={clearActiveDeck}
                 onAutoBuildDeck={autoBuildActiveDeck}
@@ -502,10 +506,12 @@ export default function App() {
                 activeDeck={activeDeck}
                 ownedUniqueCount={ownedUniqueCount}
                 totalCards={totalCards}
+                onSelectBoardScale={setBoardScale}
                 onSelectDeckSlot={selectDeckSlot}
                 onCreateDeck={createDeck}
                 onRenameDeck={renameDeck}
                 onDeleteDeck={deleteDeck}
+                onSetDeckPowerCard={setDeckPowerCard}
                 onToggleDeckCard={toggleDeckCard}
                 onClearDeck={clearActiveDeck}
                 onAutoBuildDeck={autoBuildActiveDeck}

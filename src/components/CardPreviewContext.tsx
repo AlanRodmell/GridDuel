@@ -10,13 +10,14 @@ import {
   CardPreviewContext,
   CardPreviewData,
 } from '../context/cardPreviewContext';
-import { BIOME_META, evaluateTerrainEffect } from '../data/biomes';
+import { BIOME_META, ELEMENT_META, evaluateTerrainEffect } from '../data/biomes';
 import {
   CARD_MAP,
   formatArrowsCompact,
   formatTetraCode,
   resolveCardAugment,
 } from '../data/cards';
+import { POWER_CARD_MAP } from '../data/powerCards';
 import { CARD_RARITY_THEMES } from '../styles/cardThemes';
 import { BiomeIcon, CardTraitPills } from './BiomeBadge';
 import { GameCard } from './GameCard';
@@ -36,7 +37,6 @@ export const CardPreviewProvider: React.FC<{ children: React.ReactNode }> = ({
     setPreview(null);
   }, []);
 
-  // Dismiss on Escape key
   useEffect(() => {
     if (!preview) return;
     const onKeyDown = (e: KeyboardEvent) => {
@@ -49,15 +49,15 @@ export const CardPreviewProvider: React.FC<{ children: React.ReactNode }> = ({
   }, [preview]);
 
   const handleBackdropClick = () => {
-    // Brief grace period so lifting your thumb after a long-press never instantly closes the preview
     if (Date.now() - openedAtRef.current < 260) return;
     closePreview();
   };
 
-  const card = preview ? CARD_MAP[preview.cardId] : null;
+  const card = preview ? CARD_MAP[preview.cardId] ?? null : null;
+  const powerCard = preview ? POWER_CARD_MAP[preview.cardId] ?? null : null;
   const stats = preview?.stats ?? card?.stats;
   const baseStats = preview?.baseStats ?? stats;
-  const arrows = preview?.arrows ?? card?.arrows ?? [];
+  const arrows = preview?.arrows ?? card?.arrows ?? powerCard?.dirs ?? [];
 
   const pwrDelta = stats && baseStats ? stats.power - baseStats.power : 0;
   const pDefDelta = stats && baseStats ? stats.pDef - baseStats.pDef : 0;
@@ -67,6 +67,7 @@ export const CardPreviewProvider: React.FC<{ children: React.ReactNode }> = ({
   const terrainMeta = preview?.terrain ? BIOME_META[preview.terrain] : null;
   const activeAugment =
     card && preview ? resolveCardAugment(card.id, preview.augmentId) : undefined;
+
   const arenaBiomeBreakdown = useMemo(() => {
     if (!card || !stats || preview?.terrain || !preview?.arenaBiomes?.length) {
       return [];
@@ -87,7 +88,8 @@ export const CardPreviewProvider: React.FC<{ children: React.ReactNode }> = ({
     });
   }, [card, preview?.arenaBiomes, preview?.terrain, stats]);
 
-  const theme = card ? CARD_RARITY_THEMES[card.rarity] : null;
+  const activeRarity = card?.rarity ?? powerCard?.rarity ?? null;
+  const theme = activeRarity ? CARD_RARITY_THEMES[activeRarity] : null;
   const contextValue = useMemo(
     () => ({ openPreview, closePreview }),
     [openPreview, closePreview]
@@ -96,6 +98,91 @@ export const CardPreviewProvider: React.FC<{ children: React.ReactNode }> = ({
   return (
     <CardPreviewContext.Provider value={contextValue}>
       {children}
+
+      {preview && powerCard && theme && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-label={`Relic preview: ${powerCard.name}`}
+          onClick={handleBackdropClick}
+          onContextMenu={(e) => e.preventDefault()}
+          className="fixed inset-0 z-[100] flex items-center justify-center bg-[#060403]/92 p-4 select-none"
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="animate-preview-pop relative w-full max-w-[420px] max-h-[95dvh] overflow-y-auto flex flex-col items-center gap-3 py-2"
+          >
+            <div className="w-full flex items-center justify-between gap-2 px-1">
+              <div className="flex flex-wrap items-center gap-1.5">
+                <span className="organic-tag px-2.5 py-0.5 bg-sky-950/95 text-[10px] font-[var(--font-display)] font-bold uppercase tracking-wider text-sky-200">
+                  Power Relic · {powerCard.code}
+                </span>
+                <span
+                  className={`organic-tag px-2.5 py-0.5 text-[10px] font-semibold ${
+                    ELEMENT_META[powerCard.element].badgeClass
+                  }`}
+                >
+                  {ELEMENT_META[powerCard.element].label}
+                </span>
+                {preview.owner === 'player' && (
+                  <span className="organic-tag px-2.5 py-0.5 bg-[#162944] text-[10px] font-[var(--font-display)] font-bold uppercase tracking-wider text-[#bcd9f7]">
+                    Your Relic
+                  </span>
+                )}
+                {preview.owner === 'rival' && (
+                  <span className="organic-tag px-2.5 py-0.5 bg-[#3a1616] text-[10px] font-[var(--font-display)] font-bold uppercase tracking-wider text-[#f3b6b6]">
+                    Rival Relic
+                  </span>
+                )}
+              </div>
+
+              <button
+                type="button"
+                onClick={closePreview}
+                aria-label="Close card preview"
+                className="iron-btn w-8 h-8 rounded-[3px] flex items-center justify-center cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="w-full max-w-[368px] sm:max-w-[388px]">
+              <GameCard
+                cardId={powerCard.id}
+                arrows={powerCard.dirs}
+                owner={preview.owner ?? 'neutral'}
+                variant="tarot"
+                size="lg"
+                showArrows
+                disableLongPress
+              />
+            </div>
+
+            <div className="w-full max-w-[388px] brass-panel px-3.5 py-3 space-y-2 text-xs">
+              <div className="flex items-center justify-between gap-2">
+                <span className="font-[var(--font-display)] text-[10.5px] font-bold uppercase tracking-[0.14em] text-sky-300">
+                  Persistent Relic Totem Specifics
+                </span>
+                <span className="font-mono text-[10.5px] text-[#e7c47a]">
+                  Tier {powerCard.unlockTier} Clear
+                </span>
+              </div>
+
+              <div className="organic-tag bg-[#151d28]/90 px-3 py-2 text-[11.5px] text-sky-100 space-y-1">
+                <div className="font-[var(--font-display)] font-semibold text-amber-200">
+                  Target Pattern: {powerCard.patternLabel}
+                </div>
+                <p className="text-[#dfd0b6] leading-snug">{powerCard.description}</p>
+              </div>
+
+              <p className="font-[var(--font-serif)] italic text-[11.5px] text-[#b8a487] leading-snug">
+                Occupies an open battlefield socket as an un-flippable structure. Affects units
+                already on target tiles and any units placed or flipped onto those tiles later!
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
 
       {preview && card && stats && theme && (
         <div
@@ -110,7 +197,6 @@ export const CardPreviewProvider: React.FC<{ children: React.ReactNode }> = ({
             onClick={(e) => e.stopPropagation()}
             className="animate-preview-pop relative w-full max-w-[420px] max-h-[95dvh] overflow-y-auto flex flex-col items-center gap-3 py-2"
           >
-            {/* Floating Header Strip: Ownership + Close */}
             <div className="w-full flex items-center justify-between gap-2 px-1">
               <div className="flex items-center gap-1.5">
                 <span
@@ -141,7 +227,6 @@ export const CardPreviewProvider: React.FC<{ children: React.ReactNode }> = ({
               </button>
             </div>
 
-            {/* Full Luxury Collector Tarot Card */}
             <div className="w-full max-w-[368px] sm:max-w-[388px]">
               <GameCard
                 cardId={card.id}
@@ -158,7 +243,6 @@ export const CardPreviewProvider: React.FC<{ children: React.ReactNode }> = ({
               />
             </div>
 
-            {/* Active Biome Tile Banner (when inspecting a card placed on a biome tile) */}
             {terrainMeta && (
               <div
                 className={`organic-tag w-full max-w-[388px] px-3.5 py-2 flex items-center justify-between gap-2 text-xs ${terrainMeta.badgeClass}`}
@@ -173,7 +257,24 @@ export const CardPreviewProvider: React.FC<{ children: React.ReactNode }> = ({
               </div>
             )}
 
-            {/* Active Board Modification Banner (Terrain + Augments on placed cards) */}
+            {preview.relicAuraMod && (
+              <div
+                className={`organic-tag w-full max-w-[388px] px-3.5 py-2 flex items-center justify-between gap-2 text-xs ${
+                  preview.relicAuraMod.isPositive
+                    ? 'bg-sky-950/90 text-sky-100'
+                    : 'bg-rose-950/90 text-rose-100'
+                }`}
+              >
+                <span className="inline-flex items-center gap-1.5 font-[var(--font-display)] font-semibold">
+                  <Sparkles className="w-3.5 h-3.5 text-sky-300 shrink-0" />
+                  <span>Relic Totem Aura</span>
+                </span>
+                <span className="font-mono font-bold truncate max-w-[230px]">
+                  {preview.relicAuraMod.label}
+                </span>
+              </div>
+            )}
+
             {hasBoardMod && baseStats && (
               <div
                 className={`organic-tag w-full max-w-[388px] px-3.5 py-2 flex items-center justify-between gap-2 text-xs ${
@@ -188,13 +289,7 @@ export const CardPreviewProvider: React.FC<{ children: React.ReactNode }> = ({
                   }`}
                 >
                   <Sparkles className="w-3.5 h-3.5 shrink-0" />
-                  <span>
-                    {preview.terrainMod && preview.lastAugmented
-                      ? 'Terrain & Augment'
-                      : preview.terrainMod
-                      ? 'Terrain Modified'
-                      : 'Board Augmented'}
-                  </span>
+                  <span>Effective Board Stats</span>
                 </span>
                 <span className="font-mono font-bold tabular-nums text-[#efe3cd]">
                   {formatTetraCode(baseStats)} →{' '}
@@ -205,7 +300,6 @@ export const CardPreviewProvider: React.FC<{ children: React.ReactNode }> = ({
               </div>
             )}
 
-            {/* Active Battlefield Biome Buff / Penalty Specifics (when inspecting from Hand during Match) */}
             {arenaBiomeBreakdown.length > 0 && (
               <div className="w-full max-w-[388px] brass-panel px-3.5 py-2.5 space-y-2 text-xs">
                 <div className="flex items-center justify-between gap-2">
@@ -270,7 +364,6 @@ export const CardPreviewProvider: React.FC<{ children: React.ReactNode }> = ({
               </div>
             )}
 
-            {/* Runeforge / Mythic Augment Specifics Summary */}
             {activeAugment && (
               <div className="organic-tag w-full max-w-[388px] bg-[#23152c]/90 px-3.5 py-2 text-xs text-violet-100 space-y-0.5">
                 <div className="flex items-center justify-between gap-2">
@@ -288,7 +381,6 @@ export const CardPreviewProvider: React.FC<{ children: React.ReactNode }> = ({
               </div>
             )}
 
-            {/* Compact Decimal & Compass Readout Plaque */}
             <div className="w-full max-w-[388px] brass-panel px-3.5 py-2.5 flex items-center justify-between gap-2 text-xs">
               <span className="font-mono tabular-nums text-[#dfd0b6]">
                 ATK {stats.power} · {stats.type} · P.DEF {stats.pDef} · M.DEF {stats.mDef}

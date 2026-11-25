@@ -4,8 +4,10 @@ import {
   Coins,
   Copy,
   Eraser,
+  Eye,
   HelpCircle,
   Layers,
+  Lock,
   Pencil,
   Play,
   Plus,
@@ -15,6 +17,7 @@ import {
   Wand2,
   X,
 } from 'lucide-react';
+import { useCardPreview } from '../context/cardPreviewContext';
 import {
   ALL_ELEMENTS,
   ALL_TRIBES,
@@ -35,10 +38,26 @@ import {
   sortCardCopies,
 } from '../data/cards';
 import { getFighterBiomes } from '../data/ladder';
-import { AutoBuildStrategy, DECK_CAPACITY, MAX_DECK_SLOTS } from '../store/useProfile';
+import {
+  POWER_CARDS,
+  POWER_CARD_MAP,
+  getUnlockedPowerCardIdSet,
+} from '../data/powerCards';
+import {
+  ALL_BOARD_SCALES,
+  BOARD_SCALES,
+  getBoardScaleSpec,
+} from '../engine/triadEngine';
+import {
+  AutoBuildStrategy,
+  MAX_DECK_SLOTS,
+  MAX_UNIT_CAPACITY,
+  getUnitCapacityForScale,
+} from '../store/useProfile';
 import {
   AttackType,
   BiomeType,
+  BoardScale,
   CardDef,
   CardElement,
   CardTribe,
@@ -78,7 +97,7 @@ function formatDeltaBadge(
   if (copy.uid === best.uid) {
     return {
       label: '★ Best Roll',
-      className: 'bg-emerald-950/85 border-emerald-400/50 text-emerald-300',
+      className: 'bg-emerald-950/85 text-emerald-300',
     };
   }
   const copyTotal = copy.stats.power + copy.stats.pDef + copy.stats.mDef;
@@ -88,7 +107,11 @@ function formatDeltaBadge(
 
   const parts: string[] = [];
   if (statDiff !== 0) {
-    parts.push(`${statDiff > 0 ? `+${statDiff}` : statDiff} stat${Math.abs(statDiff) === 1 ? '' : 's'}`);
+    parts.push(
+      `${statDiff > 0 ? `+${statDiff}` : statDiff} stat${
+        Math.abs(statDiff) === 1 ? '' : 's'
+      }`
+    );
   }
   if (arrowDiff !== 0) {
     parts.push(`${arrowDiff > 0 ? `+${arrowDiff}` : arrowDiff}▲`);
@@ -100,7 +123,7 @@ function formatDeltaBadge(
       copy.stats.mDef === best.stats.mDef;
     return {
       label: identicalSplit ? '= Same Roll' : '⇄ Stat Split',
-      className: 'bg-[#191410] border-[#4b3a29] text-[#cbb89a]',
+      className: 'bg-[#191410] text-[#cbb89a]',
     };
   }
 
@@ -108,10 +131,10 @@ function formatDeltaBadge(
     label: parts.join(' · '),
     className:
       statDiff >= 0 && arrowDiff >= 0
-        ? 'bg-emerald-950/75 border-emerald-400/45 text-emerald-200'
+        ? 'bg-emerald-950/75 text-emerald-200'
         : statDiff <= 0 && arrowDiff <= 0
-        ? 'bg-rose-950/75 border-rose-500/45 text-rose-300'
-        : 'bg-sky-950/85 border-sky-400/45 text-sky-300',
+        ? 'bg-rose-950/75 text-rose-300'
+        : 'bg-sky-950/85 text-sky-300',
   };
 }
 
@@ -120,10 +143,12 @@ interface DeckBuilderWorkspaceProps {
   activeDeck: DeckSlot;
   currentFighter: LadderFighter;
   gameMode: 'arena' | 'quick';
+  onSelectBoardScale: (scale: BoardScale) => void;
   onSelectDeckSlot: (index: number) => void;
   onCreateDeck: (name?: string, duplicateFromIndex?: number) => { ok: boolean; message?: string };
   onRenameDeck: (index: number, newName: string) => void;
   onDeleteDeck: (index: number) => { ok: boolean; message?: string };
+  onSetDeckPowerCard: (powerCardId: string | null) => { ok: boolean; message?: string };
   onToggleDeckCard: (
     uidOrCardId: string,
     preferredSlotIndex?: number
@@ -150,10 +175,12 @@ export const DeckBuilderWorkspace: React.FC<DeckBuilderWorkspaceProps> = ({
   activeDeck,
   currentFighter,
   gameMode,
+  onSelectBoardScale,
   onSelectDeckSlot,
   onCreateDeck,
   onRenameDeck,
   onDeleteDeck,
+  onSetDeckPowerCard,
   onToggleDeckCard,
   onClearDeck,
   onAutoBuildDeck,
@@ -163,7 +190,9 @@ export const DeckBuilderWorkspace: React.FC<DeckBuilderWorkspaceProps> = ({
   onGoToGallery,
   onOpenRules,
 }) => {
+  const { openPreview } = useCardPreview();
   const [targetSlotIdx, setTargetSlotIdx] = useState<number | null>(null);
+  const [vaultTab, setVaultTab] = useState<'units' | 'relics'>('units');
   const [isRenamingDeck, setIsRenamingDeck] = useState(false);
   const [draftDeckName, setDraftDeckName] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
@@ -186,8 +215,27 @@ export const DeckBuilderWorkspace: React.FC<DeckBuilderWorkspaceProps> = ({
     }, 2600);
   };
 
-  const arenaBiomes = useMemo(() => getFighterBiomes(currentFighter.id), [currentFighter.id]);
+  const activeScale = profile.boardScale ?? '6x3';
+  const scaleSpec = getBoardScaleSpec(activeScale);
+  const unitCapacity = getUnitCapacityForScale(activeScale);
+
+  const arenaBiomes = useMemo(
+    () => getFighterBiomes(currentFighter.id),
+    [currentFighter.id]
+  );
   const rivalAvatarCard = CARD_MAP[currentFighter.avatarCardId] ?? CARD_MAP['ember-imp'];
+
+  const unlockedPowerSet = useMemo(
+    () => getUnlockedPowerCardIdSet(profile.fighterWins),
+    [profile.fighterWins]
+  );
+  const unlockedPowerCount = unlockedPowerSet.size;
+  const equippedPowerDef =
+    activeDeck.powerSlot &&
+    POWER_CARD_MAP[activeDeck.powerSlot] &&
+    unlockedPowerSet.has(activeDeck.powerSlot)
+      ? POWER_CARD_MAP[activeDeck.powerSlot]
+      : null;
 
   const instanceByUid = useMemo(() => {
     const map: Record<string, RolledCardInstance> = {};
@@ -199,17 +247,16 @@ export const DeckBuilderWorkspace: React.FC<DeckBuilderWorkspaceProps> = ({
     return map;
   }, [profile.inventory]);
 
-  // Exact 7 fixed slots [0..6] — null slots stay null (rendered as dashed empty card outlines!)
+  // Fixed unit slots [0..unitCapacity-1] — null slots stay null as carved empty card imprints!
   const fixedDeckSlots = useMemo<(RolledCardInstance | null)[]>(() => {
     const raw = activeDeck.slots ?? activeDeck.cards;
-    return Array.from({ length: DECK_CAPACITY }, (_, idx) => {
+    return Array.from({ length: unitCapacity }, (_, idx) => {
       const uid = raw[idx];
       if (!uid) return null;
       return instanceByUid[uid] ?? null;
     });
-  }, [activeDeck.cards, activeDeck.slots, instanceByUid]);
+  }, [activeDeck.cards, activeDeck.slots, instanceByUid, unitCapacity]);
 
-  // Map uid -> 0-based slot index in active deck
   const slotIndexByUid = useMemo(() => {
     const map = new Map<string, number>();
     fixedDeckSlots.forEach((inst, idx) => {
@@ -219,8 +266,8 @@ export const DeckBuilderWorkspace: React.FC<DeckBuilderWorkspaceProps> = ({
   }, [fixedDeckSlots]);
 
   const filledCount = slotIndexByUid.size;
-  const emptyCount = DECK_CAPACITY - filledCount;
-  const isDeckReady = filledCount === DECK_CAPACITY;
+  const emptyCount = unitCapacity - filledCount;
+  const isDeckReady = filledCount === unitCapacity;
 
   const allEquippedUidSet = useMemo(
     () => new Set(profile.decks.flatMap((d) => d.cards)),
@@ -257,7 +304,6 @@ export const DeckBuilderWorkspace: React.FC<DeckBuilderWorkspaceProps> = ({
     return { count, totalGold };
   }, [allEquippedUidSet, profile.inventory]);
 
-  // STABLE VAULT ORDERING: Never sorts by `inDeck`, so clicking a card NEVER reorders or jumps the Vault!
   const filteredEntries = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
 
@@ -302,7 +348,6 @@ export const DeckBuilderWorkspace: React.FC<DeckBuilderWorkspaceProps> = ({
           return true;
         });
         if (matchingCopies.length === 0) continue;
-        // Prefer showing whichever copy is equipped if one is in the deck, else #1 best roll
         const equippedRep = matchingCopies.find((c) => slotIndexByUid.has(c.uid));
         const rep = equippedRep ?? matchingCopies[0];
         const rank = sortedCopies.findIndex((c) => c.uid === rep.uid);
@@ -336,10 +381,9 @@ export const DeckBuilderWorkspace: React.FC<DeckBuilderWorkspaceProps> = ({
       }
     }
 
-    // Purely intrinsic sort (Power / Card # / Arrows / Rarity) — 100% stable across equip/unequip clicks!
     return entries.sort((a, b) => {
-      const refA = groupByCard ? a.allCopies[0] : a.allCopies[0];
-      const refB = groupByCard ? b.allCopies[0] : b.allCopies[0];
+      const refA = a.allCopies[0];
+      const refB = b.allCopies[0];
 
       if (a.def.id !== b.def.id) {
         if (vaultSort === 'number') {
@@ -387,21 +431,12 @@ export const DeckBuilderWorkspace: React.FC<DeckBuilderWorkspaceProps> = ({
     sound.select();
     const isAlreadyInDeck = slotIndexByUid.has(inst.uid);
     if (isAlreadyInDeck) {
-      const removedSlot = slotIndexByUid.get(inst.uid) ?? null;
       onToggleDeckCard(inst.uid);
-      if (removedSlot !== null && targetSlotIdx === null) {
-        // Leave slot open cleanly without forcing a target unless clicked
-      }
       return;
     }
 
-    // Adding an unequipped card: use targeted empty/swap slot if selected, else first empty slot
     const preferred =
-      targetSlotIdx !== null && fixedDeckSlots[targetSlotIdx] === null
-        ? targetSlotIdx
-        : targetSlotIdx !== null
-        ? targetSlotIdx
-        : undefined;
+      targetSlotIdx !== null && targetSlotIdx < unitCapacity ? targetSlotIdx : undefined;
 
     const res = onToggleDeckCard(inst.uid, preferred);
     if (!res.ok && res.message) {
@@ -427,6 +462,13 @@ export const DeckBuilderWorkspace: React.FC<DeckBuilderWorkspaceProps> = ({
     return sortCardCopies(profile.inventory[compareCardId] ?? []);
   }, [compareCardId, profile.inventory]);
 
+  const dockGridColsClass =
+    unitCapacity === 10
+      ? 'grid-cols-4 sm:grid-cols-6 lg:grid-cols-11'
+      : unitCapacity === 9
+      ? 'grid-cols-4 sm:grid-cols-5 lg:grid-cols-10'
+      : 'grid-cols-3 sm:grid-cols-5 lg:grid-cols-9';
+
   return (
     <div className="space-y-3 lg:space-y-0 lg:flex-1 lg:min-h-0 lg:flex lg:flex-col lg:gap-3 lg:overflow-hidden">
       {toastMsg && (
@@ -437,10 +479,9 @@ export const DeckBuilderWorkspace: React.FC<DeckBuilderWorkspaceProps> = ({
       )}
 
       {/* ===================================================================== */}
-      {/* PINNED TOP DOCK: UNIFIED DECK SELECTOR + FIXED 7-SLOT WARBAND TRAY    */}
+      {/* PINNED TOP DOCK: SCALE + SAVED DECKS + UNIT SLOTS + DEDICATED RELIC   */}
       {/* ===================================================================== */}
-      <section className="shrink-0 brass-panel riveted-frame px-3.5 sm:px-5 py-3 space-y-2.5">
-        {/* Top Row: Challenger Context | Single-Row Deck Tabs + Deck Actions | Start Match CTA */}
+      <section className="shrink-0 brass-panel riveted-frame px-3.5 sm:px-5 py-2.5 space-y-2">
         <div className="flex flex-wrap items-center justify-between gap-2.5">
           {/* Challenger & Arena Biomes */}
           <div className="flex items-center gap-2.5 min-w-0">
@@ -463,8 +504,8 @@ export const DeckBuilderWorkspace: React.FC<DeckBuilderWorkspaceProps> = ({
                   vs {currentFighter.name}
                 </span>
                 <span className="font-mono text-[11px] text-[#e6b85c]">
-                  ({gameMode === 'quick' ? 'Skirmish' : `T${currentFighter.tierNumber}`} · +
-                  {currentFighter.winGold}g)
+                  ({gameMode === 'quick' ? 'Skirmish' : `T${currentFighter.tierNumber}`} ·{' '}
+                  {scaleSpec.shortLabel} · +{currentFighter.winGold}g)
                 </span>
               </div>
               <div className="flex flex-wrap items-center gap-1 mt-0.5">
@@ -475,11 +516,15 @@ export const DeckBuilderWorkspace: React.FC<DeckBuilderWorkspaceProps> = ({
             </div>
           </div>
 
-          {/* Unified Single-Row Saved Deck Selector + Inline Manage Controls */}
+          {/* Saved Deck Selector */}
           <div className="flex flex-wrap items-center gap-1.5">
             {profile.decks.map((d, idx) => {
               const isSel = idx === profile.activeDeckIndex;
-              const dCount = (d.slots ? d.slots.filter(Boolean) : d.cards).length;
+              const rawSlots = d.slots ?? d.cards;
+              const dCount = rawSlots.slice(0, unitCapacity).filter(Boolean).length;
+              const hasRelic = Boolean(
+                d.powerSlot && unlockedPowerSet.has(d.powerSlot)
+              );
               return (
                 <button
                   key={d.id}
@@ -499,12 +544,13 @@ export const DeckBuilderWorkspace: React.FC<DeckBuilderWorkspaceProps> = ({
                     className={`font-mono text-[10px] ${
                       isSel
                         ? 'text-[#261808]'
-                        : dCount === DECK_CAPACITY
+                        : dCount === unitCapacity
                         ? 'text-emerald-400'
                         : 'text-amber-300'
                     }`}
                   >
-                    {dCount}/{DECK_CAPACITY}
+                    {dCount}/{unitCapacity}
+                    {hasRelic ? '+R' : ''}
                   </span>
                 </button>
               );
@@ -518,7 +564,7 @@ export const DeckBuilderWorkspace: React.FC<DeckBuilderWorkspaceProps> = ({
                   if (!res.ok && res.message) showToast(res.message);
                   setTargetSlotIdx(0);
                 }}
-                title="Create a new empty 7-slot deck"
+                title="Create a new custom deck"
                 className="iron-btn min-h-[32px] px-2.5 py-1 text-xs font-[var(--font-display)] text-[#f0c76e] inline-flex items-center gap-1 cursor-pointer"
               >
                 <Plus className="w-3.5 h-3.5" />
@@ -529,14 +575,14 @@ export const DeckBuilderWorkspace: React.FC<DeckBuilderWorkspaceProps> = ({
 
           {/* Right CTA: Fill Empty Helper + Start Match */}
           <div className="flex flex-wrap items-center gap-2">
-            {emptyCount > 0 && totalOwnedCopies >= DECK_CAPACITY && (
+            {emptyCount > 0 && totalOwnedCopies >= unitCapacity && (
               <button
                 type="button"
                 onClick={() => {
                   onAutoBuildDeck('biome', arenaBiomes, true);
                   setTargetSlotIdx(null);
                 }}
-                title="Auto-fill only the remaining empty slots while keeping your chosen cards in place"
+                title="Auto-fill only the remaining empty unit slots"
                 className="iron-btn min-h-[38px] px-3 py-1.5 font-[var(--font-display)] text-xs font-bold text-emerald-300 flex items-center gap-1.5 cursor-pointer"
               >
                 <Sparkles className="w-3.5 h-3.5 text-emerald-400" />
@@ -553,14 +599,16 @@ export const DeckBuilderWorkspace: React.FC<DeckBuilderWorkspaceProps> = ({
               <Play className="w-4 h-4 fill-current" />
               <span>
                 {isDeckReady
-                  ? 'Start Match'
-                  : `Pick ${emptyCount} More (${filledCount}/${DECK_CAPACITY})`}
+                  ? equippedPowerDef
+                    ? `Start ${scaleSpec.shortLabel} (${unitCapacity}+1 Relic)`
+                    : `Start ${scaleSpec.shortLabel} Match`
+                  : `Pick ${emptyCount} More (${filledCount}/${unitCapacity})`}
               </span>
             </button>
           </div>
         </div>
 
-        {/* Sub-Bar: Active Deck Name / Inline Rename / Clear / Auto-Build Presets */}
+        {/* Sub-Bar: Active Deck Name + Battlefield Scale Switcher + Quick Presets */}
         <div className="flex flex-wrap items-center justify-between gap-2 pt-1 border-t border-[#4b3a26]/60 text-xs">
           <div className="flex flex-wrap items-center gap-2">
             {isRenamingDeck ? (
@@ -598,7 +646,8 @@ export const DeckBuilderWorkspace: React.FC<DeckBuilderWorkspaceProps> = ({
                   {activeDeck.name}
                 </span>
                 <span className="font-mono text-[11px] text-[#b39e81]">
-                  {filledCount}/{DECK_CAPACITY} slots · {totalArrows}▲
+                  {filledCount}/{unitCapacity} units
+                  {equippedPowerDef ? ` + ${equippedPowerDef.code}` : ''} · {totalArrows}▲
                 </span>
                 <button
                   type="button"
@@ -625,14 +674,14 @@ export const DeckBuilderWorkspace: React.FC<DeckBuilderWorkspaceProps> = ({
                     <Copy className="w-3 h-3" />
                   </button>
                 )}
-                {filledCount > 0 && (
+                {(filledCount > 0 || equippedPowerDef) && (
                   <button
                     type="button"
                     onClick={() => {
                       onClearDeck();
                       setTargetSlotIdx(0);
                     }}
-                    title="Clear all 7 slots to empty outlines"
+                    title="Clear all slots to empty outlines"
                     className="inline-flex items-center gap-1 text-[#a89478] hover:text-rose-300 px-1.5 py-0.5 cursor-pointer"
                   >
                     <Eraser className="w-3 h-3" />
@@ -654,9 +703,33 @@ export const DeckBuilderWorkspace: React.FC<DeckBuilderWorkspaceProps> = ({
           </div>
 
           <div className="flex flex-wrap items-center gap-1.5">
-            <span className="font-[var(--font-display)] text-[10.5px] uppercase tracking-wider text-[#9b886e] hidden sm:inline">
-              Quick Presets:
-            </span>
+            {/* Inline Battlefield Scale Game Mode Selector */}
+            <div className="inline-flex items-center gap-1 mr-1">
+              <span className="font-[var(--font-display)] text-[10px] uppercase tracking-wider text-[#a89478] hidden xl:inline">
+                Scale:
+              </span>
+              {ALL_BOARD_SCALES.map((sc) => {
+                const s = BOARD_SCALES[sc];
+                const isCur = sc === activeScale;
+                return (
+                  <button
+                    key={sc}
+                    type="button"
+                    onClick={() => {
+                      setTargetSlotIdx(null);
+                      onSelectBoardScale(sc);
+                    }}
+                    title={s.subtitle}
+                    className={`px-2 py-0.5 text-[11px] font-mono font-bold cursor-pointer ${
+                      isCur ? 'brass-btn' : 'iron-btn text-[#c9b79b]'
+                    }`}
+                  >
+                    {s.shortLabel}
+                  </button>
+                );
+              })}
+            </div>
+
             <button
               type="button"
               onClick={() => {
@@ -699,10 +772,10 @@ export const DeckBuilderWorkspace: React.FC<DeckBuilderWorkspaceProps> = ({
           </div>
         </div>
 
-        {/* FIXED 7-SLOT WARBAND GRID (Zero Reordering · Hand-Carved Empty Card Imprints!) */}
-        <div className="grid grid-cols-4 sm:grid-cols-7 gap-2 sm:gap-2.5 lg:gap-3 pt-0.5">
+        {/* FIXED UNIT SLOTS + DEDICATED POWER RELIC SLOT */}
+        <div className={`grid ${dockGridColsClass} gap-1.5 sm:gap-2 lg:gap-2 pt-0.5 items-start`}>
           {fixedDeckSlots.map((slotInst, slotIdx) => {
-            const isTargeted = targetSlotIdx === slotIdx;
+            const isTargeted = targetSlotIdx === slotIdx && vaultTab === 'units';
 
             if (!slotInst) {
               return (
@@ -711,30 +784,28 @@ export const DeckBuilderWorkspace: React.FC<DeckBuilderWorkspaceProps> = ({
                   type="button"
                   onClick={() => {
                     sound.select();
+                    setVaultTab('units');
                     setTargetSlotIdx((cur) => (cur === slotIdx ? null : slotIdx));
                   }}
-                  title={`Empty Slot #${slotIdx + 1} — click any card in your Vault below to fill`}
+                  title={`Empty Unit Slot #${slotIdx + 1} — click any Unit card in your Vault below to fill`}
                   className={`empty-card-imprint ${
                     isTargeted ? 'empty-card-imprint-active' : ''
-                  } group relative aspect-[5/7] w-full max-w-[142px] mx-auto flex flex-col items-center justify-center p-2 text-center transition-transform hover:scale-[1.02] cursor-pointer`}
+                  } group relative aspect-[5/7] w-full max-w-[118px] mx-auto flex flex-col items-center justify-center p-1.5 text-center transition-transform hover:scale-[1.02] cursor-pointer`}
                 >
-                  <span className="absolute top-2 left-2 font-mono text-[10px] font-bold text-[#8c775c]">
+                  <span className="absolute top-1.5 left-1.5 font-mono text-[9.5px] font-bold text-[#8c775c]">
                     #{slotIdx + 1}
                   </span>
                   <div
-                    className={`organic-seal w-7 h-7 flex items-center justify-center mb-1 transition-colors ${
+                    className={`organic-seal w-6 h-6 flex items-center justify-center mb-1 transition-colors ${
                       isTargeted
                         ? 'bg-amber-600/35 text-[#f7dea2]'
                         : 'bg-[#211810] text-[#9b866a] group-hover:text-[#f0c76e]'
                     }`}
                   >
-                    <Plus className="w-4 h-4" />
+                    <Plus className="w-3.5 h-3.5" />
                   </div>
-                  <span className="font-[var(--font-display)] text-[10px] sm:text-[11px] font-semibold uppercase tracking-wider text-[#b5a184]">
-                    {isTargeted ? 'Picking…' : 'Empty Slot'}
-                  </span>
-                  <span className="hidden sm:block font-[var(--font-serif)] italic text-[11px] text-[#847158] leading-tight mt-0.5">
-                    Click card below
+                  <span className="font-[var(--font-display)] text-[9.5px] sm:text-[10px] font-semibold uppercase tracking-wider text-[#b5a184]">
+                    {isTargeted ? 'Picking…' : 'Unit Slot'}
                   </span>
                 </button>
               );
@@ -743,9 +814,9 @@ export const DeckBuilderWorkspace: React.FC<DeckBuilderWorkspaceProps> = ({
             return (
               <div
                 key={`slot-${slotIdx}-${slotInst.uid}`}
-                className="group relative w-full max-w-[142px] mx-auto"
+                className="group relative w-full max-w-[118px] mx-auto"
               >
-                <span className="organic-seal pointer-events-none absolute top-1 left-1 z-30 w-5 h-5 bg-[#19120c]/95 font-mono text-[9px] font-bold text-[#e5d2b0] flex items-center justify-center shadow">
+                <span className="organic-seal pointer-events-none absolute top-1 left-1 z-30 w-4 h-4 bg-[#19120c]/95 font-mono text-[8.5px] font-bold text-[#e5d2b0] flex items-center justify-center shadow">
                   {slotIdx + 1}
                 </span>
 
@@ -763,240 +834,432 @@ export const DeckBuilderWorkspace: React.FC<DeckBuilderWorkspaceProps> = ({
                   }}
                 />
 
-                <span className="organic-tag pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity absolute -top-1.5 -right-1.5 z-40 px-2 py-0.5 bg-[#7c1f1f] text-[9.5px] font-[var(--font-display)] font-bold text-white shadow-lg flex items-center gap-0.5">
+                <span className="organic-tag pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity absolute -top-1.5 -right-1 z-40 px-1.5 py-0.5 bg-[#7c1f1f] text-[9px] font-[var(--font-display)] font-bold text-white shadow-lg flex items-center gap-0.5">
                   <X className="w-2.5 h-2.5 stroke-[3]" />
                   <span>Remove</span>
                 </span>
               </div>
             );
           })}
+
+          {/* DEDICATED POWER RELIC SLOT (Locked until at least 1 Tier is cleared!) */}
+          {unlockedPowerCount === 0 ? (
+            <button
+              type="button"
+              onClick={() => {
+                sound.select();
+                setVaultTab('relics');
+                showToast(
+                  'Conquer all 5 challengers in Tier 1 to unlock your first Power Relic!'
+                );
+              }}
+              title="Dedicated Power Relic Slot — Locked until you clear all 5 challengers in a Campaign Tier"
+              className="empty-card-imprint relative aspect-[5/7] w-full max-w-[118px] mx-auto flex flex-col items-center justify-center p-1.5 text-center opacity-75 hover:opacity-100 transition-opacity cursor-pointer"
+            >
+              <span className="organic-tag absolute top-1 inset-x-1.5 bg-sky-950/80 py-[1px] font-[var(--font-display)] text-[8px] font-bold uppercase tracking-wider text-sky-300/90">
+                Relic Slot
+              </span>
+              <div className="organic-seal w-6 h-6 bg-[#141c24] text-sky-300/75 flex items-center justify-center mb-1 mt-2">
+                <Lock className="w-3.5 h-3.5" />
+              </div>
+              <span className="font-[var(--font-display)] text-[9px] font-bold uppercase tracking-wider text-sky-200/80 leading-tight">
+                Locked
+              </span>
+              <span className="hidden sm:block font-[var(--font-serif)] italic text-[10px] text-[#8ea2b8] leading-tight mt-0.5">
+                Clear Tier 1
+              </span>
+            </button>
+          ) : !equippedPowerDef ? (
+            <button
+              type="button"
+              onClick={() => {
+                sound.select();
+                setVaultTab('relics');
+              }}
+              title="Dedicated Power Relic Slot — Click to equip one of your Tier-unlocked Power Relics"
+              className={`empty-card-imprint ${
+                vaultTab === 'relics' ? 'empty-card-imprint-active' : ''
+              } group relative aspect-[5/7] w-full max-w-[118px] mx-auto flex flex-col items-center justify-center p-1.5 text-center transition-transform hover:scale-[1.02] cursor-pointer`}
+            >
+              <span className="organic-tag absolute top-1 inset-x-1.5 bg-sky-950/90 py-[1px] font-[var(--font-display)] text-[8px] font-bold uppercase tracking-wider text-sky-200">
+                Relic Slot
+              </span>
+              <div className="organic-seal w-6 h-6 bg-sky-950 text-sky-300 flex items-center justify-center mb-1 mt-2 group-hover:scale-110 transition-transform">
+                <Sparkles className="w-3.5 h-3.5" />
+              </div>
+              <span className="font-[var(--font-display)] text-[9.5px] font-bold uppercase tracking-wider text-sky-200 leading-tight">
+                {vaultTab === 'relics' ? 'Pick Relic…' : 'Add Relic'}
+              </span>
+              <span className="hidden sm:block font-[var(--font-serif)] italic text-[10px] text-sky-300/80 leading-tight mt-0.5">
+                {unlockedPowerCount}/12 Owned
+              </span>
+            </button>
+          ) : (
+            <div className="group relative w-full max-w-[118px] mx-auto">
+              <span className="organic-tag pointer-events-none absolute top-1 left-1 z-30 px-1.5 py-[1px] bg-sky-950/95 font-mono text-[8px] font-bold text-sky-200 shadow">
+                {equippedPowerDef.code}
+              </span>
+
+              <GameCard
+                cardId={equippedPowerDef.id}
+                arrows={equippedPowerDef.dirs}
+                owner="player"
+                size="sm"
+                showName
+                onClick={() => {
+                  sound.select();
+                  onSetDeckPowerCard(null);
+                }}
+              />
+
+              <span className="organic-tag pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity absolute -top-1.5 -right-1 z-40 px-1.5 py-0.5 bg-[#7c1f1f] text-[9px] font-[var(--font-display)] font-bold text-white shadow-lg flex items-center gap-0.5">
+                <X className="w-2.5 h-2.5 stroke-[3]" />
+                <span>Remove</span>
+              </span>
+            </div>
+          )}
         </div>
       </section>
 
       {/* ===================================================================== */}
-      {/* INDEPENDENTLY SCROLLING CARD VAULT — ZERO REORDERING ON CLICK!        */}
+      {/* INDEPENDENTLY SCROLLING VAULT: UNIT CARDS OR TIER POWER RELICS        */}
       {/* ===================================================================== */}
       <section className="iron-panel p-3.5 sm:p-4 lg:flex-1 lg:min-h-0 lg:flex lg:flex-col gap-3 overflow-hidden">
-        {/* Compact Vault Filter & Stable Sort Bar */}
         <div className="shrink-0 space-y-2 pb-2.5 border-b border-[#3e3124]">
           <div className="flex flex-wrap items-center justify-between gap-2">
-            <div className="flex flex-wrap items-center gap-2">
-              <h2 className="font-[var(--font-display)] text-sm sm:text-base font-bold text-[#f3dfb6] tracking-wide">
-                Card Vault{' '}
-                <span className="font-mono text-xs font-semibold text-[#e6b85c]">
-                  ({filteredEntries.length} {groupByCard ? 'cards' : 'copies'})
-                </span>
-              </h2>
-              <span className="hidden md:inline font-[var(--font-serif)] italic text-xs sm:text-sm text-[#a89478]">
-                · Click any card to add or remove without shifting order
-              </span>
+            {/* Vault Category Switcher: Units vs Tier Power Relics */}
+            <div className="flex flex-wrap items-center gap-1.5">
+              <button
+                type="button"
+                onClick={() => {
+                  sound.select();
+                  setVaultTab('units');
+                }}
+                className={`min-h-[34px] px-3 py-1 font-[var(--font-display)] text-xs font-bold tracking-wide cursor-pointer ${
+                  vaultTab === 'units' ? 'brass-btn' : 'iron-btn text-[#cbb89a]'
+                }`}
+              >
+                Unit Cards ({filteredEntries.length})
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  sound.select();
+                  setVaultTab('relics');
+                }}
+                className={`min-h-[34px] px-3 py-1 font-[var(--font-display)] text-xs font-bold tracking-wide inline-flex items-center gap-1.5 cursor-pointer ${
+                  vaultTab === 'relics'
+                    ? 'brass-btn'
+                    : 'iron-btn text-sky-200 hover:text-sky-100'
+                }`}
+              >
+                <Sparkles className="w-3.5 h-3.5" />
+                <span>Power Relics ({unlockedPowerCount}/12)</span>
+              </button>
             </div>
 
-            <div className="flex flex-wrap items-center gap-2">
-              {sellableExtrasSummary.count > 0 && (
+            {vaultTab === 'units' && (
+              <div className="flex flex-wrap items-center gap-2">
+                {sellableExtrasSummary.count > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const res = onSellExtraCopies();
+                      if (res.soldCount > 0) {
+                        showToast(
+                          `Sold ${res.soldCount} lower-rolled duplicate${
+                            res.soldCount === 1 ? '' : 's'
+                          } for +${res.goldEarned.toLocaleString()}g!`
+                        );
+                      }
+                    }}
+                    className="brass-plaque min-h-[34px] px-2.5 py-1 text-[#f5d593] font-[var(--font-display)] text-xs font-semibold flex items-center gap-1.5 cursor-pointer"
+                  >
+                    <Coins className="w-3.5 h-3.5 text-[#e2b053] shrink-0" />
+                    <span>
+                      Sell {sellableExtrasSummary.count} Extra
+                      {sellableExtrasSummary.count === 1 ? '' : 's'} (+
+                      {sellableExtrasSummary.totalGold.toLocaleString()}g)
+                    </span>
+                  </button>
+                )}
+
+                <select
+                  aria-label="Sort vault cards"
+                  value={vaultSort}
+                  onChange={(e) => {
+                    sound.select();
+                    setVaultSort(e.target.value as VaultSortKey);
+                  }}
+                  className="organic-control min-h-[34px] pl-3 text-xs font-medium text-[#f0d8a8] cursor-pointer"
+                >
+                  <option value="power">Sort: Highest Power</option>
+                  <option value="number">Sort: Card #01–#120</option>
+                  <option value="arrows">Sort: Most Arrows</option>
+                  <option value="rarity">Sort: Rarity Tier</option>
+                </select>
+
+                <div className="relative w-44 sm:w-56">
+                  <Search className="w-3.5 h-3.5 text-[#8c785f] absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none z-10" />
+                  <input
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder="Search card or rune..."
+                    className="organic-control w-full min-h-[34px] pl-8 pr-3 text-xs text-[#efe3cd] placeholder:text-[#7d6c56]"
+                  />
+                </div>
+
+                <button
+                  type="button"
+                  onClick={onGoToGallery}
+                  className="iron-btn px-2.5 py-1.5 font-[var(--font-display)] text-[11px] cursor-pointer"
+                >
+                  Compendium →
+                </button>
+              </div>
+            )}
+          </div>
+
+          {vaultTab === 'units' ? (
+            <div className="flex flex-wrap items-center gap-1.5">
+              <div className="inline-flex items-center gap-1">
                 <button
                   type="button"
                   onClick={() => {
-                    const res = onSellExtraCopies();
-                    if (res.soldCount > 0) {
-                      showToast(
-                        `Sold ${res.soldCount} lower-rolled duplicate${
-                          res.soldCount === 1 ? '' : 's'
-                        } for +${res.goldEarned.toLocaleString()}g!`
-                      );
-                    }
+                    sound.select();
+                    setGroupByCard(true);
                   }}
-                  className="brass-plaque min-h-[34px] px-2.5 py-1 text-[#f5d593] font-[var(--font-display)] text-xs font-semibold flex items-center gap-1.5 cursor-pointer"
+                  className={`min-h-[28px] px-2.5 py-0.5 font-[var(--font-display)] text-[11px] cursor-pointer ${
+                    groupByCard ? 'brass-btn font-bold' : 'iron-btn text-[#a69277]'
+                  }`}
                 >
-                  <Coins className="w-3.5 h-3.5 text-[#e2b053] shrink-0" />
-                  <span>
-                    Sell {sellableExtrasSummary.count} Extra
-                    {sellableExtrasSummary.count === 1 ? '' : 's'} (+
-                    {sellableExtrasSummary.totalGold.toLocaleString()}g)
-                  </span>
+                  Best Roll
                 </button>
-              )}
-
-              <select
-                aria-label="Sort vault cards"
-                value={vaultSort}
-                onChange={(e) => {
-                  sound.select();
-                  setVaultSort(e.target.value as VaultSortKey);
-                }}
-                className="organic-control min-h-[34px] pl-3 text-xs font-medium text-[#f0d8a8] cursor-pointer"
-              >
-                <option value="power">Sort: Highest Power</option>
-                <option value="number">Sort: Card #01–#120</option>
-                <option value="arrows">Sort: Most Arrows</option>
-                <option value="rarity">Sort: Rarity Tier</option>
-              </select>
-
-              <div className="relative w-44 sm:w-56">
-                <Search className="w-3.5 h-3.5 text-[#8c785f] absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none z-10" />
-                <input
-                  type="text"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Search card or rune..."
-                  className="organic-control w-full min-h-[34px] pl-8 pr-3 text-xs text-[#efe3cd] placeholder:text-[#7d6c56]"
-                />
+                <button
+                  type="button"
+                  onClick={() => {
+                    sound.select();
+                    setGroupByCard(false);
+                  }}
+                  className={`min-h-[28px] px-2.5 py-0.5 font-[var(--font-display)] text-[11px] cursor-pointer ${
+                    !groupByCard ? 'brass-btn font-bold' : 'iron-btn text-[#a69277]'
+                  }`}
+                >
+                  All Copies
+                </button>
               </div>
 
               <button
                 type="button"
-                onClick={onGoToGallery}
-                className="iron-btn px-2.5 py-1.5 font-[var(--font-display)] text-[11px] cursor-pointer"
+                onClick={() => {
+                  sound.select();
+                  setOnlyDuplicates((v) => !v);
+                }}
+                className={`min-h-[28px] px-2.5 py-0.5 font-[var(--font-display)] text-[11px] font-semibold cursor-pointer ${
+                  onlyDuplicates ? 'brass-btn font-bold' : 'iron-btn text-[#dfd0b6]'
+                }`}
               >
-                Compendium →
+                2+ Copies
               </button>
-            </div>
-          </div>
 
-          {/* Filter Chips Row */}
-          <div className="flex flex-wrap items-center gap-1.5">
-            <div className="inline-flex items-center gap-1">
               <button
                 type="button"
                 onClick={() => {
                   sound.select();
-                  setGroupByCard(true);
+                  setOnlyBiomeFavored((v) => !v);
                 }}
-                className={`min-h-[28px] px-2.5 py-0.5 font-[var(--font-display)] text-[11px] cursor-pointer ${
-                  groupByCard ? 'brass-btn font-bold' : 'iron-btn text-[#a69277]'
+                className={`organic-tag min-h-[28px] px-3 py-0.5 font-[var(--font-display)] text-[11px] font-semibold cursor-pointer ${
+                  onlyBiomeFavored
+                    ? 'bg-emerald-800 text-white'
+                    : 'bg-[#1a2619] text-emerald-300 hover:bg-[#223421]'
                 }`}
               >
-                Best Roll
+                ▲ Favored Here
               </button>
+
               <button
                 type="button"
                 onClick={() => {
                   sound.select();
-                  setGroupByCard(false);
+                  setOnlyAugments((v) => !v);
                 }}
-                className={`min-h-[28px] px-2.5 py-0.5 font-[var(--font-display)] text-[11px] cursor-pointer ${
-                  !groupByCard ? 'brass-btn font-bold' : 'iron-btn text-[#a69277]'
+                className={`organic-tag min-h-[28px] px-3 py-0.5 font-[var(--font-display)] text-[11px] font-semibold inline-flex items-center gap-1 cursor-pointer ${
+                  onlyAugments
+                    ? 'bg-violet-800 text-white'
+                    : 'bg-[#23162b] text-violet-300 hover:bg-[#2f1d3a]'
                 }`}
               >
-                All Copies
+                <Wand2 className="w-3 h-3" />
+                <span>Runes</span>
               </button>
-            </div>
 
-            <button
-              type="button"
-              onClick={() => {
-                sound.select();
-                setOnlyDuplicates((v) => !v);
-              }}
-              className={`min-h-[28px] px-2.5 py-0.5 font-[var(--font-display)] text-[11px] font-semibold cursor-pointer ${
-                onlyDuplicates ? 'brass-btn font-bold' : 'iron-btn text-[#dfd0b6]'
-              }`}
-            >
-              2+ Copies
-            </button>
-
-            <button
-              type="button"
-              onClick={() => {
-                sound.select();
-                setOnlyBiomeFavored((v) => !v);
-              }}
-              className={`organic-tag min-h-[28px] px-3 py-0.5 font-[var(--font-display)] text-[11px] font-semibold cursor-pointer ${
-                onlyBiomeFavored
-                  ? 'bg-emerald-800 text-white'
-                  : 'bg-[#1a2619] text-emerald-300 hover:bg-[#223421]'
-              }`}
-            >
-              ▲ Favored Here
-            </button>
-
-            <button
-              type="button"
-              onClick={() => {
-                sound.select();
-                setOnlyAugments((v) => !v);
-              }}
-              className={`organic-tag min-h-[28px] px-3 py-0.5 font-[var(--font-display)] text-[11px] font-semibold inline-flex items-center gap-1 cursor-pointer ${
-                onlyAugments
-                  ? 'bg-violet-800 text-white'
-                  : 'bg-[#23162b] text-violet-300 hover:bg-[#2f1d3a]'
-              }`}
-            >
-              <Wand2 className="w-3 h-3" />
-              <span>Runes</span>
-            </button>
-
-            {(['all', 'common', 'rare', 'epic', 'mythic'] as const).map((r) => (
-              <button
-                key={r}
-                type="button"
-                onClick={() => {
-                  sound.select();
-                  setRarityFilter(r);
-                }}
-                className={`min-h-[28px] px-2.5 py-0.5 font-[var(--font-display)] text-[11px] capitalize cursor-pointer ${
-                  rarityFilter === r ? 'brass-plaque text-[#f5d593] font-bold' : 'text-[#a69277] hover:text-[#f0e4cc]'
-                }`}
-              >
-                {r}
-              </button>
-            ))}
-
-            <select
-              aria-label="Filter by attack type"
-              value={typeFilter}
-              onChange={(e) => {
-                sound.select();
-                setTypeFilter(e.target.value as 'all' | AttackType);
-              }}
-              className="organic-control min-h-[28px] pl-2.5 text-[11px] text-[#e5d6bc] cursor-pointer"
-            >
-              <option value="all">All Types</option>
-              <option value="P">Type P</option>
-              <option value="M">Type M</option>
-              <option value="X">Type X</option>
-              <option value="A">Type A</option>
-            </select>
-
-            <select
-              aria-label="Filter by element"
-              value={elementFilter}
-              onChange={(e) => {
-                sound.select();
-                setElementFilter(e.target.value as 'all' | CardElement);
-              }}
-              className="organic-control min-h-[28px] pl-2.5 text-[11px] text-[#e5d6bc] cursor-pointer"
-            >
-              <option value="all">All Elements</option>
-              {ALL_ELEMENTS.map((el) => (
-                <option key={el} value={el}>
-                  {ELEMENT_META[el].label}
-                </option>
+              {(['all', 'common', 'rare', 'epic', 'mythic'] as const).map((r) => (
+                <button
+                  key={r}
+                  type="button"
+                  onClick={() => {
+                    sound.select();
+                    setRarityFilter(r);
+                  }}
+                  className={`min-h-[28px] px-2.5 py-0.5 font-[var(--font-display)] text-[11px] capitalize cursor-pointer ${
+                    rarityFilter === r
+                      ? 'brass-plaque text-[#f5d593] font-bold'
+                      : 'text-[#a69277] hover:text-[#f0e4cc]'
+                  }`}
+                >
+                  {r}
+                </button>
               ))}
-            </select>
 
-            <select
-              aria-label="Filter by tribe"
-              value={tribeFilter}
-              onChange={(e) => {
-                sound.select();
-                setTribeFilter(e.target.value as 'all' | CardTribe);
-              }}
-              className="organic-control min-h-[28px] pl-2.5 text-[11px] text-[#e5d6bc] cursor-pointer"
-            >
-              <option value="all">All Tribes</option>
-              {ALL_TRIBES.map((tr) => (
-                <option key={tr} value={tr}>
-                  {TRIBE_META[tr].label}
-                </option>
-              ))}
-            </select>
-          </div>
+              <select
+                aria-label="Filter by attack type"
+                value={typeFilter}
+                onChange={(e) => {
+                  sound.select();
+                  setTypeFilter(e.target.value as 'all' | AttackType);
+                }}
+                className="organic-control min-h-[28px] pl-2.5 text-[11px] text-[#e5d6bc] cursor-pointer"
+              >
+                <option value="all">All Types</option>
+                <option value="P">Type P</option>
+                <option value="M">Type M</option>
+                <option value="X">Type X</option>
+                <option value="A">Type A</option>
+              </select>
+
+              <select
+                aria-label="Filter by element"
+                value={elementFilter}
+                onChange={(e) => {
+                  sound.select();
+                  setElementFilter(e.target.value as 'all' | CardElement);
+                }}
+                className="organic-control min-h-[28px] pl-2.5 text-[11px] text-[#e5d6bc] cursor-pointer"
+              >
+                <option value="all">All Elements</option>
+                {ALL_ELEMENTS.map((el) => (
+                  <option key={el} value={el}>
+                    {ELEMENT_META[el].label}
+                  </option>
+                ))}
+              </select>
+
+              <select
+                aria-label="Filter by tribe"
+                value={tribeFilter}
+                onChange={(e) => {
+                  sound.select();
+                  setTribeFilter(e.target.value as 'all' | CardTribe);
+                }}
+                className="organic-control min-h-[28px] pl-2.5 text-[11px] text-[#e5d6bc] cursor-pointer"
+              >
+                <option value="all">All Tribes</option>
+                {ALL_TRIBES.map((tr) => (
+                  <option key={tr} value={tr}>
+                    {TRIBE_META[tr].label}
+                  </option>
+                ))}
+              </select>
+            </div>
+          ) : (
+            <p className="font-[var(--font-serif)] text-xs sm:text-sm text-[#cbb89a]">
+              Power Relics unlock strictly by conquering all 5 challengers in each Campaign Tier
+              (Tiers 1–10). Equip 1 unlocked Relic into your Dedicated Relic Slot to deploy an
+              un-flippable directional Totem during battle!
+            </p>
+          )}
         </div>
 
-        {/* Scrollable Stable Card Grid */}
+        {/* Scrollable Grid: Either Unit Cards or 12 Power Relics */}
         <div className="lg:flex-1 lg:min-h-0 lg:overflow-y-auto pr-1 pt-1">
-          {filteredEntries.length === 0 ? (
+          {vaultTab === 'relics' ? (
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-6 gap-3.5 sm:gap-4 pb-2">
+              {POWER_CARDS.map((pCard) => {
+                const isUnlocked = unlockedPowerSet.has(pCard.id);
+                const isEquipped = equippedPowerDef?.id === pCard.id;
+
+                return (
+                  <div
+                    key={pCard.id}
+                    className={`card-grid-item flex flex-col gap-1.5 ${
+                      !isUnlocked ? 'opacity-65' : ''
+                    }`}
+                  >
+                    <div className="relative">
+                      <GameCard
+                        cardId={pCard.id}
+                        arrows={pCard.dirs}
+                        owner={isEquipped ? 'player' : 'neutral'}
+                        size="md"
+                        showName
+                        onClick={() => {
+                          if (!isUnlocked) {
+                            sound.select();
+                            openPreview({
+                              cardId: pCard.id,
+                              arrows: pCard.dirs,
+                              owner: 'neutral',
+                            });
+                            return;
+                          }
+                          sound.select();
+                          const res = onSetDeckPowerCard(isEquipped ? null : pCard.id);
+                          if (!res.ok && res.message) {
+                            showToast(res.message);
+                          }
+                        }}
+                      />
+
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          sound.select();
+                          openPreview({
+                            cardId: pCard.id,
+                            arrows: pCard.dirs,
+                            owner: isEquipped ? 'player' : 'neutral',
+                          });
+                        }}
+                        aria-label={`Inspect ${pCard.name}`}
+                        title="Inspect full Relic details"
+                        className="organic-seal absolute top-1.5 left-1.5 z-20 w-6 h-6 bg-[#141c24]/95 text-sky-200 hover:text-white flex items-center justify-center shadow cursor-pointer"
+                      >
+                        <Eye className="w-3.5 h-3.5" />
+                      </button>
+
+                      {isEquipped ? (
+                        <span className="organic-tag pointer-events-none absolute top-1.5 right-1.5 z-20 px-2 py-0.5 bg-sky-400 text-[#071521] text-[9.5px] font-[var(--font-display)] font-bold flex items-center gap-0.5 shadow-lg">
+                          <Check className="w-2.5 h-2.5 stroke-[3]" />
+                          <span>Equipped</span>
+                        </span>
+                      ) : !isUnlocked ? (
+                        <span className="organic-tag pointer-events-none absolute top-1.5 right-1.5 z-20 px-2 py-0.5 bg-[#1a130d]/95 text-[#cbb89a] text-[9.5px] font-mono font-bold flex items-center gap-1 shadow">
+                          <Lock className="w-2.5 h-2.5 text-amber-400" />
+                          <span>Tier {pCard.unlockTier}</span>
+                        </span>
+                      ) : null}
+                    </div>
+
+                    <div className="text-center px-1 space-y-0.5">
+                      <div className="text-[10.5px] font-mono font-semibold text-sky-200 truncate">
+                        {pCard.shortTag}
+                      </div>
+                      <div className="text-[10px] text-[#a69277]">
+                        {isUnlocked
+                          ? isEquipped
+                            ? 'Click to unequip'
+                            : 'Click to equip in Relic Slot'
+                          : `Clear Tier ${pCard.unlockTier} to unlock`}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          ) : filteredEntries.length === 0 ? (
             <div className="p-8 text-center space-y-2">
               <p className="font-[var(--font-display)] text-sm font-semibold text-[#f0c76e]">
                 No owned cards match these filters.
@@ -1025,21 +1288,32 @@ export const DeckBuilderWorkspace: React.FC<DeckBuilderWorkspaceProps> = ({
                   ? (slotIndexByUid.get(inst.uid) ?? 0) + 1
                   : null;
                 const inDeck = slotNum !== null;
-                const equippedCopiesCount = allCopies.filter((c) => slotIndexByUid.has(c.uid)).length;
+                const equippedCopiesCount = allCopies.filter((c) =>
+                  slotIndexByUid.has(c.uid)
+                ).length;
                 const aug = resolveCardAugment(inst.cardId, inst.augmentId);
                 const biomeHints = arenaBiomes
                   .map((b) => evaluateTerrainEffect(b, def))
-                  .filter((ev): ev is NonNullable<typeof ev> => Boolean(ev && ev.hasEffect));
+                  .filter((ev): ev is NonNullable<typeof ev> =>
+                    Boolean(ev && ev.hasEffect)
+                  );
                 const copyCount = allCopies.length;
                 const deltaVsBest =
-                  !groupByCard && copyCount > 1 ? formatDeltaBadge(inst, allCopies[0]) : null;
-                const sellGold = getCardSellValue(def, inst.stats, inst.arrows, inst.augmentId);
+                  !groupByCard && copyCount > 1
+                    ? formatDeltaBadge(inst, allCopies[0])
+                    : null;
+                const sellGold = getCardSellValue(
+                  def,
+                  inst.stats,
+                  inst.arrows,
+                  inst.augmentId
+                );
                 const canQuickSellInline =
                   !groupByCard &&
                   copyRank > 0 &&
                   !inDeck &&
                   !allEquippedUidSet.has(inst.uid) &&
-                  totalOwnedCopies > DECK_CAPACITY;
+                  totalOwnedCopies > MAX_UNIT_CAPACITY;
 
                 return (
                   <div key={inst.uid} className="card-grid-item flex flex-col gap-1.5">
@@ -1138,7 +1412,9 @@ export const DeckBuilderWorkspace: React.FC<DeckBuilderWorkspaceProps> = ({
                               onClick={() => {
                                 const res = onSellCardInstance(inst.uid);
                                 if (res.ok) {
-                                  showToast(`Sold ${def.name} copy for +${res.goldEarned}g!`);
+                                  showToast(
+                                    `Sold ${def.name} copy for +${res.goldEarned}g!`
+                                  );
                                 } else if (res.message) {
                                   showToast(res.message);
                                 }
@@ -1160,7 +1436,7 @@ export const DeckBuilderWorkspace: React.FC<DeckBuilderWorkspaceProps> = ({
         </div>
       </section>
 
-      {/* SIDE-BY-SIDE ROLLED COPY COMPARISON & QUICK-SELL MODAL */}
+      {/* SIDE-BY-SIDE ROLLED COPY COMPARISON MODAL */}
       {compareCardDef && compareCopies.length > 0 && (
         <div
           className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-[#060403]/90 p-0 sm:p-5"
@@ -1244,7 +1520,7 @@ export const DeckBuilderWorkspace: React.FC<DeckBuilderWorkspaceProps> = ({
                     copy.arrows,
                     copy.augmentId
                   );
-                  const canSell = totalOwnedCopies > DECK_CAPACITY;
+                  const canSell = totalOwnedCopies > MAX_UNIT_CAPACITY;
 
                   return (
                     <div
@@ -1258,7 +1534,9 @@ export const DeckBuilderWorkspace: React.FC<DeckBuilderWorkspaceProps> = ({
                       }`}
                     >
                       <div className="flex items-center justify-between gap-1 text-[10.5px]">
-                        <span className="font-mono font-bold text-[#cbb89a]">Copy #{idx + 1}</span>
+                        <span className="font-mono font-bold text-[#cbb89a]">
+                          Copy #{idx + 1}
+                        </span>
                         <span
                           className={`organic-tag px-2 py-0.5 font-mono text-[10px] font-semibold ${delta.className}`}
                         >

@@ -4,6 +4,7 @@ import {
   Copy,
   Pencil,
   Plus,
+  Sparkles,
   Trash2,
   Wand2,
   X,
@@ -14,13 +15,15 @@ import {
   getStatsPowerScore,
   resolveCardAugment,
 } from '../data/cards';
-import { DECK_CAPACITY, MAX_DECK_SLOTS } from '../store/useProfile';
-import { DeckSlot, RolledCardInstance } from '../types/game';
+import { POWER_CARD_MAP } from '../data/powerCards';
+import { MAX_DECK_SLOTS, getUnitCapacityForScale } from '../store/useProfile';
+import { BoardScale, DeckSlot, RolledCardInstance } from '../types/game';
 import { sound } from '../utils/sound';
 
 interface DeckShelfProps {
   decks: DeckSlot[];
   activeDeckIndex: number;
+  boardScale?: BoardScale;
   inventory: Record<string, RolledCardInstance[]>;
   onSelectDeck: (index: number) => void;
   onCreateDeck: (name?: string, duplicateFromIndex?: number) => { ok: boolean; message?: string };
@@ -31,12 +34,14 @@ interface DeckShelfProps {
 export const DeckShelf: React.FC<DeckShelfProps> = ({
   decks,
   activeDeckIndex,
+  boardScale = '6x3',
   inventory,
   onSelectDeck,
   onCreateDeck,
   onRenameDeck,
   onDeleteDeck,
 }) => {
+  const unitCapacity = getUnitCapacityForScale(boardScale);
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const [draftName, setDraftName] = useState('');
 
@@ -99,9 +104,12 @@ export const DeckShelf: React.FC<DeckShelfProps> = ({
           const isSelected = idx === activeDeckIndex;
           const isEditing = editingIndex === idx;
 
-          const instances = deck.cards
-            .map((uid) => instanceByUid[uid])
+          const rawSlots = deck.slots ?? deck.cards;
+          const instances = rawSlots
+            .slice(0, unitCapacity)
+            .map((uid) => (uid ? instanceByUid[uid] : undefined))
             .filter((inst): inst is RolledCardInstance => Boolean(inst));
+          const relicDef = deck.powerSlot ? POWER_CARD_MAP[deck.powerSlot] ?? null : null;
 
           // Pick the strongest card in the deck as the deck box cover art
           const coverInst =
@@ -221,9 +229,18 @@ export const DeckShelf: React.FC<DeckShelfProps> = ({
                   )}
 
                   <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[11px] font-mono text-[#a69277]">
-                    <span className={instances.length === DECK_CAPACITY ? 'text-emerald-400' : 'text-[#f0c76e]'}>
-                      {instances.length}/{DECK_CAPACITY} Cards
+                    <span className={instances.length === unitCapacity ? 'text-emerald-400' : 'text-[#f0c76e]'}>
+                      {instances.length}/{unitCapacity} Units
                     </span>
+                    {relicDef && (
+                      <>
+                        <span>·</span>
+                        <span className="inline-flex items-center gap-0.5 text-sky-300">
+                          <Sparkles className="w-2.5 h-2.5" />
+                          {relicDef.code}
+                        </span>
+                      </>
+                    )}
                     <span>·</span>
                     <span className="text-[#e8d5b3]">{totalArrows}▲</span>
                     {augCount > 0 && (
