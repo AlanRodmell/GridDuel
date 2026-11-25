@@ -1,8 +1,9 @@
-import { useCallback, useState } from 'react';
+import { Suspense, lazy, useCallback, useEffect, useState } from 'react';
 import {
   BookOpen,
   Coins,
   Crown,
+  HardDrive,
   Home,
   LayoutGrid,
   Music,
@@ -11,18 +12,42 @@ import {
   Volume2,
   VolumeX,
 } from 'lucide-react';
-import { ArenaView } from './components/ArenaView';
 import { CardPreviewProvider } from './components/CardPreviewContext';
-import { GalleryView } from './components/GalleryView';
 import { HomeView, PlayLaunchIntent } from './components/HomeView';
-import { MusicModal } from './components/MusicModal';
-import { RulesModal } from './components/RulesModal';
-import { ShopView } from './components/ShopView';
 import { useProfile } from './store/useProfile';
 import { MusicThemeId, music } from './utils/music';
 import { sound } from './utils/sound';
 
+const ArenaView = lazy(() =>
+  import('./components/ArenaView').then((m) => ({ default: m.ArenaView }))
+);
+const GalleryView = lazy(() =>
+  import('./components/GalleryView').then((m) => ({ default: m.GalleryView }))
+);
+const ShopView = lazy(() =>
+  import('./components/ShopView').then((m) => ({ default: m.ShopView }))
+);
+const RulesModal = lazy(() =>
+  import('./components/RulesModal').then((m) => ({ default: m.RulesModal }))
+);
+const MusicModal = lazy(() =>
+  import('./components/MusicModal').then((m) => ({ default: m.MusicModal }))
+);
+const SaveVaultModal = lazy(() =>
+  import('./components/SaveVaultModal').then((m) => ({ default: m.SaveVaultModal }))
+);
+
 type TabId = 'home' | 'arena' | 'gallery' | 'shop';
+
+function StageLoadingFallback() {
+  return (
+    <div className="h-full w-full flex items-center justify-center p-6">
+      <div className="brass-plaque riveted-frame rounded-[4px] px-5 py-3 font-[var(--font-display)] text-xs uppercase tracking-[0.18em] text-[#f0c76e]">
+        Unfurling War Table…
+      </div>
+    </div>
+  );
+}
 
 export default function App() {
   const {
@@ -44,6 +69,9 @@ export default function App() {
     claimSpoilCard,
     sellCardInstance,
     sellExtraCopies,
+    exportSaveJson,
+    importSaveJson,
+    resetProfile,
   } = useProfile();
 
   const [activeTab, setActiveTab] = useState<TabId>('home');
@@ -52,12 +80,42 @@ export default function App() {
   const [isMatchActive, setIsMatchActive] = useState(false);
   const [rulesOpen, setRulesOpen] = useState(false);
   const [musicModalOpen, setMusicModalOpen] = useState(false);
+  const [saveVaultOpen, setSaveVaultOpen] = useState(false);
   const [musicEnabled, setMusicEnabled] = useState(false);
   const [musicVolume, setMusicVolume] = useState(0.55);
   const [activeMusicTheme, setActiveMusicTheme] = useState<MusicThemeId>('tavern');
   const [adaptiveMusic, setAdaptiveMusic] = useState(true);
 
   const lockViewportForMatch = activeTab === 'arena' && isMatchActive;
+
+  // Global desktop keyboard shortcuts: R = Field Codex, M = Mute/Unmute SFX
+  useEffect(() => {
+    const handleGlobalKey = (e: KeyboardEvent) => {
+      if (e.metaKey || e.ctrlKey || e.altKey) return;
+      const target = e.target as HTMLElement | null;
+      if (
+        target &&
+        (target.tagName === 'INPUT' ||
+          target.tagName === 'TEXTAREA' ||
+          target.tagName === 'SELECT' ||
+          target.isContentEditable)
+      ) {
+        return;
+      }
+
+      if (e.key === 'r' || e.key === 'R') {
+        e.preventDefault();
+        sound.select();
+        setRulesOpen((prev) => !prev);
+      } else if (e.key === 'm' || e.key === 'M') {
+        e.preventDefault();
+        toggleSound();
+      }
+    };
+
+    window.addEventListener('keydown', handleGlobalKey);
+    return () => window.removeEventListener('keydown', handleGlobalKey);
+  }, [toggleSound]);
 
   const handleToggleMusic = useCallback((enabled: boolean) => {
     setMusicEnabled(enabled);
@@ -144,7 +202,9 @@ export default function App() {
                 </span>
               </div>
               <div className="hidden xl:flex items-center justify-between text-[11px] text-[#a99373] pt-1.5 border-t border-[#4b3a27]/70">
-                <span className="font-[var(--font-display)] uppercase tracking-wider text-[10px]">Record</span>
+                <span className="font-[var(--font-display)] uppercase tracking-wider text-[10px]">
+                  Record
+                </span>
                 <span className="font-mono font-semibold">
                   <span className="text-emerald-400">{profile.wins}W</span>
                   <span className="text-[#5e4d3b]"> · </span>
@@ -160,7 +220,7 @@ export default function App() {
               <button
                 type="button"
                 onClick={() => switchTab('home')}
-                title="Home"
+                title="Campaign"
                 className={`w-full min-h-[44px] px-2.5 xl:px-3 py-2 rounded-[3px] flex items-center justify-center xl:justify-start gap-3 text-[13px] font-[var(--font-display)] font-semibold tracking-wider transition-all cursor-pointer border ${
                   activeTab === 'home'
                     ? 'bg-gradient-to-r from-[#2e2114] via-[#241a11] to-[#1a130d] border-[#8c6731] border-l-2 border-l-[#e5b864] text-[#f5d799] shadow-[inset_0_1px_0_rgba(245,212,145,0.14),0_4px_12px_rgba(0,0,0,0.45)]'
@@ -235,11 +295,12 @@ export default function App() {
                 sound.select();
                 setRulesOpen(true);
               }}
-              title="Field & Biome Codex"
+              title="Field & Biome Codex (Shortcut: R)"
               className="w-full min-h-[38px] px-2.5 xl:px-3 py-2 rounded-[3px] flex items-center justify-center xl:justify-start gap-3 text-xs font-[var(--font-display)] tracking-wide text-[#cbbba0] hover:text-[#f4d494] hover:bg-[#221a13]/80 border border-transparent hover:border-[#423426] transition-colors cursor-pointer"
             >
               <BookOpen className="w-4 h-4 text-[#d8a64c] shrink-0" />
-              <span className="hidden xl:inline">Field Codex</span>
+              <span className="hidden xl:inline flex-1 text-left">Field Codex</span>
+              <span className="hidden xl:inline text-[10px] font-mono text-[#7c6b56]">R</span>
             </button>
 
             <button
@@ -270,7 +331,11 @@ export default function App() {
             <button
               type="button"
               onClick={toggleSound}
-              title={profile.soundEnabled ? 'Mute sound effects' : 'Enable sound effects'}
+              title={
+                profile.soundEnabled
+                  ? 'Mute sound effects (Shortcut: M)'
+                  : 'Enable sound effects (Shortcut: M)'
+              }
               className="w-full min-h-[38px] px-2.5 xl:px-3 py-2 rounded-[3px] flex items-center justify-center xl:justify-start gap-3 text-xs font-[var(--font-display)] tracking-wide text-[#9e8c72] hover:text-[#efe3cd] hover:bg-[#221a13]/80 border border-transparent hover:border-[#423426] transition-colors cursor-pointer"
             >
               {profile.soundEnabled ? (
@@ -282,6 +347,19 @@ export default function App() {
               <span className="hidden xl:inline text-[10px] font-mono text-[#82715b]">
                 {profile.soundEnabled ? 'ON' : 'MUTE'}
               </span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                sound.select();
+                setSaveVaultOpen(true);
+              }}
+              title="Campaign Save Backup & Reset"
+              className="w-full min-h-[38px] px-2.5 xl:px-3 py-2 rounded-[3px] flex items-center justify-center xl:justify-start gap-3 text-xs font-[var(--font-display)] tracking-wide text-[#9e8c72] hover:text-[#f4d494] hover:bg-[#221a13]/80 border border-transparent hover:border-[#423426] transition-colors cursor-pointer"
+            >
+              <HardDrive className="w-4 h-4 text-[#d8a64c] shrink-0" />
+              <span className="hidden xl:inline flex-1 text-left">Save Vault</span>
             </button>
           </div>
         </aside>
@@ -300,7 +378,7 @@ export default function App() {
               <button
                 type="button"
                 onClick={() => launchPlayFlow('choose')}
-                className={`px-2.5 py-1 rounded-[3px] text-xs font-[var(--font-display)] font-semibold cursor-pointer ${
+                className={`px-2 py-1 rounded-[3px] text-xs font-[var(--font-display)] font-semibold cursor-pointer ${
                   activeTab === 'arena' ? 'brass-btn' : 'text-[#c9b89c]'
                 }`}
               >
@@ -309,7 +387,7 @@ export default function App() {
               <button
                 type="button"
                 onClick={() => switchTab('gallery')}
-                className={`px-2.5 py-1 rounded-[3px] text-xs font-[var(--font-display)] font-semibold cursor-pointer ${
+                className={`px-2 py-1 rounded-[3px] text-xs font-[var(--font-display)] font-semibold cursor-pointer ${
                   activeTab === 'gallery' ? 'brass-btn' : 'text-[#c9b89c]'
                 }`}
               >
@@ -318,11 +396,23 @@ export default function App() {
               <button
                 type="button"
                 onClick={() => switchTab('shop')}
-                className={`px-2.5 py-1 rounded-[3px] text-xs font-[var(--font-display)] font-semibold cursor-pointer ${
+                className={`px-2 py-1 rounded-[3px] text-xs font-[var(--font-display)] font-semibold cursor-pointer ${
                   activeTab === 'shop' ? 'brass-btn' : 'text-[#c9b89c]'
                 }`}
               >
                 Forge
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  sound.select();
+                  setSaveVaultOpen(true);
+                }}
+                aria-label="Open Save Vault"
+                title="Save Vault"
+                className="p-1.5 rounded-[3px] text-[#c9b89c] hover:text-[#f2d394] cursor-pointer"
+              >
+                <HardDrive className="w-3.5 h-3.5" />
               </button>
               <span className="inline-flex items-center gap-1 px-2 py-1 rounded-[3px] brass-plaque text-[#f0c76e] font-mono text-xs font-bold">
                 <Coins className="w-3 h-3 text-[#d9a242]" />
@@ -350,70 +440,98 @@ export default function App() {
             />
           )}
           {activeTab === 'arena' && (
-            <ArenaView
-              profile={profile}
-              activeDeck={activeDeck}
-              initialIntent={playIntent}
-              launchNonce={playLaunchNonce}
-              onSelectDeckSlot={selectDeckSlot}
-              onCreateDeck={createDeck}
-              onRenameDeck={renameDeck}
-              onDeleteDeck={deleteDeck}
-              onToggleDeckCard={toggleDeckCard}
-              onAutoBuildDeck={autoBuildActiveDeck}
-              onRecordMatch={recordMatchOutcome}
-              onClaimSpoil={claimSpoilCard}
-              onGoHome={() => switchTab('home')}
-              onGoToGallery={() => switchTab('gallery')}
-              onOpenRules={() => setRulesOpen(true)}
-              onToggleSound={toggleSound}
-              onMatchActiveChange={setIsMatchActive}
-              onMatchThemeChange={handleMatchThemeChange}
-            />
+            <Suspense fallback={<StageLoadingFallback />}>
+              <ArenaView
+                profile={profile}
+                activeDeck={activeDeck}
+                initialIntent={playIntent}
+                launchNonce={playLaunchNonce}
+                onSelectDeckSlot={selectDeckSlot}
+                onCreateDeck={createDeck}
+                onRenameDeck={renameDeck}
+                onDeleteDeck={deleteDeck}
+                onToggleDeckCard={toggleDeckCard}
+                onAutoBuildDeck={autoBuildActiveDeck}
+                onRecordMatch={recordMatchOutcome}
+                onClaimSpoil={claimSpoilCard}
+                onGoHome={() => switchTab('home')}
+                onGoToGallery={() => switchTab('gallery')}
+                onOpenRules={() => setRulesOpen(true)}
+                onToggleSound={toggleSound}
+                onMatchActiveChange={setIsMatchActive}
+                onMatchThemeChange={handleMatchThemeChange}
+              />
+            </Suspense>
           )}
           {activeTab === 'gallery' && (
-            <GalleryView
-              profile={profile}
-              activeDeck={activeDeck}
-              ownedUniqueCount={ownedUniqueCount}
-              totalCards={totalCards}
-              onSelectDeckSlot={selectDeckSlot}
-              onCreateDeck={createDeck}
-              onRenameDeck={renameDeck}
-              onDeleteDeck={deleteDeck}
-              onToggleDeckCard={toggleDeckCard}
-              onAutoBuildDeck={autoBuildActiveDeck}
-              onSellCardInstance={sellCardInstance}
-              onSellExtraCopies={sellExtraCopies}
-              onGoToShop={() => switchTab('shop')}
-            />
+            <Suspense fallback={<StageLoadingFallback />}>
+              <GalleryView
+                profile={profile}
+                activeDeck={activeDeck}
+                ownedUniqueCount={ownedUniqueCount}
+                totalCards={totalCards}
+                onSelectDeckSlot={selectDeckSlot}
+                onCreateDeck={createDeck}
+                onRenameDeck={renameDeck}
+                onDeleteDeck={deleteDeck}
+                onToggleDeckCard={toggleDeckCard}
+                onAutoBuildDeck={autoBuildActiveDeck}
+                onSellCardInstance={sellCardInstance}
+                onSellExtraCopies={sellExtraCopies}
+                onGoToShop={() => switchTab('shop')}
+              />
+            </Suspense>
           )}
           {activeTab === 'shop' && (
-            <ShopView
-              profile={profile}
-              activeDeck={activeDeck}
-              onBuyCard={buyCard}
-              onOpenPack={openBoosterPack}
-              onCraftAugment={craftAugmentOnCopy}
-              onSellCardInstance={sellCardInstance}
-              onSellExtraCopies={sellExtraCopies}
-            />
+            <Suspense fallback={<StageLoadingFallback />}>
+              <ShopView
+                profile={profile}
+                activeDeck={activeDeck}
+                onBuyCard={buyCard}
+                onOpenPack={openBoosterPack}
+                onCraftAugment={craftAugmentOnCopy}
+                onSellCardInstance={sellCardInstance}
+                onSellExtraCopies={sellExtraCopies}
+              />
+            </Suspense>
           )}
         </main>
 
-        <RulesModal open={rulesOpen} onClose={() => setRulesOpen(false)} />
-        <MusicModal
-          open={musicModalOpen}
-          onClose={() => setMusicModalOpen(false)}
-          musicEnabled={musicEnabled}
-          onToggleMusic={handleToggleMusic}
-          musicVolume={musicVolume}
-          onChangeVolume={handleChangeMusicVolume}
-          activeTheme={activeMusicTheme}
-          onSelectTheme={handleSelectMusicTheme}
-          adaptiveMode={adaptiveMusic}
-          onToggleAdaptive={setAdaptiveMusic}
-        />
+        {rulesOpen && (
+          <Suspense fallback={null}>
+            <RulesModal open={rulesOpen} onClose={() => setRulesOpen(false)} />
+          </Suspense>
+        )}
+        {musicModalOpen && (
+          <Suspense fallback={null}>
+            <MusicModal
+              open={musicModalOpen}
+              onClose={() => setMusicModalOpen(false)}
+              musicEnabled={musicEnabled}
+              onToggleMusic={handleToggleMusic}
+              musicVolume={musicVolume}
+              onChangeVolume={handleChangeMusicVolume}
+              activeTheme={activeMusicTheme}
+              onSelectTheme={handleSelectMusicTheme}
+              adaptiveMode={adaptiveMusic}
+              onToggleAdaptive={setAdaptiveMusic}
+            />
+          </Suspense>
+        )}
+        {saveVaultOpen && (
+          <Suspense fallback={null}>
+            <SaveVaultModal
+              open={saveVaultOpen}
+              onClose={() => setSaveVaultOpen(false)}
+              profile={profile}
+              ownedUniqueCount={ownedUniqueCount}
+              totalCards={totalCards}
+              onExportSave={exportSaveJson}
+              onImportSave={importSaveJson}
+              onResetProfile={resetProfile}
+            />
+          </Suspense>
+        )}
       </div>
     </CardPreviewProvider>
   );

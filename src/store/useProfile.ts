@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { evaluateTerrainEffect } from '../data/biomes';
 import {
   BOOSTER_PACKS,
   CARD_MAP,
@@ -11,8 +12,10 @@ import {
   resolveCardAugment,
   rollCardArrows,
   rollCardInstance,
+  sortCardCopies,
 } from '../data/cards';
 import {
+  BiomeType,
   CardDef,
   DeckSlot,
   HandCard,
@@ -166,11 +169,10 @@ function sanitizeDeckInstanceUids(
   return chosenUids.slice(0, DECK_CAPACITY);
 }
 
-function loadProfile(): PlayerProfile {
+function parseAndSanitizeProfile(raw: string): PlayerProfile | null {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return DEFAULT_PROFILE;
     const parsed = JSON.parse(raw) as Partial<PlayerProfile> & { deck?: string[] };
+    if (!parsed || typeof parsed !== 'object') return null;
 
     const rawOwned: Record<string, number> = {
       ...DEFAULT_OWNED,
@@ -191,7 +193,6 @@ function loadProfile(): PlayerProfile {
             let arrows = Array.isArray(item.arrows) ? [...item.arrows] : rollCardArrows(cardDef, false);
             const sig = [...arrows].sort().join(',');
             if (seenArrowSigs.has(sig)) {
-              // Ensure multiple copies of the same card have varied arrow configurations
               for (let attempt = 0; attempt < 5; attempt++) {
                 const candidate = rollCardArrows(cardDef, false);
                 const cSig = [...candidate].sort().join(',');
@@ -215,7 +216,7 @@ function loadProfile(): PlayerProfile {
             };
           });
         if (validCopies.length > 0) {
-          inventory[cardId] = validCopies;
+          inventory[cardId] = sortCardCopies(validCopies);
         }
       }
     }
@@ -231,7 +232,7 @@ function loadProfile(): PlayerProfile {
         for (let i = 0; i < needed; i++) {
           added.push(rollCardInstance(cardId, false));
         }
-        inventory[cardId] = [...existing, ...added];
+        inventory[cardId] = sortCardCopies([...existing, ...added]);
       }
     }
 
@@ -262,12 +263,23 @@ function loadProfile(): PlayerProfile {
     return {
       ...DEFAULT_PROFILE,
       ...parsed,
+      gold: typeof parsed.gold === 'number' && Number.isFinite(parsed.gold) ? Math.max(0, Math.floor(parsed.gold)) : DEFAULT_PROFILE.gold,
       owned,
       inventory,
       decks,
       activeDeckIndex,
       fighterWins: parsed.fighterWins ?? {},
     };
+  } catch {
+    return null;
+  }
+}
+
+function loadProfile(): PlayerProfile {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return DEFAULT_PROFILE;
+    return parseAndSanitizeProfile(raw) ?? DEFAULT_PROFILE;
   } catch {
     return DEFAULT_PROFILE;
   }
@@ -282,7 +294,7 @@ export interface PackRevealItem {
   copyNumber: number;
 }
 
-export type AutoBuildStrategy = 'power' | 'arrows' | 'assault' | 'augments';
+export type AutoBuildStrategy = 'power' | 'arrows' | 'assault' | 'augments' | 'biome';
 
 function rollCardByWeights(weights: Record<Rarity, number>, minRarity?: Rarity): CardDef {
   // Mythics are strictly excluded from shop booster packs (earned only via High-Tier RNG or Bosses)
@@ -514,54 +526,73 @@ export function useProfile() {
     []
   );
 
-  const autoBuildActiveDeck = useCallback((strategy: AutoBuildStrategy) => {
-    setProfile((prev) => {
-      const allInstances = Object.values(prev.inventory).flat();
-      let ordered: RolledCardInstance[];
+  const autoBuildActiveDeck = useCallback(
+    (strategy: AutoBuildStrategy, targetBiomes?: BiomeType[]) => {
+      setProfile((prev) => {
+        const allInstances = Object.values(prev.inventory).flat();
+        let ordered: RolledCardInstance[];
 
-      if (strategy === 'power') {
-        ordered = [...allInstances].sort(
-          (a, b) =>
-            getStatsPowerScore(b.stats, b.arrows.length) -
-              getStatsPowerScore(a.stats, a.arrows.length) ||
-            b.arrows.length - a.arrows.length
-        );
-      } else if (strategy === 'arrows') {
-        ordered = [...allInstances].sort(
-          (a, b) =>
-            b.arrows.length - a.arrows.length ||
-            getStatsPowerScore(b.stats, b.arrows.length) -
-              getStatsPowerScore(a.stats, a.arrows.length)
-        );
-      } else if (strategy === 'augments') {
-        ordered = [...allInstances].sort((a, b) => {
-          const aAug = resolveCardAugment(a.cardId, a.augmentId) ? 16 : 0;
-          const bAug = resolveCardAugment(b.cardId, b.augmentId) ? 16 : 0;
-          return (
-            bAug +
-            getStatsPowerScore(b.stats, b.arrows.length) -
-            (aAug + getStatsPowerScore(a.stats, a.arrows.length))
+        if (strategy === 'biome' && targetBiomes && targetBiomes.length > 0) {
+          const biomeFit = (inst: RolledCardInstance) => {
+            const def = CARD_MAP[inst.cardId];
+            if (!def) return 0;
+            let terrainSum = 0;
+            for (const b of targetBiomes) {
+              const ev = evaluateTerrainEffect(b, def);
+              if (ev && ev.hasEffect) {
+                // Strongly reward favored cards and penalize hindered cards
+                terrainSum += ev.isPositive ? ev.netScore * 4.5 : ev.netScore * 3.5;
+              }
+            }
+            const augBonus = resolveCardAugment(inst.cardId, inst.augmentId) ? 5 : 0;
+            return terrainSum + getStatsPowerScore(inst.stats, inst.arrows.length) + augBonus;
+          };
+          ordered = [...allInstances].sort((a, b) => biomeFit(b) - biomeFit(a));
+        } else if (strategy === 'power') {
+          ordered = [...allInstances].sort(
+            (a, b) =>
+              getStatsPowerScore(b.stats, b.arrows.length) -
+                getStatsPowerScore(a.stats, a.arrows.length) ||
+              b.arrows.length - a.arrows.length
           );
-        });
-      } else {
-        const typeScore = (t: RolledCardInstance['stats']['type']) =>
-          t === 'A' ? 30 : t === 'X' ? 18 : 0;
-        ordered = [...allInstances].sort(
-          (a, b) =>
-            typeScore(b.stats.type) +
-            getStatsPowerScore(b.stats, b.arrows.length) -
-            (typeScore(a.stats.type) + getStatsPowerScore(a.stats, a.arrows.length))
-        );
-      }
+        } else if (strategy === 'arrows') {
+          ordered = [...allInstances].sort(
+            (a, b) =>
+              b.arrows.length - a.arrows.length ||
+              getStatsPowerScore(b.stats, b.arrows.length) -
+                getStatsPowerScore(a.stats, a.arrows.length)
+          );
+        } else if (strategy === 'augments') {
+          ordered = [...allInstances].sort((a, b) => {
+            const aAug = resolveCardAugment(a.cardId, a.augmentId) ? 16 : 0;
+            const bAug = resolveCardAugment(b.cardId, b.augmentId) ? 16 : 0;
+            return (
+              bAug +
+              getStatsPowerScore(b.stats, b.arrows.length) -
+              (aAug + getStatsPowerScore(a.stats, a.arrows.length))
+            );
+          });
+        } else {
+          const typeScore = (t: RolledCardInstance['stats']['type']) =>
+            t === 'A' ? 30 : t === 'X' ? 18 : 0;
+          ordered = [...allInstances].sort(
+            (a, b) =>
+              typeScore(b.stats.type) +
+              getStatsPowerScore(b.stats, b.arrows.length) -
+              (typeScore(a.stats.type) + getStatsPowerScore(a.stats, a.arrows.length))
+          );
+        }
 
-      const nextCards = ordered.slice(0, DECK_CAPACITY).map((c) => c.uid);
-      const nextDecks = prev.decks.map((d, i) =>
-        i === prev.activeDeckIndex ? { ...d, cards: nextCards } : d
-      );
-      return { ...prev, decks: nextDecks };
-    });
-    sound.select();
-  }, []);
+        const nextCards = ordered.slice(0, DECK_CAPACITY).map((c) => c.uid);
+        const nextDecks = prev.decks.map((d, i) =>
+          i === prev.activeDeckIndex ? { ...d, cards: nextCards } : d
+        );
+        return { ...prev, decks: nextDecks };
+      });
+      sound.select();
+    },
+    []
+  );
 
   /**
    * Buys a new rolled copy of a card in the Shop (up to MAX_COPIES_PER_CARD = 5 copies).
@@ -594,7 +625,7 @@ export function useProfile() {
       if (prev.gold < card.price || existing.length >= MAX_COPIES_PER_CARD) return prev;
       const nextInv = {
         ...prev.inventory,
-        [cardId]: [...existing, rolled],
+        [cardId]: sortCardCopies([...existing, rolled]),
       };
       return {
         ...prev,
@@ -633,13 +664,13 @@ export function useProfile() {
 
       const card = CARD_MAP[target.cardId];
       if (!card) return { ok: false, goldEarned: 0 };
-      const goldEarned = getCardSellValue(card, target.stats, target.arrows);
+      const goldEarned = getCardSellValue(card, target.stats, target.arrows, target.augmentId);
 
       setProfile((prev) => {
         const copies = prev.inventory[target.cardId] ?? [];
         if (!copies.some((c) => c.uid === instanceUid)) return prev;
 
-        const nextCopies = copies.filter((c) => c.uid !== instanceUid);
+        const nextCopies = sortCardCopies(copies.filter((c) => c.uid !== instanceUid));
         const nextInv = { ...prev.inventory };
         if (nextCopies.length > 0) {
           nextInv[target.cardId] = nextCopies;
@@ -672,7 +703,7 @@ export function useProfile() {
 
   /**
    * Bulk-sells all extra copies across the collection (or for a specific cardId),
-   * keeping the highest-rolled copy (plus any copies currently equipped in saved hands).
+   * keeping the highest-scored copy, all equipped copies, AND any copy with a crafted Runeforge augment.
    */
   const sellExtraCopies = useCallback(
     (
@@ -693,20 +724,16 @@ export function useProfile() {
         const card = CARD_MAP[cid];
         if (!card) continue;
 
-        // Sort strongest roll first so we always keep the strongest copy
-        const sorted = [...copies].sort(
-          (a, b) =>
-            getStatsPowerScore(b.stats, b.arrows.length) -
-            getStatsPowerScore(a.stats, a.arrows.length)
-        );
+        const sorted = sortCardCopies(copies);
         const bestUid = sorted[0].uid;
 
         for (const inst of sorted) {
           if (inst.uid === bestUid) continue;
           if (equippedUids.has(inst.uid)) continue;
+          if (inst.augmentId) continue; // Protect Runeforged copies from bulk-sell!
           uidsToSell.add(inst.uid);
           soldCount += 1;
-          goldEarned += getCardSellValue(card, inst.stats, inst.arrows);
+          goldEarned += getCardSellValue(card, inst.stats, inst.arrows, inst.augmentId);
         }
       }
 
@@ -717,7 +744,7 @@ export function useProfile() {
       setProfile((prev) => {
         const nextInv: Record<string, RolledCardInstance[]> = {};
         for (const [cid, list] of Object.entries(prev.inventory)) {
-          const filtered = list.filter((inst) => !uidsToSell.has(inst.uid));
+          const filtered = sortCardCopies(list.filter((inst) => !uidsToSell.has(inst.uid)));
           if (filtered.length > 0) {
             nextInv[cid] = filtered;
           }
@@ -768,7 +795,7 @@ export function useProfile() {
         const isNewUnlock = existing.length === 0;
 
         if (existing.length >= MAX_COPIES_PER_CARD) {
-          const overflowGold = getCardSellValue(card, instance.stats, instance.arrows);
+          const overflowGold = getCardSellValue(card, instance.stats, instance.arrows, instance.augmentId);
           overflowTotal += overflowGold;
           return {
             card,
@@ -780,7 +807,7 @@ export function useProfile() {
           };
         }
 
-        const updated = [...existing, instance];
+        const updated = sortCardCopies([...existing, instance]);
         nextInv[card.id] = updated;
         return {
           card,
@@ -841,7 +868,8 @@ export function useProfile() {
 
   /**
    * Claims a specific rolled HandCard spoil from a defeated rival (or RNG Mythic drop).
-   * Adds the exact rolled instance to your inventory (up to 5 copies), or auto-sells for Gold if already at 5/5 copies!
+   * Adds the exact rolled instance (including any Boss Runeforge augment!) to your inventory,
+   * or auto-sells for Gold if already at 5/5 copies!
    */
   const claimSpoilCard = useCallback(
     (
@@ -855,7 +883,9 @@ export function useProfile() {
       const existing = profile.inventory[card.id] ?? [];
       const isNew = existing.length === 0;
       const wasOverflow = existing.length >= MAX_COPIES_PER_CARD;
-      const bonusGold = wasOverflow ? getCardSellValue(card, spoilCard.stats) : 0;
+      const bonusGold = wasOverflow
+        ? getCardSellValue(card, spoilCard.stats, spoilCard.arrows, spoilCard.augmentId)
+        : 0;
 
       const newInstance: RolledCardInstance = {
         uid: `inst-${card.id}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`,
@@ -875,7 +905,7 @@ export function useProfile() {
         }
         const nextInv = {
           ...prev.inventory,
-          [card.id]: [...cur, newInstance],
+          [card.id]: sortCardCopies([...cur, newInstance]),
         };
         return {
           ...prev,
@@ -952,8 +982,10 @@ export function useProfile() {
       setProfile((prev) => {
         if (prev.gold < rune.craftCost) return prev;
         const list = prev.inventory[targetInst.cardId] ?? [];
-        const updatedList = list.map((inst) =>
-          inst.uid === instanceUid ? { ...inst, augmentId: rune.id } : inst
+        const updatedList = sortCardCopies(
+          list.map((inst) =>
+            inst.uid === instanceUid ? { ...inst, augmentId: rune.id } : inst
+          )
         );
         return {
           ...prev,
@@ -976,6 +1008,57 @@ export function useProfile() {
     },
     [instanceMap, profile.gold]
   );
+
+  const exportSaveJson = useCallback((): string => {
+    return JSON.stringify(
+      {
+        version: 1,
+        exportedAt: new Date().toISOString(),
+        profile,
+      },
+      null,
+      2
+    );
+  }, [profile]);
+
+  const importSaveJson = useCallback(
+    (rawJson: string): { ok: boolean; message: string } => {
+      try {
+        const wrapper = JSON.parse(rawJson) as { profile?: unknown } & Record<string, unknown>;
+        const candidateRaw =
+          wrapper && typeof wrapper === 'object' && wrapper.profile && typeof wrapper.profile === 'object'
+            ? JSON.stringify(wrapper.profile)
+            : rawJson;
+        const sanitized = parseAndSanitizeProfile(candidateRaw);
+        if (!sanitized || Object.keys(sanitized.inventory).length === 0) {
+          return { ok: false, message: 'Invalid or empty GridDuel save file.' };
+        }
+        setProfile(sanitized);
+        sound.victory();
+        return {
+          ok: true,
+          message: `Restored campaign (${sanitized.wins}W–${sanitized.losses}L · ${sanitized.gold.toLocaleString()}g).`,
+        };
+      } catch {
+        return { ok: false, message: 'Could not parse save JSON file.' };
+      }
+    },
+    []
+  );
+
+  const resetProfile = useCallback(() => {
+    const freshInv = createStarterInventory();
+    const freshProfile: PlayerProfile = {
+      ...DEFAULT_PROFILE,
+      owned: syncOwnedCounts(freshInv),
+      inventory: freshInv,
+      decks: buildDefaultDecksFromInventory(freshInv),
+      activeDeckIndex: 0,
+      soundEnabled: profile.soundEnabled,
+    };
+    setProfile(freshProfile);
+    sound.select();
+  }, [profile.soundEnabled]);
 
   const ownedUniqueCount = CARDS.filter((c) => (profile.owned[c.id] ?? 0) > 0).length;
   const totalCopiesCount = Object.values(profile.inventory).reduce(
@@ -1005,5 +1088,8 @@ export function useProfile() {
     craftAugmentOnCopy,
     recordMatchOutcome,
     claimSpoilCard,
+    exportSaveJson,
+    importSaveJson,
+    resetProfile,
   };
 }

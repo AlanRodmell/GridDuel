@@ -2,6 +2,7 @@ import { ALL_BIOMES, evaluateTerrainEffect } from '../data/biomes';
 import {
   CARD_MAP,
   CARDS,
+  CRAFTABLE_AUGMENTS,
   CardRollOptions,
   getCardPower,
   getStatsPowerScore,
@@ -13,12 +14,14 @@ import { ALL_FIGHTERS, FIGHTER_MAP } from '../data/ladder';
 import {
   ArrowDir,
   AugmentEvent,
+  AugmentTier,
   BiomeType,
   BoardCell,
   CardDef,
   ClashDetail,
   FlipEvent,
   HandCard,
+  LadderFighter,
   MoveResolution,
   Owner,
   PlacedCard,
@@ -188,11 +191,56 @@ function getOpponentRollOptions(
   };
 }
 
+function pickBossRuneForCard(fighter: LadderFighter, cardDef: CardDef, slotIndex: number): string | undefined {
+  if (cardDef.augment) return undefined; // Mythic cards with innate traits keep their innate trait
+
+  // Tier 4–5 Bosses socket 1 Minor Rune; Tier 6–7 Bosses socket up to 2 Major Runes;
+  // Tier 8–10 Bosses socket up to 2 Sovereign/Major Runes; Tier 8+ non-boss elites have a 35% shot on slot 0.
+  let targetTier: AugmentTier | null = null;
+  let maxAugmentedSlots = 0;
+
+  if (fighter.isBoss) {
+    if (fighter.tierNumber >= 8) {
+      targetTier = 'sovereign';
+      maxAugmentedSlots = 2;
+    } else if (fighter.tierNumber >= 6) {
+      targetTier = 'major';
+      maxAugmentedSlots = 2;
+    } else if (fighter.tierNumber >= 4) {
+      targetTier = 'minor';
+      maxAugmentedSlots = 1;
+    }
+  } else if (fighter.tierNumber >= 8 && slotIndex === 0 && Math.random() < 0.35) {
+    targetTier = 'major';
+    maxAugmentedSlots = 1;
+  }
+
+  if (!targetTier || slotIndex >= maxAugmentedSlots) return undefined;
+
+  const tierRunes = CRAFTABLE_AUGMENTS.filter((r) => r.tier === targetTier);
+  if (tierRunes.length === 0) return undefined;
+
+  // Prefer runes that match the card's attack type or universal/hex scopes
+  const matching = tierRunes.filter((r) => {
+    if (r.scope === 'all_allies' || r.scope === 'adjacent_allies' || r.scope === 'adjacent_rivals') {
+      return true;
+    }
+    if (r.scope === 'type_P_allies') return cardDef.stats.type === 'P';
+    if (r.scope === 'type_M_allies') return cardDef.stats.type === 'M';
+    if (r.scope === 'type_X_allies') return cardDef.stats.type === 'X';
+    if (r.scope === 'type_A_allies') return cardDef.stats.type === 'A';
+    return false;
+  });
+
+  const pool = matching.length > 0 ? matching : tierRunes;
+  return pool[Math.floor(Math.random() * pool.length)]?.id;
+}
+
 /**
  * Builds a fair, tier-bounded 7-card hand for the selected Ladder Fighter:
  * - Includes 1-2 of the fighter's signature cards
- * - Draws remaining cards from their [minCardNumber, maxCardNumber] range
- * - Gates expansion cards (#91+) out of early Tier 1 fights and power-caps them in early tiers
+ * - Draws remaining cards from their [minCardNumber, maxCardNumber] range + gated expansion cards (#91-#120)
+ * - Sockets thematic Runeforge augments onto Tier 4-10 Boss signature cards (claimable as spoils!)
  * - Scales stat/arrow roll variance and X/A upgrade chances by tier
  */
 export function buildOpponentHand(fighterId: string): HandCard[] {
@@ -247,7 +295,7 @@ export function buildOpponentHand(fighterId: string): HandCard[] {
     [pool[i], pool[j]] = [pool[j], pool[i]];
   }
 
-  let expansionPicked = 0;
+  let expansionPicked = chosenIds.filter((id) => (CARD_MAP[id]?.number ?? 0) > 90).length;
   for (const card of pool) {
     if (chosenIds.length >= HAND_SIZE) break;
     if (card.number > 90 && expansionPicked >= maxExpansionInHand) continue;
@@ -267,11 +315,13 @@ export function buildOpponentHand(fighterId: string): HandCard[] {
 
   return chosenIds.slice(0, HAND_SIZE).map((cardId, i) => {
     const def = CARD_MAP[cardId] ?? CARDS[0];
+    const augmentId = pickBossRuneForCard(fighter, def, i);
     return {
       uid: `rival-${i}-${cardId}-${Math.random().toString(36).slice(2, 6)}`,
       cardId,
       stats: rollCardStats(def, rollOpts),
       arrows: rollCardArrows(def, rollOpts),
+      ...(augmentId ? { augmentId } : {}),
     };
   });
 }
@@ -575,7 +625,17 @@ export function resolvePlacement(
     }
   }
 
-  // 1. Resolve Arrow Clashes
+  // 1. Resolve Arrow Clashes — sort favorable matchups first so directional order (N vs S) never biases combo chains!
+  clashTargets.sort((a, b) => {
+    const aAdv =
+      getCombatValues(placed.stats, a.card.stats).atkVal -
+      getCombatValues(placed.stats, a.card.stats).defVal;
+    const bAdv =
+      getCombatValues(placed.stats, b.card.stats).atkVal -
+      getCombatValues(placed.stats, b.card.stats).defVal;
+    return bAdv - aAdv;
+  });
+
   let placedWasLost = false;
   for (const target of clashTargets) {
     if (nextBoard[target.r][target.c].card?.owner === owner) continue;
@@ -764,6 +824,33 @@ export function chooseAiMove(
             score -= 1.2 * skill;
           }
         }
+      }
+
+      // Endgame 2-Ply Lookahead for Veterans & Bosses (skill >= 0.82 when <= 4 open sockets remain):
+      // Evaluates how exposed the resulting board is to an opponent counter-drop on the remaining open cells.
+      if (skill >= 0.82 && emptyCells.length >= 2 && emptyCells.length <= 4) {
+        const probeCard: HandCard = {
+          uid: 'probe-player',
+          cardId: hCard.cardId,
+          stats: {
+            power: Math.min(14, Math.round(6 + skill * 6)),
+            type: 'X',
+            pDef: Math.min(13, Math.round(5 + skill * 6)),
+            mDef: Math.min(13, Math.round(5 + skill * 6)),
+          },
+          arrows: ['n', 'ne', 'e', 'se', 's', 'sw', 'w', 'nw'],
+        };
+        let worstSwingAgainstRival = 0;
+        for (const [or, oc] of emptyCells) {
+          if (or === r && oc === c) continue;
+          const replySim = resolvePlacement(sim.nextBoard, or, oc, probeCard, 'player', true);
+          const replyScores = getScores(replySim.nextBoard);
+          const rivalLostCards = after.rival - replyScores.rival;
+          if (rivalLostCards > worstSwingAgainstRival) {
+            worstSwingAgainstRival = rivalLostCards;
+          }
+        }
+        score -= worstSwingAgainstRival * 7.5 * skill;
       }
 
       const jitter = (Math.random() - 0.5) * 2 * noiseAmp;

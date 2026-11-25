@@ -31,6 +31,7 @@ import { HAND_SIZE } from '../engine/triadEngine';
 import { AutoBuildStrategy, MAX_DECK_SLOTS } from '../store/useProfile';
 import {
   AttackType,
+  BiomeType,
   CardElement,
   CardTribe,
   DeckSlot,
@@ -63,7 +64,7 @@ interface DeckBuilderWorkspaceProps {
   onRenameDeck: (index: number, newName: string) => void;
   onDeleteDeck: (index: number) => { ok: boolean; message?: string };
   onToggleDeckCard: (uidOrCardId: string) => { ok: boolean; message?: string };
-  onAutoBuildDeck: (strategy: AutoBuildStrategy) => void;
+  onAutoBuildDeck: (strategy: AutoBuildStrategy, targetBiomes?: BiomeType[]) => void;
   onStartMatch: () => void;
   onGoToGallery: () => void;
   onOpenRules: () => void;
@@ -93,6 +94,7 @@ export const DeckBuilderWorkspace: React.FC<DeckBuilderWorkspaceProps> = ({
   const [elementFilter, setElementFilter] = useState<'all' | CardElement>('all');
   const [tribeFilter, setTribeFilter] = useState<'all' | CardTribe>('all');
   const [onlyAugments, setOnlyAugments] = useState(false);
+  const [onlyBiomeFavored, setOnlyBiomeFavored] = useState(false);
 
   const arenaBiomes = useMemo(() => getFighterBiomes(currentFighter.id), [currentFighter.id]);
   const rivalAvatarCard = CARD_MAP[currentFighter.avatarCardId] ?? CARD_MAP['ember-imp'];
@@ -112,6 +114,10 @@ export const DeckBuilderWorkspace: React.FC<DeckBuilderWorkspaceProps> = ({
         if (tribeFilter !== 'all' && def.tribe !== tribeFilter) return false;
         const aug = resolveCardAugment(inst.cardId, inst.augmentId);
         if (onlyAugments && !aug) return false;
+        if (onlyBiomeFavored) {
+          const favored = arenaBiomes.some((b) => evaluateTerrainEffect(b, def)?.isPositive);
+          if (!favored) return false;
+        }
         if (
           q &&
           !def.name.toLowerCase().includes(q) &&
@@ -134,8 +140,10 @@ export const DeckBuilderWorkspace: React.FC<DeckBuilderWorkspaceProps> = ({
       });
   }, [
     activeDeckUidSet,
+    arenaBiomes,
     elementFilter,
     onlyAugments,
+    onlyBiomeFavored,
     profile.inventory,
     rarityFilter,
     searchQuery,
@@ -285,9 +293,17 @@ export const DeckBuilderWorkspace: React.FC<DeckBuilderWorkspaceProps> = ({
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
-            {/* Compact Auto-Fill Row */}
+            {/* Compact Auto-Fill Row (Now includes Biome Fit!) */}
             <div className="inline-flex items-center gap-1 p-1 rounded-[3px] basalt-recess">
               <Sparkles className="w-3.5 h-3.5 text-[#e2b053] shrink-0 ml-1 mr-0.5" />
+              <button
+                type="button"
+                onClick={() => onAutoBuildDeck('biome', arenaBiomes)}
+                title="Auto-build warband favored by this challenger's Arena Biomes"
+                className="px-2 py-1 rounded-[2px] bg-emerald-950/75 hover:bg-emerald-900/80 border border-emerald-500/45 text-[11px] font-[var(--font-display)] font-bold text-emerald-200 transition-colors cursor-pointer"
+              >
+                Biome Fit
+              </button>
               {(
                 [
                   { id: 'power', label: 'Power' },
@@ -509,6 +525,21 @@ export const DeckBuilderWorkspace: React.FC<DeckBuilderWorkspaceProps> = ({
               type="button"
               onClick={() => {
                 sound.select();
+                setOnlyBiomeFavored((v) => !v);
+              }}
+              className={`min-h-[34px] px-3 py-1 rounded-[3px] border font-[var(--font-display)] text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer ${
+                onlyBiomeFavored
+                  ? 'bg-emerald-800 border-emerald-400 text-white'
+                  : 'basalt-recess text-emerald-300 hover:border-emerald-400/55'
+              }`}
+            >
+              <span>▲ Favored Here</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                sound.select();
                 setOnlyAugments((v) => !v);
               }}
               className={`min-h-[34px] px-3 py-1 rounded-[3px] border font-[var(--font-display)] text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer ${
@@ -537,6 +568,7 @@ export const DeckBuilderWorkspace: React.FC<DeckBuilderWorkspaceProps> = ({
                   setElementFilter('all');
                   setTribeFilter('all');
                   setOnlyAugments(false);
+                  setOnlyBiomeFavored(false);
                 }}
                 className="iron-btn px-3.5 py-1.5 rounded-[3px] font-[var(--font-display)] text-xs cursor-pointer"
               >

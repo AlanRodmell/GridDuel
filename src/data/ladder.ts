@@ -156,7 +156,7 @@ export const LADDER_TIERS: LadderTier[] = [
         title: 'Catacomb Caretaker',
         specialty: 'Magic Defense Acolytes (#11–#18)',
         avatarCardId: 'crypt-acolyte',
-        signatureCardIds: ['crypt-acolyte', 'bronze-footman'],
+        signatureCardIds: ['crypt-acolyte', 'crypt-skeleton', 'bronze-footman'],
         minCardNumber: 11,
         maxCardNumber: 18,
         winGold: 50,
@@ -223,7 +223,7 @@ export const LADDER_TIERS: LadderTier[] = [
         title: 'Bog Collector',
         specialty: 'Mire Oozes & Dryads (#18–#24)',
         avatarCardId: 'thorn-dryad',
-        signatureCardIds: ['mire-ooze', 'thorn-dryad'],
+        signatureCardIds: ['thorn-dryad', 'moonpetal-sprite', 'mire-ooze'],
         minCardNumber: 18,
         maxCardNumber: 24,
         winGold: 65,
@@ -442,7 +442,7 @@ export const LADDER_TIERS: LadderTier[] = [
         title: 'Grave Warlock',
         specialty: 'Diagonal Necromancy (#38–#45)',
         avatarCardId: 'grave-warlock',
-        signatureCardIds: ['grave-warlock', 'rime-enchanter'],
+        signatureCardIds: ['grave-warlock', 'wailing-banshee', 'hollow-revenant'],
         minCardNumber: 38,
         maxCardNumber: 45,
         winGold: 130,
@@ -577,7 +577,7 @@ export const LADDER_TIERS: LadderTier[] = [
         title: 'Heartwood Elder',
         specialty: '6-Arrow Heartwoods & Lanterns (#53–#59)',
         avatarCardId: 'elder-heartwood',
-        signatureCardIds: ['elder-heartwood', 'astral-lantern'],
+        signatureCardIds: ['elder-heartwood', 'bramble-ent', 'lifespren'],
         minCardNumber: 53,
         maxCardNumber: 59,
         winGold: 175,
@@ -682,7 +682,7 @@ export const LADDER_TIERS: LadderTier[] = [
         title: 'Lord of the Sunken Crypts (Boss)',
         specialty: '8-Arrow Assault Liches (#61–#68)',
         avatarCardId: 'abyssal-lich',
-        signatureCardIds: ['abyssal-lich', 'void-necromancer'],
+        signatureCardIds: ['abyssal-lich', 'dread-deathknight', 'crimson-nosferatu'],
         minCardNumber: 61,
         maxCardNumber: 68,
         winGold: 240,
@@ -823,7 +823,7 @@ export const LADDER_TIERS: LadderTier[] = [
         title: 'Monarch of Permafrost (Boss)',
         specialty: 'Mythic Titan & Glacial Empress (#78–#84)',
         avatarCardId: 'glacial-empress',
-        signatureCardIds: ['glacial-empress', 'emerald-titan'],
+        signatureCardIds: ['glacial-empress', 'worldtree-sovereign', 'emerald-titan'],
         minCardNumber: 78,
         maxCardNumber: 84,
         winGold: 350,
@@ -876,7 +876,7 @@ export const LADDER_TIERS: LadderTier[] = [
         title: 'Master of the Void (Boss)',
         specialty: 'Mythic Void Wyrmlord & Kraken (#81–#89)',
         avatarCardId: 'void-bahamut',
-        signatureCardIds: ['void-bahamut', 'astral-phoenix', 'abyssal-kraken'],
+        signatureCardIds: ['void-bahamut', 'skeletal-dracolich', 'abyssal-kraken'],
         minCardNumber: 81,
         maxCardNumber: 89,
         winGold: 450,
@@ -895,7 +895,7 @@ export const LADDER_TIERS: LadderTier[] = [
         title: 'Supreme Grandmaster (Final Boss)',
         specialty: 'EAEE Eternal Overlord & Full Mythics (#83–#90)',
         avatarCardId: 'eternal-overlord',
-        signatureCardIds: ['eternal-overlord', 'void-bahamut', 'solar-sovereign'],
+        signatureCardIds: ['eternal-overlord', 'voidspren', 'highspren'],
         minCardNumber: 83,
         maxCardNumber: 90,
         winGold: 550,
@@ -924,6 +924,16 @@ export function getTierForFighter(fighterId: string): LadderTier | undefined {
 
 export function getFighterBiomes(fighterId: string): BiomeType[] {
   return getTierForFighter(fighterId)?.biomes ?? ['water', 'marsh'];
+}
+
+export function getFighterPoolLabel(fighter: LadderFighter): string {
+  const base = `#${String(fighter.minCardNumber).padStart(2, '0')}–#${String(
+    fighter.maxCardNumber
+  ).padStart(2, '0')}`;
+  if (fighter.tierNumber === 1 && fighter.orderInTier <= 3) {
+    return base;
+  }
+  return `${base} + Realms #91–#120`;
 }
 
 export function isTierUnlocked(

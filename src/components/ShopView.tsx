@@ -25,6 +25,7 @@ import {
   MAX_COPIES_PER_CARD,
   RARITY_ARROW_RANGE,
   RARITY_STAT_RANGE,
+  sortCardCopies,
 } from '../data/cards';
 import { PackRevealItem } from '../store/useProfile';
 import {
@@ -227,32 +228,38 @@ export const ShopView: React.FC<ShopViewProps> = ({
     }
   };
 
-  // Only Common, Rare, and Epic cards (80 cards total) are sold in the Shop.
-  // Mythic cards (#81-#90) are strictly earned from High-Tier RNG drops or Tier 9-10 Bosses.
+  // Only Common, Rare, and Epic cards are sold in the Vault.
+  // Mythic cards are strictly earned from High-Tier RNG drops or Tier 9-10 Bosses.
   const purchasableCatalog = useMemo(
     () => CARDS.filter((c) => c.rarity !== 'mythic'),
     []
   );
 
-  // Calculate total extra duplicate copies (keeping best copy + active deck copies)
+  const equippedUidsSet = useMemo(
+    () => new Set(profile.decks.flatMap((d) => d.cards)),
+    [profile.decks]
+  );
+
+  // Calculate total extra duplicate copies (keeping best copy + all equipped copies + all Runeforged copies)
   const extraCopiesSummary = useMemo(() => {
-    const activeDeckSet = new Set(
-      profile.decks[profile.activeDeckIndex]?.cards ?? []
-    );
     let extraCount = 0;
     let totalGold = 0;
 
     for (const card of CARDS) {
       const copies = profile.inventory[card.id] ?? [];
       if (copies.length <= 1) continue;
-      copies.forEach((inst, idx) => {
-        if (idx === 0 || activeDeckSet.has(inst.uid)) return;
+      const sorted = sortCardCopies(copies);
+      const bestUid = sorted[0].uid;
+      for (const inst of sorted) {
+        if (inst.uid === bestUid) continue;
+        if (equippedUidsSet.has(inst.uid)) continue;
+        if (inst.augmentId) continue;
         extraCount += 1;
-        totalGold += getCardSellValue(card, inst.stats, inst.arrows);
-      });
+        totalGold += getCardSellValue(card, inst.stats, inst.arrows, inst.augmentId);
+      }
     }
     return { extraCount, totalGold };
-  }, [profile.activeDeckIndex, profile.decks, profile.inventory]);
+  }, [equippedUidsSet, profile.inventory]);
 
   const marketCards = useMemo(() => {
     return purchasableCatalog.filter((c) => {
@@ -322,11 +329,21 @@ export const ShopView: React.FC<ShopViewProps> = ({
     }
   };
 
+  const pickWeakestSellCandidate = (copies: RolledCardInstance[]): RolledCardInstance | undefined => {
+    if (copies.length === 0) return undefined;
+    const asc = [...sortCardCopies(copies)].reverse();
+    // Prefer an un-augmented, unequipped copy first; then un-augmented; then absolute lowest
+    return (
+      asc.find((c) => !c.augmentId && !equippedUidsSet.has(c.uid)) ??
+      asc.find((c) => !c.augmentId) ??
+      asc[0]
+    );
+  };
+
   const handleSellWeakestCopy = (cardId: string) => {
     const copies = profile.inventory[cardId] ?? [];
-    if (copies.length === 0) return;
-    // Sell the lowest-rolled copy (last in sorted inventory array)
-    const targetCopy = copies[copies.length - 1];
+    const targetCopy = pickWeakestSellCandidate(copies);
+    if (!targetCopy) return;
     const res = onSellCardInstance(targetCopy.uid);
     if (res.ok) {
       showToast(
@@ -1014,10 +1031,10 @@ export const ShopView: React.FC<ShopViewProps> = ({
         ) : (
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-4 sm:gap-5">
             {marketCards.map((card) => {
-              const copies = profile.inventory[card.id] ?? [];
-              const ownedCount = copies.length;
-              const bestCopy = copies[0];
-              const weakestCopy = copies[copies.length - 1];
+              const sortedCopies = sortCardCopies(profile.inventory[card.id] ?? []);
+              const ownedCount = sortedCopies.length;
+              const bestCopy = sortedCopies[0];
+              const weakestCopy = pickWeakestSellCandidate(sortedCopies);
               const isMaxCopies = ownedCount >= MAX_COPIES_PER_CARD;
               const canAfford = profile.gold >= card.price && !isMaxCopies;
               const wasJustBought = justBoughtRoll?.cardId === card.id;
@@ -1119,7 +1136,7 @@ export const ShopView: React.FC<ShopViewProps> = ({
                     >
                       <Trash2 className="w-3 h-3" />
                       <span>
-                        Sell {ownedCount > 1 ? 'Lowest' : 'Copy'} ({formatTetraCode(weakestCopy.stats)}·{weakestCopy.arrows.length}▲) +{getCardSellValue(card, weakestCopy.stats, weakestCopy.arrows)}g
+                        Sell {ownedCount > 1 ? 'Lowest' : 'Copy'} ({formatTetraCode(weakestCopy.stats)}·{weakestCopy.arrows.length}▲) +{getCardSellValue(card, weakestCopy.stats, weakestCopy.arrows, weakestCopy.augmentId)}g
                       </span>
                     </button>
                   )}

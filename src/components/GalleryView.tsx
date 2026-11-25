@@ -21,8 +21,8 @@ import {
   formatArrowsCompact,
   formatTetraCode,
   getCardSellValue,
-  getStatsPowerScore,
   resolveCardAugment,
+  sortCardCopies,
   toHexDigit,
 } from '../data/cards';
 import { AutoBuildStrategy, DECK_CAPACITY } from '../store/useProfile';
@@ -136,23 +136,18 @@ export const GalleryView: React.FC<GalleryViewProps> = ({
     return map;
   }, [profile.inventory]);
 
-  // Best (highest rolled) copy per cardId
+  // Best (highest scored) copy per cardId
   const bestCopyByCardId = useMemo(() => {
     const map: Record<string, RolledCardInstance> = {};
     for (const [cid, list] of Object.entries(profile.inventory)) {
       if (list.length > 0) {
-        const sorted = [...list].sort(
-          (a, b) =>
-            getStatsPowerScore(b.stats, b.arrows.length) -
-            getStatsPowerScore(a.stats, a.arrows.length)
-        );
-        map[cid] = sorted[0];
+        map[cid] = sortCardCopies(list)[0];
       }
     }
     return map;
   }, [profile.inventory]);
 
-  // Count how many extra copies across the entire collection can be bulk-sold
+  // Count how many extra copies across the entire collection can be bulk-sold (excluding best, equipped, and Runeforged)
   const sellableExtrasSummary = useMemo(() => {
     const equippedUids = new Set(profile.decks.flatMap((d) => d.cards));
     let count = 0;
@@ -162,17 +157,14 @@ export const GalleryView: React.FC<GalleryViewProps> = ({
       if (list.length <= 1) continue;
       const card = CARD_MAP[cid];
       if (!card) continue;
-      const sorted = [...list].sort(
-        (a, b) =>
-          getStatsPowerScore(b.stats, b.arrows.length) -
-          getStatsPowerScore(a.stats, a.arrows.length)
-      );
+      const sorted = sortCardCopies(list);
       const bestUid = sorted[0].uid;
       for (const inst of sorted) {
         if (inst.uid === bestUid) continue;
         if (equippedUids.has(inst.uid)) continue;
+        if (inst.augmentId) continue;
         count += 1;
-        totalGold += getCardSellValue(card, inst.stats, inst.arrows);
+        totalGold += getCardSellValue(card, inst.stats, inst.arrows, inst.augmentId);
       }
     }
     return { count, totalGold };
@@ -252,12 +244,7 @@ export const GalleryView: React.FC<GalleryViewProps> = ({
   const inspectedCard: CardDef | null = inspectedId ? CARD_MAP[inspectedId] ?? null : null;
   const inspectedCopies: RolledCardInstance[] = useMemo(() => {
     if (!inspectedCard) return [];
-    const raw = profile.inventory[inspectedCard.id] ?? [];
-    return [...raw].sort(
-      (a, b) =>
-        getStatsPowerScore(b.stats, b.arrows.length) -
-        getStatsPowerScore(a.stats, a.arrows.length)
-    );
+    return sortCardCopies(profile.inventory[inspectedCard.id] ?? []);
   }, [inspectedCard, profile.inventory]);
 
   const activeInspectedCopy: RolledCardInstance | null = useMemo(() => {
@@ -892,7 +879,8 @@ export const GalleryView: React.FC<GalleryViewProps> = ({
                         const sellGold = getCardSellValue(
                           inspectedCard,
                           copy.stats,
-                          copy.arrows
+                          copy.arrows,
+                          copy.augmentId
                         );
                         const canSell = totalOwnedCopies > DECK_CAPACITY;
 

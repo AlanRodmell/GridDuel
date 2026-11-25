@@ -48,6 +48,16 @@ const IMG = {
   dwarf: './src/assets/images/card_dwarven_thunderer_1795419232969.jpg',
   archon: './src/assets/images/card_celestial_archon_1795419232449.jpg',
   voidDragon: './src/assets/images/card_void_behemoth_1795419233239.jpg',
+  eternalOverlord: './src/assets/images/card_eternal_overlord.jpg',
+  abyssalKraken: './src/assets/images/card_abyssal_kraken.jpg',
+  skeletalDracolich: './src/assets/images/card_skeletal_dracolich.jpg',
+  worldtreeSovereign: './src/assets/images/card_worldtree_sovereign.jpg',
+  eclipseAssassin: './src/assets/images/card_eclipse_assassin.jpg',
+  chronosOwl: './src/assets/images/card_chronos_owl.jpg',
+  dreadDeathknight: './src/assets/images/card_dread_deathknight.jpg',
+  crimsonNosferatu: './src/assets/images/card_crimson_nosferatu.jpg',
+  radiantBishop: './src/assets/images/card_radiant_bishop.jpg',
+  wailingBanshee: './src/assets/images/card_wailing_banshee.jpg',
 };
 
 const ROLE_FROM_TYPE: Record<AttackType, CardRole> = {
@@ -590,8 +600,7 @@ const RAW_CARDS: RawEntry[] = [
     rarity: 'rare',
     stats: [6, 'M', 6, 8],
     arrows: ['n', 'e', 's', 'w', 'ne', 'nw'],
-    image: IMG.cleric,
-    artFilter: 'hue-rotate-30 brightness-105',
+    image: IMG.radiantBishop,
     price: 185,
     accentGradient: 'from-yellow-950 via-amber-950 to-slate-950',
   },
@@ -700,8 +709,7 @@ const RAW_CARDS: RawEntry[] = [
     rarity: 'rare',
     stats: [7, 'X', 6, 6],
     arrows: ['n', 'ne', 'e', 'se', 's', 'sw', 'w'],
-    image: IMG.owl,
-    artFilter: 'hue-rotate-180 contrast-110',
+    image: IMG.chronosOwl,
     price: 200,
     accentGradient: 'from-cyan-950 via-slate-900 to-slate-950',
   },
@@ -928,8 +936,7 @@ const RAW_CARDS: RawEntry[] = [
     rarity: 'epic',
     stats: [10, 'A', 8, 8],
     arrows: ['n', 'ne', 'e', 'se', 's', 'sw', 'w', 'nw'],
-    image: IMG.rogue,
-    artFilter: 'hue-rotate-180 contrast-115',
+    image: IMG.eclipseAssassin,
     price: 355,
     accentGradient: 'from-slate-800 via-violet-950 to-slate-950',
   },
@@ -1024,8 +1031,7 @@ const RAW_CARDS: RawEntry[] = [
     rarity: 'mythic',
     stats: [13, 'A', 13, 11],
     arrows: ['n', 'ne', 'e', 'se', 's', 'sw', 'w'],
-    image: IMG.leviathan,
-    artFilter: 'hue-rotate-90 saturate-125',
+    image: IMG.abyssalKraken,
     price: 580,
     accentGradient: 'from-purple-900 via-indigo-950 to-slate-950',
   },
@@ -1035,8 +1041,7 @@ const RAW_CARDS: RawEntry[] = [
     rarity: 'mythic',
     stats: [14, 'A', 14, 14],
     arrows: ['n', 'ne', 'e', 'se', 's', 'sw', 'w', 'nw'],
-    image: IMG.sovereign,
-    artFilter: 'hue-rotate-30 contrast-115 saturate-125',
+    image: IMG.eternalOverlord,
     price: 680,
     accentGradient: 'from-amber-600 via-red-950 to-slate-950',
   },
@@ -1230,8 +1235,8 @@ const RAW_CARDS: RawEntry[] = [
     rarity: 'epic',
     stats: [11, 'P', 12, 8],
     arrows: ['n', 'e', 'se', 's', 'sw', 'w'],
-    image: IMG.titan,
-    artFilter: 'saturate-125 contrast-110',
+    image: IMG.worldtreeSovereign,
+    artFilter: 'hue-rotate-15 brightness-95',
     price: 335,
     accentGradient: 'from-emerald-900 via-amber-950 to-slate-950',
   },
@@ -1263,8 +1268,7 @@ const RAW_CARDS: RawEntry[] = [
     rarity: 'mythic',
     stats: [14, 'A', 14, 13],
     arrows: ['n', 'ne', 'e', 'se', 's', 'sw', 'w', 'nw'],
-    image: IMG.titan,
-    artFilter: 'hue-rotate-60 saturate-150 brightness-105',
+    image: IMG.worldtreeSovereign,
     price: 660,
     accentGradient: 'from-emerald-800 via-amber-950 to-slate-950',
   },
@@ -1322,8 +1326,7 @@ const RAW_CARDS: RawEntry[] = [
     rarity: 'rare',
     stats: [8, 'M', 4, 8],
     arrows: ['n', 'nw', 'ne', 'sw', 'se'],
-    image: IMG.empress,
-    artFilter: 'hue-rotate-60 saturate-75 contrast-125',
+    image: IMG.wailingBanshee,
     price: 190,
     accentGradient: 'from-violet-950 via-slate-900 to-slate-950',
   },
@@ -1333,8 +1336,8 @@ const RAW_CARDS: RawEntry[] = [
     rarity: 'rare',
     stats: [8, 'X', 6, 7],
     arrows: ['n', 'ne', 'e', 'se', 'sw', 'nw'],
-    image: IMG.rogue,
-    artFilter: '-hue-rotate-45 saturate-150 contrast-115',
+    image: IMG.crimsonNosferatu,
+    artFilter: 'hue-rotate-15 brightness-95',
     price: 195,
     accentGradient: 'from-rose-950 via-slate-900 to-slate-950',
   },
@@ -1344,8 +1347,7 @@ const RAW_CARDS: RawEntry[] = [
     rarity: 'epic',
     stats: [11, 'A', 9, 10],
     arrows: ['n', 'ne', 'e', 'se', 's', 'nw'],
-    image: IMG.samurai,
-    artFilter: '-hue-rotate-15 saturate-150 contrast-125',
+    image: IMG.crimsonNosferatu,
     price: 350,
     accentGradient: 'from-rose-950 via-red-950 to-slate-950',
   },
@@ -1355,8 +1357,7 @@ const RAW_CARDS: RawEntry[] = [
     rarity: 'epic',
     stats: [12, 'P', 11, 8],
     arrows: ['n', 'ne', 'e', 'se', 's', 'sw', 'w'],
-    image: IMG.knight,
-    artFilter: 'hue-rotate-180 contrast-125 brightness-90',
+    image: IMG.dreadDeathknight,
     price: 345,
     accentGradient: 'from-sky-950 via-slate-900 to-slate-950',
   },
@@ -1377,8 +1378,7 @@ const RAW_CARDS: RawEntry[] = [
     rarity: 'mythic',
     stats: [15, 'A', 13, 13],
     arrows: ['n', 'ne', 'e', 'se', 's', 'sw', 'w', 'nw'],
-    image: IMG.wyvern,
-    artFilter: 'hue-rotate-90 contrast-125 saturate-125',
+    image: IMG.skeletalDracolich,
     price: 680,
     accentGradient: 'from-violet-950 via-emerald-950 to-slate-950',
   },
@@ -2080,14 +2080,24 @@ export function rollCardInstance(
   };
 }
 
+export function getInstanceSortScore(inst: Pick<RolledCardInstance, 'stats' | 'arrows' | 'augmentId'>): number {
+  const augBonus = inst.augmentId && CRAFTABLE_AUGMENT_MAP[inst.augmentId] ? 8 : 0;
+  return getStatsPowerScore(inst.stats, inst.arrows.length) + augBonus;
+}
+
+export function sortCardCopies(copies: RolledCardInstance[]): RolledCardInstance[] {
+  return [...copies].sort((a, b) => getInstanceSortScore(b) - getInstanceSortScore(a));
+}
+
 /**
  * Calculates how much Gold a rolled card instance sells for.
- * Higher stat rolls, extra arrows, and X/A attack types fetch a higher Gold price at the Emporium!
+ * Higher stat rolls, extra arrows, X/A attack types, and socketed Runeforge augments fetch higher Gold!
  */
 export function getCardSellValue(
   card: CardDef,
   stats?: TetraStats,
-  arrows?: ArrowDir[]
+  arrows?: ArrowDir[],
+  augmentId?: string
 ): number {
   const s = stats ?? card.stats;
   const a = arrows ?? card.arrows;
@@ -2119,11 +2129,14 @@ export function getCardSellValue(
       : 0;
 
   const arrowBonus = arrowDiff * perStatPoint[card.rarity];
+  const craftedRune = augmentId ? CRAFTABLE_AUGMENT_MAP[augmentId] : undefined;
+  const augmentRefund = craftedRune ? Math.round(craftedRune.craftCost * 0.35) : 0;
 
   const raw =
     baseSellByRarity[card.rarity] +
     Math.round(rollDiff * perStatPoint[card.rarity]) +
     typeBonus +
-    arrowBonus;
+    arrowBonus +
+    augmentRefund;
   return Math.max(25, Math.round(raw / 5) * 5);
 }
