@@ -616,60 +616,81 @@ select.organic-control {
   }
 }
 
-@keyframes slamFlashBurst {
+@keyframes flareUnderGlow {
   0% {
-    transform: scale(0.35);
+    transform: scale(0.76);
     opacity: 0;
   }
-  16% {
-    transform: scale(0.95);
+  14% {
+    transform: scale(1.04);
     opacity: 1;
   }
+  42% {
+    transform: scale(1.1);
+    opacity: 0.86;
+  }
   100% {
-    transform: scale(1.45);
+    transform: scale(1.22);
     opacity: 0;
   }
 }
 
-@keyframes slamShockwaveRing {
+@keyframes flareCoreBloom {
   0% {
-    transform: scale(0.28) rotate(-8deg);
-    opacity: 0.98;
+    transform: scale(0.55);
+    opacity: 0;
   }
-  22% {
-    opacity: 1;
+  12% {
+    transform: scale(1.02);
+    opacity: 0.95;
   }
   100% {
-    transform: scale(1.18) rotate(8deg);
+    transform: scale(1.32);
     opacity: 0;
   }
 }
 
-@keyframes slamPillarRise {
+@keyframes flareStreakBloom {
   0% {
-    transform: scaleY(0.2) scaleX(1.25);
+    transform: scaleX(0.35) scaleY(0.6);
     opacity: 0;
   }
-  18% {
-    transform: scaleY(1.05) scaleX(1);
+  14% {
+    transform: scaleX(1.05) scaleY(1);
     opacity: 1;
   }
   100% {
-    transform: scaleY(1.3) scaleX(0.35);
+    transform: scaleX(1.28) scaleY(0.45);
     opacity: 0;
   }
 }
 
-@keyframes slamShardFly {
+@keyframes flareStreakDiagA {
   0% {
-    transform: translate3d(0, 0, 0) rotate(0deg) scale(1.1);
-    opacity: 1;
+    transform: rotate(45deg) scaleX(0.35) scaleY(0.6);
+    opacity: 0;
   }
-  70% {
+  15% {
+    transform: rotate(45deg) scaleX(1.04) scaleY(1);
     opacity: 0.92;
   }
   100% {
-    transform: translate3d(var(--tx, 40px), var(--ty, 40px), 0) rotate(var(--rot, 45deg)) scale(0.2);
+    transform: rotate(45deg) scaleX(1.25) scaleY(0.45);
+    opacity: 0;
+  }
+}
+
+@keyframes flareStreakDiagB {
+  0% {
+    transform: rotate(-45deg) scaleX(0.35) scaleY(0.6);
+    opacity: 0;
+  }
+  15% {
+    transform: rotate(-45deg) scaleX(1.04) scaleY(1);
+    opacity: 0.92;
+  }
+  100% {
+    transform: rotate(-45deg) scaleX(1.25) scaleY(0.45);
     opacity: 0;
   }
 }
@@ -755,25 +776,36 @@ select.organic-control {
   animation: cardSlamIn 270ms cubic-bezier(0.18, 1, 0.32, 1);
 }
 
-.animate-slam-flash {
-  animation: slamFlashBurst 480ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+.animate-flare-glow-common {
+  animation: flareUnderGlow 620ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
-.animate-slam-ring {
-  animation: slamShockwaveRing 560ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+.animate-flare-glow-rare {
+  animation: flareUnderGlow 780ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
-.animate-slam-ring-delayed {
-  animation: slamShockwaveRing 680ms 75ms cubic-bezier(0.16, 1, 0.3, 1) both;
+.animate-flare-glow-epic {
+  animation: flareUnderGlow 940ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
-.animate-slam-pillar {
-  transform-origin: center bottom;
-  animation: slamPillarRise 640ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+.animate-flare-glow-mythic {
+  animation: flareUnderGlow 1150ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
-.animate-slam-shard {
-  animation: slamShardFly 580ms cubic-bezier(0.15, 0.9, 0.28, 1) forwards;
+.animate-flare-core {
+  animation: flareCoreBloom 520ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-flare-streak {
+  animation: flareStreakBloom 620ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-flare-streak-diag-a {
+  animation: flareStreakDiagA 680ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-flare-streak-diag-b {
+  animation: flareStreakDiagB 680ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
 .animate-board-shake-common {
@@ -901,11 +933,14 @@ select.organic-control {
 @media (prefers-reduced-motion: reduce) {
   .animate-card-flip,
   .animate-card-drop,
-  .animate-slam-flash,
-  .animate-slam-ring,
-  .animate-slam-ring-delayed,
-  .animate-slam-pillar,
-  .animate-slam-shard,
+  .animate-flare-glow-common,
+  .animate-flare-glow-rare,
+  .animate-flare-glow-epic,
+  .animate-flare-glow-mythic,
+  .animate-flare-core,
+  .animate-flare-streak,
+  .animate-flare-streak-diag-a,
+  .animate-flare-streak-diag-b,
   .animate-board-shake-common,
   .animate-board-shake-rare,
   .animate-board-shake-epic,

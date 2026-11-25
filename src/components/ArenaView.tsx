@@ -182,13 +182,10 @@ export const ArenaView: React.FC<ArenaViewProps> = ({
   const [confirmingRetreat, setConfirmingRetreat] = useState(false);
   const [callout, setCallout] = useState<{ id: number; text: string } | null>(null);
   const [activeClash, setActiveClash] = useState<ClashDetail | null>(null);
-  const [activeSlam, setActiveSlam] = useState<{
-    id: number;
-    row: number;
-    col: number;
-    rarity: Rarity;
-    isRelic: boolean;
-  } | null>(null);
+  const [boardShakeRarity, setBoardShakeRarity] = useState<Rarity | null>(null);
+  const [cellFlareMap, setCellFlareMap] = useState<
+    Record<string, { id: number; rarity: Rarity; isRelic: boolean }>
+  >({});
   const [lastBattleLog, setLastBattleLog] = useState<string>(
     'Drag a card from your right-hand fan onto any open battlefield socket · Click a card in hand to inspect full buffs.'
   );
@@ -323,7 +320,8 @@ export const ArenaView: React.FC<ArenaViewProps> = ({
       setTurn(starter);
       setSelectedHandUid(null);
       setActiveClash(null);
-      setActiveSlam(null);
+      setBoardShakeRarity(null);
+      setCellFlareMap({});
       setPlayerFlipsCount(0);
       setPlayerCombosCount(0);
       setSummary(null);
@@ -498,17 +496,29 @@ export const ArenaView: React.FC<ArenaViewProps> = ({
       sound.placeSlab(slamRarity, Boolean(chosenPowerDef), slamPan);
 
       const slamId = Date.now() + Math.random();
-      setActiveSlam({
-        id: slamId,
-        row,
-        col,
-        rarity: slamRarity,
-        isRelic: Boolean(chosenPowerDef),
-      });
-      const clearSlamTimer = window.setTimeout(() => {
-        setActiveSlam((cur) => (cur?.id === slamId ? null : cur));
-      }, 640);
-      timersRef.current.push(clearSlamTimer);
+      const cellKey = `${row}-${col}`;
+      setBoardShakeRarity(slamRarity);
+      setCellFlareMap((prev) => ({
+        ...prev,
+        [cellKey]: {
+          id: slamId,
+          rarity: slamRarity,
+          isRelic: Boolean(chosenPowerDef),
+        },
+      }));
+
+      const clearShakeTimer = window.setTimeout(() => {
+        setBoardShakeRarity(null);
+      }, 420);
+      const clearFlareTimer = window.setTimeout(() => {
+        setCellFlareMap((prev) => {
+          if (prev[cellKey]?.id !== slamId) return prev;
+          const next = { ...prev };
+          delete next[cellKey];
+          return next;
+        });
+      }, 1220);
+      timersRef.current.push(clearShakeTimer, clearFlareTimer);
 
       const resolution = resolvePlacement(board, row, col, chosen, owner);
 
@@ -1323,7 +1333,7 @@ export const ArenaView: React.FC<ArenaViewProps> = ({
 
           <div
             className={`relative ${boardFitClass} p-1.5 sm:p-2 lg:p-3 ${
-              activeSlam ? `animate-board-shake-${activeSlam.rarity}` : ''
+              boardShakeRarity ? `animate-board-shake-${boardShakeRarity}` : ''
             }`}
           >
             <BattlefieldSiegeOverlay />
@@ -1375,8 +1385,7 @@ export const ArenaView: React.FC<ArenaViewProps> = ({
 
                     if (cell.card) {
                       const placedCard = cell.card;
-                      const isActiveSlamCell =
-                        activeSlam?.row === rIdx && activeSlam?.col === cIdx;
+                      const cellFlare = cellFlareMap[key];
                       return (
                         <div
                           key={key}
@@ -1393,21 +1402,22 @@ export const ArenaView: React.FC<ArenaViewProps> = ({
                             }
                           }}
                           className={`relative aspect-[5/7] transition-transform ${
-                            isActiveSlamCell ? 'z-30' : ''
+                            cellFlare ? 'z-30' : ''
                           } ${
                             isRelicAuraTarget
                               ? 'ring-2 ring-sky-300 shadow-[0_0_20px_rgba(56,189,248,0.55)] z-20 scale-[1.02]'
                               : ''
                           }`}
                         >
-                          {isActiveSlamCell && activeSlam && (
+                          {cellFlare && (
                             <CardSlamFlare
-                              key={activeSlam.id}
-                              rarity={activeSlam.rarity}
-                              isRelic={activeSlam.isRelic}
+                              key={cellFlare.id}
+                              rarity={cellFlare.rarity}
+                              isRelic={cellFlare.isRelic}
                             />
                           )}
                           <GameCard
+                            className="relative z-10"
                             cardId={placedCard.cardId}
                             stats={placedCard.stats}
                             baseStats={placedCard.baseStats}

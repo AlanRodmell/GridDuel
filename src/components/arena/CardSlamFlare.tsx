@@ -6,326 +6,182 @@ interface CardSlamFlareProps {
   isRelic?: boolean;
 }
 
-interface ShardSpec {
-  angleDeg: number;
-  distPx: number;
-  sizePx: number;
-  rotDeg: number;
+interface GlowSpec {
+  rimShadow: string;
+  innerWash: string;
+  outerAtmosphere: string;
+  streakHoriz?: string;
+  streakVert?: string;
+  streakDiag?: string;
+  durationClass: string;
 }
 
-const SHARDS_COMMON: ShardSpec[] = [
-  { angleDeg: 20, distPx: 54, sizePx: 6, rotDeg: 42 },
-  { angleDeg: 68, distPx: 48, sizePx: 5, rotDeg: -35 },
-  { angleDeg: 118, distPx: 56, sizePx: 6, rotDeg: 58 },
-  { angleDeg: 162, distPx: 52, sizePx: 5, rotDeg: -48 },
-  { angleDeg: 205, distPx: 58, sizePx: 6, rotDeg: 31 },
-  { angleDeg: 252, distPx: 46, sizePx: 5, rotDeg: -62 },
-  { angleDeg: 298, distPx: 55, sizePx: 6, rotDeg: 47 },
-  { angleDeg: 342, distPx: 50, sizePx: 5, rotDeg: -28 },
-];
-
-const SHARDS_RARE: ShardSpec[] = [
-  { angleDeg: 0, distPx: 68, sizePx: 7, rotDeg: 45 },
-  { angleDeg: 36, distPx: 58, sizePx: 5, rotDeg: -30 },
-  { angleDeg: 72, distPx: 64, sizePx: 6, rotDeg: 60 },
-  { angleDeg: 108, distPx: 60, sizePx: 5, rotDeg: -50 },
-  { angleDeg: 144, distPx: 66, sizePx: 7, rotDeg: 35 },
-  { angleDeg: 180, distPx: 70, sizePx: 6, rotDeg: 45 },
-  { angleDeg: 216, distPx: 58, sizePx: 5, rotDeg: -40 },
-  { angleDeg: 252, distPx: 64, sizePx: 6, rotDeg: 55 },
-  { angleDeg: 288, distPx: 60, sizePx: 5, rotDeg: -35 },
-  { angleDeg: 324, distPx: 66, sizePx: 7, rotDeg: 25 },
-];
-
-const SHARDS_EPIC: ShardSpec[] = [
-  { angleDeg: 0, distPx: 82, sizePx: 7, rotDeg: 45 },
-  { angleDeg: 28, distPx: 70, sizePx: 6, rotDeg: -40 },
-  { angleDeg: 56, distPx: 78, sizePx: 7, rotDeg: 65 },
-  { angleDeg: 85, distPx: 72, sizePx: 5, rotDeg: -55 },
-  { angleDeg: 115, distPx: 84, sizePx: 8, rotDeg: 35 },
-  { angleDeg: 145, distPx: 74, sizePx: 6, rotDeg: -25 },
-  { angleDeg: 175, distPx: 82, sizePx: 7, rotDeg: 50 },
-  { angleDeg: 205, distPx: 72, sizePx: 6, rotDeg: -60 },
-  { angleDeg: 235, distPx: 80, sizePx: 7, rotDeg: 40 },
-  { angleDeg: 265, distPx: 74, sizePx: 5, rotDeg: -35 },
-  { angleDeg: 295, distPx: 84, sizePx: 8, rotDeg: 55 },
-  { angleDeg: 328, distPx: 72, sizePx: 6, rotDeg: -45 },
-];
-
-const SHARDS_MYTHIC: ShardSpec[] = [
-  { angleDeg: 0, distPx: 98, sizePx: 8, rotDeg: 45 },
-  { angleDeg: 22, distPx: 84, sizePx: 6, rotDeg: -35 },
-  { angleDeg: 45, distPx: 102, sizePx: 9, rotDeg: 60 },
-  { angleDeg: 68, distPx: 86, sizePx: 6, rotDeg: -50 },
-  { angleDeg: 90, distPx: 96, sizePx: 8, rotDeg: 45 },
-  { angleDeg: 112, distPx: 84, sizePx: 6, rotDeg: -30 },
-  { angleDeg: 135, distPx: 104, sizePx: 9, rotDeg: 55 },
-  { angleDeg: 158, distPx: 88, sizePx: 6, rotDeg: -45 },
-  { angleDeg: 180, distPx: 98, sizePx: 8, rotDeg: 45 },
-  { angleDeg: 202, distPx: 84, sizePx: 6, rotDeg: -55 },
-  { angleDeg: 225, distPx: 104, sizePx: 9, rotDeg: 40 },
-  { angleDeg: 248, distPx: 86, sizePx: 6, rotDeg: -35 },
-  { angleDeg: 270, distPx: 96, sizePx: 8, rotDeg: 45 },
-  { angleDeg: 292, distPx: 84, sizePx: 6, rotDeg: -60 },
-  { angleDeg: 315, distPx: 102, sizePx: 9, rotDeg: 50 },
-  { angleDeg: 338, distPx: 86, sizePx: 6, rotDeg: -25 },
-];
-
-const FLARE_PALETTE: Record<
-  Rarity,
-  {
-    coreGlow: string;
-    primaryStroke: string;
-    secondaryStroke: string;
-    shardFill: string;
-    shardGlow: string;
-  }
-> = {
+const GLOW_BY_RARITY: Record<Rarity, GlowSpec> = {
   common: {
-    coreGlow:
-      'radial-gradient(circle, rgba(232, 206, 165, 0.72) 0%, rgba(168, 135, 92, 0.34) 45%, rgba(0, 0, 0, 0) 74%)',
-    primaryStroke: '#dfc398',
-    secondaryStroke: '#9c7e58',
-    shardFill: '#cdb086',
-    shardGlow: '0 0 6px rgba(223, 195, 152, 0.7)',
+    rimShadow:
+      '0 0 22px 6px rgba(238, 205, 152, 0.72), 0 0 46px 14px rgba(176, 132, 76, 0.36)',
+    innerWash:
+      'radial-gradient(ellipse 68% 72% at 50% 50%, rgba(255, 238, 206, 0.78) 0%, rgba(216, 174, 114, 0.42) 45%, rgba(140, 102, 58, 0) 76%)',
+    outerAtmosphere:
+      'radial-gradient(ellipse 72% 72% at 50% 50%, rgba(226, 186, 128, 0.38) 0%, rgba(168, 125, 72, 0.16) 52%, rgba(0, 0, 0, 0) 78%)',
+    streakHoriz:
+      'radial-gradient(ellipse 50% 9% at 50% 50%, rgba(255, 241, 214, 0.65) 0%, rgba(222, 178, 115, 0.25) 55%, rgba(0, 0, 0, 0) 100%)',
+    durationClass: 'animate-flare-glow-common',
   },
   rare: {
-    coreGlow:
-      'radial-gradient(circle, rgba(186, 230, 253, 0.88) 0%, rgba(56, 189, 248, 0.48) 44%, rgba(14, 116, 144, 0) 76%)',
-    primaryStroke: '#7dd3fc',
-    secondaryStroke: '#0284c7',
-    shardFill: '#bae6fd',
-    shardGlow: '0 0 10px rgba(56, 189, 248, 0.95)',
+    rimShadow:
+      '0 0 28px 9px rgba(125, 211, 252, 0.88), 0 0 64px 22px rgba(14, 165, 233, 0.52), 0 0 96px 34px rgba(29, 78, 216, 0.28)',
+    innerWash:
+      'radial-gradient(ellipse 70% 74% at 50% 50%, rgba(224, 247, 255, 0.92) 0%, rgba(56, 189, 248, 0.62) 44%, rgba(2, 132, 199, 0) 78%)',
+    outerAtmosphere:
+      'radial-gradient(ellipse 76% 76% at 50% 50%, rgba(56, 189, 248, 0.52) 0%, rgba(29, 78, 216, 0.24) 54%, rgba(0, 0, 0, 0) 80%)',
+    streakHoriz:
+      'radial-gradient(ellipse 50% 8% at 50% 50%, rgba(240, 251, 255, 0.92) 0%, rgba(56, 189, 248, 0.52) 50%, rgba(14, 165, 233, 0) 100%)',
+    streakVert:
+      'radial-gradient(ellipse 8% 50% at 50% 50%, rgba(224, 247, 255, 0.82) 0%, rgba(56, 189, 248, 0.4) 50%, rgba(14, 165, 233, 0) 100%)',
+    durationClass: 'animate-flare-glow-rare',
   },
   epic: {
-    coreGlow:
-      'radial-gradient(circle, rgba(245, 208, 254, 0.92) 0%, rgba(192, 132, 252, 0.56) 45%, rgba(107, 33, 168, 0) 78%)',
-    primaryStroke: '#e879f9',
-    secondaryStroke: '#9333ea',
-    shardFill: '#f0abfc',
-    shardGlow: '0 0 12px rgba(217, 70, 239, 0.95)',
+    rimShadow:
+      '0 0 34px 12px rgba(232, 121, 249, 0.92), 0 0 78px 28px rgba(168, 85, 247, 0.62), 0 0 124px 44px rgba(107, 33, 168, 0.36)',
+    innerWash:
+      'radial-gradient(ellipse 72% 76% at 50% 50%, rgba(253, 242, 255, 0.96) 0%, rgba(217, 70, 239, 0.68) 44%, rgba(126, 34, 206, 0) 78%)',
+    outerAtmosphere:
+      'radial-gradient(ellipse 80% 80% at 50% 50%, rgba(192, 132, 252, 0.62) 0%, rgba(126, 34, 206, 0.32) 55%, rgba(0, 0, 0, 0) 82%)',
+    streakHoriz:
+      'radial-gradient(ellipse 50% 9% at 50% 50%, rgba(255, 245, 255, 0.96) 0%, rgba(232, 121, 249, 0.65) 48%, rgba(147, 51, 234, 0) 100%)',
+    streakVert:
+      'radial-gradient(ellipse 9% 50% at 50% 50%, rgba(253, 242, 255, 0.88) 0%, rgba(192, 132, 252, 0.52) 48%, rgba(147, 51, 234, 0) 100%)',
+    streakDiag:
+      'radial-gradient(ellipse 46% 6% at 50% 50%, rgba(250, 232, 255, 0.78) 0%, rgba(217, 70, 239, 0.42) 50%, rgba(126, 34, 206, 0) 100%)',
+    durationClass: 'animate-flare-glow-epic',
   },
   mythic: {
-    coreGlow:
-      'radial-gradient(circle, rgba(255, 251, 235, 0.98) 0%, rgba(250, 204, 21, 0.72) 38%, rgba(234, 88, 12, 0.35) 62%, rgba(0, 0, 0, 0) 82%)',
-    primaryStroke: '#fef08a',
-    secondaryStroke: '#f59e0b',
-    shardFill: '#fde047',
-    shardGlow: '0 0 14px rgba(250, 204, 21, 1)',
+    rimShadow:
+      '0 0 40px 15px rgba(254, 240, 138, 0.98), 0 0 92px 36px rgba(245, 158, 11, 0.72), 0 0 150px 56px rgba(217, 119, 6, 0.42)',
+    innerWash:
+      'radial-gradient(ellipse 74% 78% at 50% 50%, rgba(255, 254, 245, 1) 0%, rgba(253, 224, 71, 0.78) 42%, rgba(234, 88, 12, 0) 80%)',
+    outerAtmosphere:
+      'radial-gradient(ellipse 84% 84% at 50% 50%, rgba(250, 204, 21, 0.72) 0%, rgba(234, 88, 12, 0.38) 54%, rgba(0, 0, 0, 0) 84%)',
+    streakHoriz:
+      'radial-gradient(ellipse 50% 10% at 50% 50%, rgba(255, 255, 250, 1) 0%, rgba(253, 224, 71, 0.78) 48%, rgba(245, 158, 11, 0) 100%)',
+    streakVert:
+      'radial-gradient(ellipse 10% 50% at 50% 50%, rgba(255, 255, 250, 0.96) 0%, rgba(253, 224, 71, 0.68) 48%, rgba(245, 158, 11, 0) 100%)',
+    streakDiag:
+      'radial-gradient(ellipse 48% 7% at 50% 50%, rgba(255, 251, 235, 0.92) 0%, rgba(251, 191, 36, 0.56) 50%, rgba(217, 119, 6, 0) 100%)',
+    durationClass: 'animate-flare-glow-mythic',
   },
 };
 
 /**
- * Unclipped GPU-accelerated visual impact flare erupting around a slammed card:
- * - Common: Weathered sandstone shockwave + chipped slate fragments
- * - Rare: Crystalline sapphire diamond shockwave + 4 cardinal frost lances
- * - Epic: Dual counter-expanding amethyst arcane rift rings + 8 starlight rays
- * - Mythic: Sovereign sunfire vertical pillar + 12-ray solar corona + triple golden shockwaves
+ * Soft, screen-blended optical flare glow that blooms from beneath and around a placed card:
+ * - Zero wireframe shapes — pure incandescent rim-light, atmospheric radial bloom, and feathered optical flare streaks.
+ * - Scaled in intensity, reach, and lingering warmth by Rarity ('common' | 'rare' | 'epic' | 'mythic').
  */
 export const CardSlamFlare: React.FC<CardSlamFlareProps> = ({
   rarity,
   isRelic = false,
 }) => {
-  const pal = FLARE_PALETTE[rarity];
-  const shards =
-    rarity === 'mythic'
-      ? SHARDS_MYTHIC
-      : rarity === 'epic'
-      ? SHARDS_EPIC
-      : rarity === 'rare'
-      ? SHARDS_RARE
-      : SHARDS_COMMON;
+  const g = GLOW_BY_RARITY[rarity];
 
   return (
-    <div
-      aria-hidden="true"
-      className="pointer-events-none absolute inset-0 z-40 flex items-center justify-center overflow-visible"
-    >
-      {/* 1. Ground Impact Radial Flash */}
+    <>
+      {/* 1. Under-Card Luminous Rim Halo & Wide Stone Illumination (Behind Card: z-0) */}
       <div
-        style={{ background: pal.coreGlow }}
-        className="animate-slam-flash absolute -inset-[55%] rounded-full"
-      />
-
-      {/* 2. Mythic Vertical Sunfire Pillar Beam */}
-      {rarity === 'mythic' && (
-        <div
-          style={{
-            background:
-              'linear-gradient(to top, rgba(254, 240, 138, 0) 0%, rgba(253, 224, 71, 0.85) 22%, rgba(255, 251, 235, 0.95) 50%, rgba(245, 158, 11, 0) 100%)',
-          }}
-          className="animate-slam-pillar absolute -top-[95%] bottom-[10%] w-[68%] blur-[2px]"
-        />
-      )}
-
-      {/* 3. Rarity-Specific Geometric Shockwaves & Rays SVG */}
-      <svg
-        viewBox="-120 -120 240 240"
-        className="animate-slam-ring absolute w-[240%] h-[240%] overflow-visible"
+        aria-hidden="true"
+        className={`pointer-events-none absolute inset-0 z-0 flex items-center justify-center overflow-visible mix-blend-screen ${g.durationClass}`}
       >
-        {/* Primary Shockwave Ring / Polygon */}
-        {rarity === 'common' && (
-          <>
-            <circle
-              cx="0"
-              cy="0"
-              r="52"
-              fill="none"
-              stroke={pal.primaryStroke}
-              strokeWidth="4.5"
-              strokeDasharray="18 8 10 6"
-            />
-            <circle
-              cx="0"
-              cy="0"
-              r="38"
-              fill="none"
-              stroke={pal.secondaryStroke}
-              strokeWidth="2.5"
-            />
-          </>
-        )}
+        {/* Soft Wide Atmospheric Light Pool Illuminating Neighboring Tiles */}
+        <div
+          style={{ background: g.outerAtmosphere }}
+          className={`absolute ${
+            rarity === 'mythic'
+              ? '-inset-[105%]'
+              : rarity === 'epic'
+              ? '-inset-[88%]'
+              : rarity === 'rare'
+              ? '-inset-[72%]'
+              : '-inset-[52%]'
+          } blur-xl`}
+        />
 
-        {rarity === 'rare' && (
-          <>
-            {/* Octagonal / Diamond Crystalline Frost Shockwave + 4 Cardinal Lances */}
-            <polygon
-              points="0,-64 45,-45 64,0 45,45 0,64 -45,45 -64,0 -45,-45"
-              fill="none"
-              stroke={pal.primaryStroke}
-              strokeWidth="4"
-            />
-            <polygon
-              points="0,-48 48,0 0,48 -48,0"
-              fill="none"
-              stroke={pal.secondaryStroke}
-              strokeWidth="2.5"
-            />
-            {[0, 90, 180, 270].map((deg) => (
-              <polygon
-                key={deg}
-                points="0,-92 6,-50 0,-42 -6,-50"
-                fill={pal.primaryStroke}
-                transform={`rotate(${deg})`}
-              />
-            ))}
-          </>
-        )}
-
-        {rarity === 'epic' && (
-          <>
-            {/* Arcane Rift Sigil Ring + 8 Starlight Spikes */}
-            <circle
-              cx="0"
-              cy="0"
-              r="68"
-              fill="none"
-              stroke={pal.primaryStroke}
-              strokeWidth="4.5"
-              strokeDasharray="24 6 6 6"
-            />
-            <polygon
-              points="0,-58 41,-41 58,0 41,41 0,58 -41,41 -58,0 -41,-41"
-              fill="none"
-              stroke={pal.secondaryStroke}
-              strokeWidth="3"
-            />
-            {[0, 45, 90, 135, 180, 225, 270, 315].map((deg, idx) => (
-              <polygon
-                key={deg}
-                points={
-                  idx % 2 === 0
-                    ? '0,-102 5,-52 0,-44 -5,-52'
-                    : '0,-84 4,-50 0,-44 -4,-50'
-                }
-                fill={idx % 2 === 0 ? pal.primaryStroke : pal.secondaryStroke}
-                transform={`rotate(${deg})`}
-              />
-            ))}
-          </>
-        )}
-
-        {rarity === 'mythic' && (
-          <>
-            {/* Sovereign Triple Sunburst Corona + 12 Solar Rays */}
-            <circle
-              cx="0"
-              cy="0"
-              r="76"
-              fill="none"
-              stroke={pal.primaryStroke}
-              strokeWidth="5.5"
-            />
-            <circle
-              cx="0"
-              cy="0"
-              r="58"
-              fill="none"
-              stroke={pal.secondaryStroke}
-              strokeWidth="3.5"
-              strokeDasharray="16 6"
-            />
-            {Array.from({ length: 12 }).map((_, idx) => {
-              const deg = idx * 30;
-              const isMajor = idx % 3 === 0;
-              return (
-                <polygon
-                  key={deg}
-                  points={
-                    isMajor
-                      ? '0,-114 7,-54 0,-44 -7,-54'
-                      : '0,-92 4.5,-54 0,-46 -4.5,-54'
-                  }
-                  fill={isMajor ? '#fffbeb' : pal.primaryStroke}
-                  transform={`rotate(${deg})`}
-                />
-              );
-            })}
-          </>
-        )}
-      </svg>
-
-      {/* 4. Secondary Delayed Outer Shockwave for Epic / Mythic / Power Relics */}
-      {(rarity === 'epic' || rarity === 'mythic' || isRelic) && (
-        <svg
-          viewBox="-120 -120 240 240"
-          className="animate-slam-ring-delayed absolute w-[265%] h-[265%] overflow-visible"
-        >
-          <circle
-            cx="0"
-            cy="0"
-            r="68"
-            fill="none"
-            stroke={isRelic ? '#38bdf8' : pal.primaryStroke}
-            strokeWidth="3"
-            strokeDasharray={isRelic ? '12 8' : undefined}
+        {/* Optional Celestial Cyan Undertone for Power Relic Totems */}
+        {isRelic && (
+          <div
+            style={{
+              background:
+                'radial-gradient(ellipse 76% 76% at 50% 50%, rgba(125, 211, 252, 0.62) 0%, rgba(14, 165, 233, 0.28) 52%, rgba(0, 0, 0, 0) 82%)',
+            }}
+            className="absolute -inset-[82%] blur-lg"
           />
-        </svg>
-      )}
+        )}
 
-      {/* 5. Radially Ejected Stone Chips, Crystal Shards & Arcane Sparks */}
-      {shards.map((s, idx) => {
-        const rad = (s.angleDeg * Math.PI) / 180;
-        const tx = Math.cos(rad) * s.distPx;
-        const ty = Math.sin(rad) * s.distPx;
-        return (
-          <span
-            key={idx}
-            style={
-              {
-                width: `${s.sizePx}px`,
-                height: `${s.sizePx}px`,
-                backgroundColor: isRelic && idx % 2 === 0 ? '#7dd3fc' : pal.shardFill,
-                boxShadow: pal.shardGlow,
-                '--tx': `${tx.toFixed(1)}px`,
-                '--ty': `${ty.toFixed(1)}px`,
-                '--rot': `${s.rotDeg}deg`,
-              } as React.CSSProperties
-            }
-            className="animate-slam-shard absolute rotate-45"
+        {/* Intense Card-Silhouette Rim Bloom Seeping Out From Under the Slab */}
+        <div
+          style={{ boxShadow: g.rimShadow }}
+          className="absolute inset-[2%] rounded-[6px]"
+        />
+      </div>
+
+      {/* 2. Over-Edge Optical Lens-Flare Wash & Feathered Light Streaks (Above Card: z-30) */}
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-0 z-30 flex items-center justify-center overflow-visible mix-blend-screen"
+      >
+        {/* Soft Incandescent Core Bloom */}
+        <div
+          style={{ background: g.innerWash }}
+          className="animate-flare-core absolute -inset-[42%] blur-md"
+        />
+
+        {/* Feathered Horizontal Optical Anamorphic Flare Streak */}
+        {g.streakHoriz && (
+          <div
+            style={{ background: g.streakHoriz }}
+            className={`animate-flare-streak absolute ${
+              rarity === 'mythic'
+                ? 'w-[310%] h-[95%]'
+                : rarity === 'epic'
+                ? 'w-[265%] h-[85%]'
+                : rarity === 'rare'
+                ? 'w-[230%] h-[78%]'
+                : 'w-[185%] h-[65%]'
+            } blur-[2px]`}
           />
-        );
-      })}
-    </div>
+        )}
+
+        {/* Feathered Vertical Optical Flare Streak (Rare / Epic / Mythic) */}
+        {g.streakVert && (
+          <div
+            style={{ background: g.streakVert }}
+            className={`animate-flare-streak absolute ${
+              rarity === 'mythic'
+                ? 'w-[95%] h-[270%]'
+                : rarity === 'epic'
+                ? 'w-[85%] h-[235%]'
+                : 'w-[75%] h-[195%]'
+            } blur-[2px]`}
+          />
+        )}
+
+        {/* Feathered Diagonal Star-Bloom Streaks (Epic / Mythic) */}
+        {g.streakDiag && (
+          <>
+            <div
+              style={{ background: g.streakDiag }}
+              className={`animate-flare-streak-diag-a absolute ${
+                rarity === 'mythic' ? 'w-[265%] h-[85%]' : 'w-[220%] h-[75%]'
+              } blur-[2px]`}
+            />
+            <div
+              style={{ background: g.streakDiag }}
+              className={`animate-flare-streak-diag-b absolute ${
+                rarity === 'mythic' ? 'w-[265%] h-[85%]' : 'w-[220%] h-[75%]'
+              } blur-[2px]`}
+            />
+          </>
+        )}
+      </div>
+    </>
   );
 };
