@@ -29,9 +29,10 @@ import {
   TetraStats,
 } from '../types/game';
 
-export const BOARD_SIZE = 4;
+export const BOARD_ROWS = 3;
+export const BOARD_COLS = 5;
 export const HAND_SIZE = 7;
-export const BLOCKED_TILE_COUNT = 0; // Fully open 4x4 board (16 playable tiles, 14 cards played)
+export const BLOCKED_TILE_COUNT = 0; // Fully open 5x3 landscape board (15 playable tiles, 14 cards played)
 export const BIOME_TILE_COUNT = 4; // 4 tactical biome tiles per match
 
 export const EIGHT_DIRS: {
@@ -73,14 +74,13 @@ export function cloneBoard(board: BoardCell[][]): BoardCell[][] {
 }
 
 /**
- * Creates a fully open 4x4 tactical battlefield (16 playable tiles, 0 blocked)
- * with 4 biome tiles distributed across the 4 quadrants so players can avoid
+ * Creates a fully open 5x3 landscape tactical battlefield (5 columns x 3 rows = 15 playable tiles)
+ * with 4 biome tiles distributed across 4 disjoint sectors so players can avoid
  * hazards or capitalize on favorable terrain with their 7-card hands.
  */
 export function createBoard(allowedBiomes?: BiomeType[]): BoardCell[][] {
-  const size = BOARD_SIZE;
-  const board: BoardCell[][] = Array.from({ length: size }, (_, row) =>
-    Array.from({ length: size }, (_, col) => ({
+  const board: BoardCell[][] = Array.from({ length: BOARD_ROWS }, (_, row) =>
+    Array.from({ length: BOARD_COLS }, (_, col) => ({
       row,
       col,
       blocked: false,
@@ -96,43 +96,41 @@ export function createBoard(allowedBiomes?: BiomeType[]): BoardCell[][] {
     [biomePool[i], biomePool[j]] = [biomePool[j], biomePool[i]];
   }
 
-  // Pick 1 tile per 2x2 quadrant so the 4 biome tiles span the board cleanly
-  const quadrants: [number, number][][] = [
+  // Pick 1 tile per disjoint sector across the 5x3 landscape board so biome tiles never clump
+  const sectors: [number, number][][] = [
     [
       [0, 0],
       [0, 1],
       [1, 0],
+    ],
+    [
       [1, 1],
+      [2, 0],
+      [2, 1],
+    ],
+    [
+      [0, 3],
+      [0, 4],
+      [1, 4],
     ],
     [
       [0, 2],
-      [0, 3],
       [1, 2],
       [1, 3],
-    ],
-    [
-      [2, 0],
-      [2, 1],
-      [3, 0],
-      [3, 1],
-    ],
-    [
       [2, 2],
       [2, 3],
-      [3, 2],
-      [3, 3],
+      [2, 4],
     ],
   ];
 
-  // Shuffle quadrant order so biome assignment isn't predictable
-  for (let i = quadrants.length - 1; i > 0; i--) {
+  for (let i = sectors.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
-    [quadrants[i], quadrants[j]] = [quadrants[j], quadrants[i]];
+    [sectors[i], sectors[j]] = [sectors[j], sectors[i]];
   }
 
   for (let i = 0; i < BIOME_TILE_COUNT; i++) {
-    const quad = quadrants[i % quadrants.length];
-    const [r, c] = quad[Math.floor(Math.random() * quad.length)];
+    const sec = sectors[i % sectors.length];
+    const [r, c] = sec[Math.floor(Math.random() * sec.length)];
     board[r][c].terrain = biomePool[i % biomePool.length];
   }
 
@@ -464,14 +462,15 @@ export function resolvePlacement(
   owner: Owner,
   deterministic = false
 ): MoveResolution {
-  const size = board.length;
+  const rows = board.length;
+  const cols = board[0]?.length ?? BOARD_COLS;
   const nextBoard = cloneBoard(board);
   const cell = nextBoard[row][col];
   const def = CARD_MAP[handCard.cardId];
   const opponent: Owner = owner === 'player' ? 'rival' : 'player';
 
-  for (let r = 0; r < size; r++) {
-    for (let c = 0; c < size; c++) {
+  for (let r = 0; r < rows; r++) {
+    for (let c = 0; c < cols; c++) {
       const existing = nextBoard[r][c].card;
       if (existing) {
         existing.justPlaced = false;
@@ -525,8 +524,8 @@ export function resolvePlacement(
     const isBuff =
       aug.powerDelta >= 0 && aug.pDefDelta >= 0 && aug.mDefDelta >= 0;
 
-    for (let r = 0; r < size; r++) {
-      for (let c = 0; c < size; c++) {
+    for (let r = 0; r < rows; r++) {
+      for (let c = 0; c < cols; c++) {
         if (r === row && c === col) continue;
         const target = nextBoard[r][c].card;
         if (!target) continue;
@@ -598,7 +597,7 @@ export function resolvePlacement(
       if (!sourceCard.arrows.includes(dir.myArrow)) continue;
       const nr = cr + dir.dr;
       const nc = cc + dir.dc;
-      if (nr < 0 || nr >= size || nc < 0 || nc >= size) continue;
+      if (nr < 0 || nr >= rows || nc < 0 || nc >= cols) continue;
       const neighbor = nextBoard[nr][nc].card;
       if (neighbor && neighbor.owner !== winner) {
         flipCard(nr, nc, winner, 'combo', wave);
@@ -613,7 +612,7 @@ export function resolvePlacement(
     if (!placed.arrows.includes(dir.myArrow)) continue;
     const nr = row + dir.dr;
     const nc = col + dir.dc;
-    if (nr < 0 || nr >= size || nc < 0 || nc >= size) continue;
+    if (nr < 0 || nr >= rows || nc < 0 || nc >= cols) continue;
     const nCard = nextBoard[nr][nc].card;
     if (!nCard || nCard.owner === owner) continue;
     const nDef = CARD_MAP[nCard.cardId];
@@ -720,11 +719,12 @@ export function chooseAiMove(
 ): { handIndex: number; row: number; col: number } | null {
   const fighter = FIGHTER_MAP[fighterId] ?? ALL_FIGHTERS[0];
   const skill = Math.max(0, Math.min(1, fighter.aiSkill));
-  const size = board.length;
+  const rows = board.length;
+  const cols = board[0]?.length ?? BOARD_COLS;
   const emptyCells: [number, number][] = [];
 
-  for (let r = 0; r < size; r++) {
-    for (let c = 0; c < size; c++) {
+  for (let r = 0; r < rows; r++) {
+    for (let c = 0; c < cols; c++) {
       if (!board[r][c].blocked && !board[r][c].card) {
         emptyCells.push([r, c]);
       }
@@ -814,7 +814,7 @@ export function chooseAiMove(
       for (const dir of EIGHT_DIRS) {
         const nr = r + dir.dr;
         const nc = c + dir.dc;
-        const inBounds = nr >= 0 && nr < size && nc >= 0 && nc < size;
+        const inBounds = nr >= 0 && nr < rows && nc >= 0 && nc < cols;
         const hasArrow = hCard.arrows.includes(dir.myArrow);
 
         if (inBounds && !board[nr][nc].blocked && !board[nr][nc].card) {

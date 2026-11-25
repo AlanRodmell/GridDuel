@@ -43,18 +43,17 @@ export const RulesModal: React.FC<RulesModalProps> = ({ open, onClose }) => {
         </div>
 
         <div className="overflow-y-auto px-5 py-4 space-y-5 font-[var(--font-serif)] text-[15.5px] text-[#cbb89a] leading-relaxed">
-          {/* 1. Open 4x4 Battlefield & 7-Card Hands */}
+          {/* 1. Open 5x3 Landscape Battlefield & 7-Card Hands */}
           <section className="space-y-1.5">
             <h3 className="font-[var(--font-display)] text-xs font-bold uppercase tracking-wider text-[#e6b85c]">
-              1. Open 4×4 Battlefield &amp; 7-Card Hands
+              1. Open 5×3 Landscape Battlefield &amp; 7-Card Hands
             </h3>
             <p>
-              Each duel is played on a fully open <strong className="text-[#f3dfb6]">4×4 grid (16 playable tiles)</strong>{' '}
+              Each duel is played on a wide <strong className="text-[#f3dfb6]">5×3 landscape grid (15 playable tiles)</strong>{' '}
               seeded with <strong className="text-[#f3dfb6]">4 tactical Biome tiles</strong> based on the arena region. You and
-              your rival each play <strong className="text-[#f3dfb6]">7 cards</strong> (14 total, leaving 2 tiles open at match
-              end), so you can always maneuver around hostile terrain or plant specialists onto
-              favorable ground. Control the most cards (Blue vs Crimson) after all 14 cards are
-              played to win!
+              your rival each play <strong className="text-[#f3dfb6]">7 cards</strong> (14 total, leaving 1 tile open at match
+              end), so even the final turn preserves a tactical placement choice. Control the most
+              cards (Blue vs Crimson) after all 14 cards are played to win!
             </p>
           </section>
 
@@ -131,7 +130,7 @@ export const RulesModal: React.FC<RulesModalProps> = ({ open, onClose }) => {
               <span>4. Battlefield Augments &amp; Runeforge</span>
             </h3>
             <p>
-              Augments are rare battlefield powers that trigger when a card is placed on the 4×4
+              Augments are rare battlefield powers that trigger when a card is placed on the 5×3
               grid. Only <strong className="text-[#f3dfb6]">5 Mythic Legendaries</strong> carry innate traits—for every other
               card, visit the <strong className="text-[#f3dfb6]">Runeforge</strong> tab in the <strong className="text-[#f3dfb6]">Vault &amp; Forge</strong> to spend
               Gold and imbue a custom Rune onto your best card copies.

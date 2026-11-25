@@ -620,6 +620,7 @@
   filter: drop-shadow(0 22px 26px rgba(0, 0, 0, 0.78));
 }
 
+/* Landscape 5x3 board stage: 5 cols x 3 rows of 5:7 Tarot cards => 25:21 landscape ratio */
 .mobile-board-stage,
 .desktop-board-stage {
   container-type: size;
@@ -627,7 +628,7 @@
 
 .mobile-board-fit,
 .desktop-board-fit {
-  width: min(100cqw, calc(100cqh * 5 / 7));
+  width: min(100cqw, calc(100cqh * 25 / 21));
 }
 
 /* Rough Timber & Bark Scrollbars */

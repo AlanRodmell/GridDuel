@@ -48,7 +48,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
         <div className="lg:col-span-6 space-y-6 text-center lg:text-left">
           <div className="war-banner-tab inline-flex items-center gap-2 pl-3.5 pr-5 py-1.5 bg-gradient-to-r from-[#3b2915] to-[#24190d] text-[#edd08e] font-[var(--font-display)] text-[11px] font-semibold uppercase tracking-[0.18em] shadow">
             <Crown className="w-3.5 h-3.5 text-[#d8a243]" />
-            <span>4×4 Tactical Biome Card War</span>
+            <span>5×3 Tactical Biome Card War</span>
           </div>
 
           <div className="space-y-3">
@@ -60,8 +60,9 @@ export const HomeView: React.FC<HomeViewProps> = ({
               “Master the terrain, command the arrows, claim the board.”
             </p>
             <p className="font-[var(--font-serif)] text-base sm:text-lg text-[#c7b69a] leading-relaxed max-w-xl mx-auto lg:mx-0">
-              Outflank rivals across an open 4×4 biome battlefield using 8-way compass arrows,
-              elemental &amp; tribal terrain shifts, combo chains, and forged Runeforge augments.
+              Outflank rivals across an open 5×3 landscape biome battlefield using 8-way compass
+              arrows, elemental &amp; tribal terrain shifts, combo chains, and forged Runeforge
+              augments.
             </p>
           </div>
 

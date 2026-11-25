@@ -228,8 +228,8 @@ export const ArenaSetupFlow: React.FC<ArenaSetupFlowProps> = ({
                     Championship Arena
                   </h2>
                   <p className="font-[var(--font-serif)] text-base text-[#cbb89a] leading-relaxed">
-                    Progress through 10 themed sanctuaries on an open 4×4 biome grid, defeat
-                    rune-wielding tier bosses, and unlock Mythic drops.
+                    Progress through 10 themed sanctuaries on an open 5×3 landscape biome grid,
+                    defeat rune-wielding tier bosses, and unlock Mythic drops.
                   </p>
                 </div>
               </div>
@@ -256,7 +256,7 @@ export const ArenaSetupFlow: React.FC<ArenaSetupFlowProps> = ({
                     <Dices className="w-6 h-6" />
                   </div>
                   <span className="px-2.5 py-1 rounded-[2px] basalt-recess font-mono text-xs font-bold text-[#dfcca9]">
-                    4×4 Skirmish
+                    5×3 Skirmish
                   </span>
                 </div>
 
@@ -265,7 +265,7 @@ export const ArenaSetupFlow: React.FC<ArenaSetupFlowProps> = ({
                     Quick Random Duel
                   </h2>
                   <p className="font-[var(--font-serif)] text-base text-[#cbb89a] leading-relaxed">
-                    Draw a surprise opponent from your unlocked ladder tiers for a brisk 4×4 duel
+                    Draw a surprise opponent from your unlocked ladder tiers for a brisk 5×3 duel
                     with Gold &amp; Spoil rewards.
                   </p>
                 </div>
@@ -687,7 +687,7 @@ export const ArenaSetupFlow: React.FC<ArenaSetupFlowProps> = ({
                 <div className="font-[var(--font-display)] uppercase tracking-wider text-[10px] text-[#9b886e]">
                   Board
                 </div>
-                <div className="font-mono font-bold text-[#efe3cd] mt-0.5">4×4 Open</div>
+                <div className="font-mono font-bold text-[#efe3cd] mt-0.5">5×3 Open</div>
               </div>
               <div className="basalt-recess rounded-[3px] p-3">
                 <div className="font-[var(--font-display)] uppercase tracking-wider text-[10px] text-[#9b886e]">

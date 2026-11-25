@@ -558,14 +558,14 @@ const GameCardInner: React.FC<GameCardProps> = ({
 
   const orbMaxClass =
     size === 'sm'
-      ? 'max-w-[24px] sm:max-w-[28px] text-[9.5px] sm:text-[11.5px]'
+      ? 'max-w-[22px] sm:max-w-[29px] lg:max-w-[35px] text-[8.5px] sm:text-[11.5px] lg:text-[13px]'
       : size === 'lg'
       ? 'max-w-[38px] sm:max-w-[44px] text-sm sm:text-base'
       : 'max-w-[30px] sm:max-w-[36px] text-xs sm:text-sm';
 
   const nameplateTextClass =
     size === 'sm'
-      ? 'text-[7px] sm:text-[8px]'
+      ? 'text-[6.5px] sm:text-[8px] lg:text-[9px]'
       : size === 'lg'
       ? 'text-[9px] sm:text-[10.5px]'
       : 'text-[8px] sm:text-[9px]';

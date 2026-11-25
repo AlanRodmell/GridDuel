@@ -658,7 +658,7 @@ export function useProfile() {
         return {
           ok: false,
           goldEarned: 0,
-          message: `You must keep at least ${DECK_CAPACITY} cards in your collection for 4×4 battle.`,
+          message: `You must keep at least ${DECK_CAPACITY} cards in your collection for 5×3 battle.`,
         };
       }
 
