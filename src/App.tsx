@@ -1,4 +1,4 @@
-import { Suspense, lazy, useCallback, useEffect, useState } from 'react';
+import { Suspense, lazy, useCallback, useEffect, useRef, useState } from 'react';
 import {
   BookOpen,
   Coins,
@@ -8,8 +8,8 @@ import {
   LayoutGrid,
   MousePointerClick,
   Music,
+  Settings,
   ShoppingBag,
-  Swords,
   Volume2,
   VolumeX,
 } from 'lucide-react';
@@ -38,12 +38,12 @@ const SaveVaultModal = lazy(() =>
   import('./components/SaveVaultModal').then((m) => ({ default: m.SaveVaultModal }))
 );
 
-type TabId = 'home' | 'arena' | 'gallery' | 'shop';
+type TabId = 'home' | 'gallery' | 'shop';
 
 function StageLoadingFallback() {
   return (
     <div className="h-full w-full flex items-center justify-center p-6">
-      <div className="brass-plaque riveted-frame rounded-[4px] px-5 py-3 font-[var(--font-display)] text-xs uppercase tracking-[0.18em] text-[#f0c76e]">
+      <div className="brass-plaque riveted-frame px-5 py-3 font-[var(--font-display)] text-xs uppercase tracking-[0.18em] text-[#f0c76e]">
         Unfurling War Table…
       </div>
     </div>
@@ -80,18 +80,63 @@ export default function App() {
   } = useProfile();
 
   const [activeTab, setActiveTab] = useState<TabId>('home');
-  const [playIntent, setPlayIntent] = useState<PlayLaunchIntent>('choose');
+  const [battleFlowActive, setBattleFlowActive] = useState(false);
+  const [playIntent, setPlayIntent] = useState<PlayLaunchIntent>('arena');
   const [playLaunchNonce, setPlayLaunchNonce] = useState(0);
   const [isMatchActive, setIsMatchActive] = useState(false);
+
+  const [optionsMenuOpen, setOptionsMenuOpen] = useState(false);
+  const [mobileOptionsOpen, setMobileOptionsOpen] = useState(false);
   const [rulesOpen, setRulesOpen] = useState(false);
   const [musicModalOpen, setMusicModalOpen] = useState(false);
   const [saveVaultOpen, setSaveVaultOpen] = useState(false);
+
   const [musicEnabled, setMusicEnabled] = useState(false);
   const [musicVolume, setMusicVolume] = useState(0.55);
   const [activeMusicTheme, setActiveMusicTheme] = useState<MusicThemeId>('tavern');
   const [adaptiveMusic, setAdaptiveMusic] = useState(true);
 
-  const lockViewportForMatch = activeTab === 'arena' && isMatchActive;
+  const desktopOptionsRef = useRef<HTMLDivElement | null>(null);
+  const mobileOptionsRef = useRef<HTMLDivElement | null>(null);
+
+  const lockViewportForMatch =
+    activeTab === 'home' && battleFlowActive && isMatchActive;
+
+  // Close cogwheel options popover on outside click or Escape
+  useEffect(() => {
+    if (!optionsMenuOpen && !mobileOptionsOpen) return;
+    const handlePointerDown = (e: MouseEvent) => {
+      const target = e.target as Node | null;
+      if (
+        optionsMenuOpen &&
+        desktopOptionsRef.current &&
+        target &&
+        !desktopOptionsRef.current.contains(target)
+      ) {
+        setOptionsMenuOpen(false);
+      }
+      if (
+        mobileOptionsOpen &&
+        mobileOptionsRef.current &&
+        target &&
+        !mobileOptionsRef.current.contains(target)
+      ) {
+        setMobileOptionsOpen(false);
+      }
+    };
+    const handleEsc = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setOptionsMenuOpen(false);
+        setMobileOptionsOpen(false);
+      }
+    };
+    window.addEventListener('mousedown', handlePointerDown);
+    window.addEventListener('keydown', handleEsc);
+    return () => {
+      window.removeEventListener('mousedown', handlePointerDown);
+      window.removeEventListener('keydown', handleEsc);
+    };
+  }, [mobileOptionsOpen, optionsMenuOpen]);
 
   // Global desktop keyboard shortcuts: R = Field Codex, M = Mute/Unmute SFX
   useEffect(() => {
@@ -146,13 +191,27 @@ export default function App() {
     [adaptiveMusic]
   );
 
-  const switchTab = (tab: TabId) => {
+  const handleNavHome = () => {
     sound.select();
-    setActiveTab(tab);
-    if (tab !== 'arena') {
-      setIsMatchActive(false);
+    setOptionsMenuOpen(false);
+    setMobileOptionsOpen(false);
+    if (activeTab === 'home') {
+      // If browsing challenger/deck setup (not mid-match), return to the Home starting page!
+      if (battleFlowActive && !isMatchActive) {
+        setBattleFlowActive(false);
+      }
+      return;
     }
-    if (adaptiveMusic && tab !== 'arena') {
+    setActiveTab('home');
+  };
+
+  const switchSecondaryTab = (tab: 'gallery' | 'shop') => {
+    sound.select();
+    setOptionsMenuOpen(false);
+    setMobileOptionsOpen(false);
+    setActiveTab(tab);
+    setIsMatchActive(false);
+    if (adaptiveMusic) {
       setActiveMusicTheme('tavern');
       music.setTheme('tavern');
     }
@@ -161,293 +220,334 @@ export default function App() {
   const launchPlayFlow = (intent: PlayLaunchIntent) => {
     setPlayIntent(intent);
     setPlayLaunchNonce((n) => n + 1);
-    setActiveTab('arena');
+    setBattleFlowActive(true);
+    setActiveTab('home');
   };
+
+  const renderOptionsMenuItems = (closeMenu: () => void) => (
+    <div className="w-56 brass-panel p-2 space-y-1 shadow-[0_18px_48px_rgba(0,0,0,0.92)]">
+      <div className="px-2.5 py-1 border-b border-[#4b3a26]/70 flex items-center justify-between">
+        <span className="font-[var(--font-display)] text-[10.5px] font-bold uppercase tracking-[0.16em] text-[#e7c47a]">
+          Options &amp; Codex
+        </span>
+      </div>
+
+      <button
+        type="button"
+        onClick={() => {
+          sound.select();
+          closeMenu();
+          setRulesOpen(true);
+        }}
+        className="w-full min-h-[36px] px-2.5 py-1.5 flex items-center justify-between gap-2 text-xs font-[var(--font-display)] tracking-wide text-[#dfd0b6] hover:text-[#f7dea2] hover:bg-[#2a1e13] transition-colors cursor-pointer"
+      >
+        <span className="inline-flex items-center gap-2.5">
+          <BookOpen className="w-4 h-4 text-[#d8a64c] shrink-0" />
+          <span>Field Codex</span>
+        </span>
+        <span className="font-mono text-[10px] text-[#8c7961]">R</span>
+      </button>
+
+      <button
+        type="button"
+        onClick={() => {
+          sound.select();
+          closeMenu();
+          setMusicModalOpen(true);
+        }}
+        className="w-full min-h-[36px] px-2.5 py-1.5 flex items-center justify-between gap-2 text-xs font-[var(--font-display)] tracking-wide text-[#dfd0b6] hover:text-[#f7dea2] hover:bg-[#2a1e13] transition-colors cursor-pointer"
+      >
+        <span className="inline-flex items-center gap-2.5">
+          <Music className="w-4 h-4 text-[#d8a64c] shrink-0" />
+          <span>Soundtrack</span>
+        </span>
+        <span
+          className={`font-mono text-[10px] font-bold ${
+            musicEnabled ? 'text-emerald-300' : 'text-[#8c7961]'
+          }`}
+        >
+          {musicEnabled ? 'ON' : 'OFF'}
+        </span>
+      </button>
+
+      <button
+        type="button"
+        onClick={toggleSound}
+        className="w-full min-h-[36px] px-2.5 py-1.5 flex items-center justify-between gap-2 text-xs font-[var(--font-display)] tracking-wide text-[#dfd0b6] hover:text-[#f7dea2] hover:bg-[#2a1e13] transition-colors cursor-pointer"
+      >
+        <span className="inline-flex items-center gap-2.5">
+          {profile.soundEnabled ? (
+            <Volume2 className="w-4 h-4 text-[#d8a64c] shrink-0" />
+          ) : (
+            <VolumeX className="w-4 h-4 text-[#8c7961] shrink-0" />
+          )}
+          <span>Sound FX</span>
+        </span>
+        <span
+          className={`font-mono text-[10px] font-bold ${
+            profile.soundEnabled ? 'text-emerald-300' : 'text-rose-300'
+          }`}
+        >
+          {profile.soundEnabled ? 'ON' : 'MUTE'}
+        </span>
+      </button>
+
+      <button
+        type="button"
+        onClick={toggleClickToPlace}
+        title="Accessibility: Click Card then Click Tile to deploy"
+        className="w-full min-h-[36px] px-2.5 py-1.5 flex items-center justify-between gap-2 text-xs font-[var(--font-display)] tracking-wide text-[#dfd0b6] hover:text-[#f7dea2] hover:bg-[#2a1e13] transition-colors cursor-pointer"
+      >
+        <span className="inline-flex items-center gap-2.5">
+          <MousePointerClick
+            className={`w-4 h-4 shrink-0 ${
+              profile.clickToPlace ? 'text-[#f0c76e]' : 'text-[#8c7961]'
+            }`}
+          />
+          <span>Click-to-Place</span>
+        </span>
+        <span
+          className={`font-mono text-[10px] font-bold ${
+            profile.clickToPlace ? 'text-amber-300' : 'text-[#8c7961]'
+          }`}
+        >
+          {profile.clickToPlace ? 'ON' : 'DRAG'}
+        </span>
+      </button>
+
+      <div className="border-t border-[#4b3a26]/70 pt-1">
+        <button
+          type="button"
+          onClick={() => {
+            sound.select();
+            closeMenu();
+            setSaveVaultOpen(true);
+          }}
+          className="w-full min-h-[36px] px-2.5 py-1.5 flex items-center justify-between gap-2 text-xs font-[var(--font-display)] tracking-wide text-[#dfd0b6] hover:text-[#f7dea2] hover:bg-[#2a1e13] transition-colors cursor-pointer"
+        >
+          <span className="inline-flex items-center gap-2.5">
+            <HardDrive className="w-4 h-4 text-[#d8a64c] shrink-0" />
+            <span>Save Vault</span>
+          </span>
+        </button>
+      </div>
+    </div>
+  );
 
   return (
     <CardPreviewProvider>
       <div className="h-dvh w-screen overflow-hidden flex flex-col md:flex-row campaign-stage text-[#efe3cd]">
-        {/* DESKTOP LEFT APPLICATION RAIL (Weathered Oak & Wrought Iron) */}
+        {/* DESKTOP SLIM ICON RAIL: HOME | COMPENDIUM | VAULT & FORGE + COGWHEEL MENU */}
         <aside
           aria-label="Application navigation"
-          className="hidden md:flex flex-col justify-between w-[76px] xl:w-[232px] shrink-0 h-full war-rail border-r px-2.5 xl:px-3.5 py-4 select-none z-30"
+          className="hidden md:flex flex-col items-center justify-between w-[74px] shrink-0 h-full war-rail border-r px-2 py-3.5 select-none z-30"
         >
-          {/* Top Brand + Player Economy */}
-          <div className="space-y-4">
+          {/* Top Crest + Gold Treasury + 3 Primary Icon Buttons */}
+          <div className="w-full flex flex-col items-center space-y-3">
             <button
               type="button"
-              onClick={() => switchTab('home')}
-              className="w-full flex items-center justify-center xl:justify-start gap-2.5 px-1.5 py-1.5 rounded-[3px] hover:bg-[#231a13]/70 transition-colors cursor-pointer"
+              onClick={() => {
+                sound.select();
+                if (!isMatchActive) setBattleFlowActive(false);
+                setActiveTab('home');
+              }}
+              title="GridDuel — Home & Battle"
+              aria-label="GridDuel Home"
+              className="w-10 h-10 brass-btn flex items-center justify-center cursor-pointer"
             >
-              <span className="w-9 h-9 brass-btn flex items-center justify-center shrink-0">
-                <Crown className="w-5 h-5" />
-              </span>
-              <div className="hidden xl:block text-left min-w-0">
-                <div className="font-[var(--font-display)] text-lg font-bold tracking-[0.1em] text-[#f2d394] leading-none drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)]">
-                  GridDuel
-                </div>
-                <div className="text-[10px] font-[var(--font-display)] uppercase tracking-[0.18em] text-[#8fa668] mt-1">
-                  Siege Camp
-                </div>
-              </div>
+              <Crown className="w-5 h-5" />
             </button>
 
-            {/* Stamped Brass Gold & Record Plaque */}
-            <div className="brass-plaque riveted-frame rounded-[3px] p-2.5 xl:px-3.5 xl:py-2.5 space-y-1.5">
-              <div
-                title={`${profile.gold.toLocaleString()} Gold`}
-                className="flex flex-col xl:flex-row items-center justify-between gap-1"
-              >
-                <span className="inline-flex items-center gap-1.5 text-[#f0c76e] font-mono text-xs xl:text-sm font-bold tabular-nums">
-                  <Coins className="w-3.5 h-3.5 xl:w-4 xl:h-4 text-[#d9a242] shrink-0" />
-                  <span>{profile.gold.toLocaleString()}</span>
-                </span>
-                <span className="hidden xl:inline font-[var(--font-display)] text-[10px] uppercase tracking-[0.16em] text-[#a99373]">
-                  Treasury
-                </span>
-              </div>
-              <div className="hidden xl:flex items-center justify-between text-[11px] text-[#a99373] pt-1.5 border-t border-[#4b3a27]/70">
-                <span className="font-[var(--font-display)] uppercase tracking-wider text-[10px]">
-                  Record
-                </span>
-                <span className="font-mono font-semibold">
-                  <span className="text-emerald-400">{profile.wins}W</span>
-                  <span className="text-[#5e4d3b]"> · </span>
-                  <span className="text-rose-400">{profile.losses}L</span>
-                </span>
-              </div>
+            {/* Compact Gold Treasury Badge */}
+            <div
+              title={`Treasury: ${profile.gold.toLocaleString()} Gold (${profile.wins}W · ${profile.losses}L)`}
+              className="w-full brass-plaque py-1.5 px-1 flex flex-col items-center justify-center gap-0.5 text-center"
+            >
+              <Coins className="w-3.5 h-3.5 text-[#d9a242]" />
+              <span className="font-mono text-[10.5px] font-bold tabular-nums text-[#f0c76e] leading-none">
+                {profile.gold >= 10000
+                  ? `${(profile.gold / 1000).toFixed(1)}k`
+                  : profile.gold.toLocaleString()}
+              </span>
             </div>
 
-            <div className="ornate-divider" />
+            <div className="ornate-divider w-full" />
 
-            {/* Primary Navigation Links — Tattered Swallowtail Cloth War-Banners */}
-            <nav className="space-y-2">
+            {/* 3 Primary Navigation Icons: Home, Compendium, Vault & Forge */}
+            <nav className="w-full space-y-2">
               <button
                 type="button"
-                onClick={() => switchTab('home')}
-                title="Campaign"
-                className={`war-banner-tab w-full min-h-[44px] px-2.5 xl:pl-3.5 xl:pr-5 py-2 flex items-center justify-center xl:justify-start gap-3 text-[13px] font-[var(--font-display)] font-semibold tracking-wider transition-all cursor-pointer ${
+                onClick={handleNavHome}
+                title="Home & Battle"
+                aria-label="Home and Battle"
+                aria-current={activeTab === 'home' ? 'page' : undefined}
+                className={`relative w-full py-2.5 flex flex-col items-center justify-center gap-1 transition-all cursor-pointer ${
                   activeTab === 'home'
-                    ? 'bg-gradient-to-r from-[#4a3219] via-[#342312] to-[#23170c] text-[#f7dea2] shadow-[inset_3px_0_0_#e5b864]'
-                    : 'bg-[#1b140e]/65 text-[#a89579] hover:text-[#f2e4ca] hover:bg-[#281d14]'
+                    ? 'brass-btn font-bold'
+                    : 'iron-btn text-[#b9a588] hover:text-[#f5dfb2]'
                 }`}
               >
-                <Home className="w-4 h-4 shrink-0" />
-                <span className="hidden xl:inline">Campaign</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => {
-                  sound.select();
-                  launchPlayFlow('choose');
-                }}
-                title="Play Arena"
-                className={`war-banner-tab w-full min-h-[44px] px-2.5 xl:pl-3.5 xl:pr-5 py-2 flex items-center justify-center xl:justify-start gap-3 text-[13px] font-[var(--font-display)] font-semibold tracking-wider transition-all cursor-pointer ${
-                  activeTab === 'arena'
-                    ? 'bg-gradient-to-r from-[#4a3219] via-[#342312] to-[#23170c] text-[#f7dea2] shadow-[inset_3px_0_0_#e5b864]'
-                    : 'bg-[#1b140e]/65 text-[#a89579] hover:text-[#f2e4ca] hover:bg-[#281d14]'
-                }`}
-              >
-                <Swords className="w-4 h-4 shrink-0" />
-                <span className="hidden xl:inline flex-1 text-left">Battle</span>
+                <Home className="w-4 h-4" />
+                <span className="font-[var(--font-display)] text-[9px] uppercase tracking-wider leading-none">
+                  Home
+                </span>
                 {isMatchActive && (
-                  <span className="hidden xl:inline-flex organic-tag px-2 py-0.5 bg-emerald-950/90 text-[10px] font-mono text-emerald-300">
-                    LIVE
-                  </span>
+                  <span
+                    title="Match in progress"
+                    className="absolute top-1 right-1 w-2 h-2 rounded-full bg-emerald-400 shadow-[0_0_6px_rgba(52,211,153,0.9)] animate-pulse"
+                  />
                 )}
               </button>
 
               <button
                 type="button"
-                onClick={() => switchTab('gallery')}
-                title={`Compendium (${ownedUniqueCount}/${totalCards})`}
-                className={`war-banner-tab w-full min-h-[44px] px-2.5 xl:pl-3.5 xl:pr-5 py-2 flex items-center justify-center xl:justify-start gap-3 text-[13px] font-[var(--font-display)] font-semibold tracking-wider transition-all cursor-pointer ${
+                onClick={() => switchSecondaryTab('gallery')}
+                title={`Compendium (${ownedUniqueCount}/${totalCards} Cards)`}
+                aria-label="Compendium"
+                aria-current={activeTab === 'gallery' ? 'page' : undefined}
+                className={`w-full py-2.5 flex flex-col items-center justify-center gap-1 transition-all cursor-pointer ${
                   activeTab === 'gallery'
-                    ? 'bg-gradient-to-r from-[#4a3219] via-[#342312] to-[#23170c] text-[#f7dea2] shadow-[inset_3px_0_0_#e5b864]'
-                    : 'bg-[#1b140e]/65 text-[#a89579] hover:text-[#f2e4ca] hover:bg-[#281d14]'
+                    ? 'brass-btn font-bold'
+                    : 'iron-btn text-[#b9a588] hover:text-[#f5dfb2]'
                 }`}
               >
-                <LayoutGrid className="w-4 h-4 shrink-0" />
-                <span className="hidden xl:inline flex-1 text-left">Compendium</span>
-                <span className="hidden xl:inline font-mono text-[11px] text-[#b5a184]">
-                  {ownedUniqueCount}/{totalCards}
+                <LayoutGrid className="w-4 h-4" />
+                <span className="font-[var(--font-display)] text-[8.5px] uppercase tracking-wider leading-none">
+                  Cards
                 </span>
               </button>
 
               <button
                 type="button"
-                onClick={() => switchTab('shop')}
-                title="Merchant & Runeforge"
-                className={`war-banner-tab w-full min-h-[44px] px-2.5 xl:pl-3.5 xl:pr-5 py-2 flex items-center justify-center xl:justify-start gap-3 text-[13px] font-[var(--font-display)] font-semibold tracking-wider transition-all cursor-pointer ${
+                onClick={() => switchSecondaryTab('shop')}
+                title="Vault & Runeforge"
+                aria-label="Vault and Runeforge"
+                aria-current={activeTab === 'shop' ? 'page' : undefined}
+                className={`w-full py-2.5 flex flex-col items-center justify-center gap-1 transition-all cursor-pointer ${
                   activeTab === 'shop'
-                    ? 'bg-gradient-to-r from-[#4a3219] via-[#342312] to-[#23170c] text-[#f7dea2] shadow-[inset_3px_0_0_#e5b864]'
-                    : 'bg-[#1b140e]/65 text-[#a89579] hover:text-[#f2e4ca] hover:bg-[#281d14]'
+                    ? 'brass-btn font-bold'
+                    : 'iron-btn text-[#b9a588] hover:text-[#f5dfb2]'
                 }`}
               >
-                <ShoppingBag className="w-4 h-4 shrink-0" />
-                <span className="hidden xl:inline">Vault &amp; Forge</span>
+                <ShoppingBag className="w-4 h-4" />
+                <span className="font-[var(--font-display)] text-[8.5px] uppercase tracking-wider leading-none">
+                  Forge
+                </span>
               </button>
             </nav>
           </div>
 
-          {/* Bottom Utility Controls */}
-          <div className="space-y-1.5 pt-3">
-            <div className="ornate-divider mb-2.5" />
+          {/* Bottom-Left Cogwheel Options Menu */}
+          <div ref={desktopOptionsRef} className="relative w-full flex flex-col items-center pt-2">
+            <div className="ornate-divider w-full mb-2.5" />
             <button
               type="button"
               onClick={() => {
                 sound.select();
-                setRulesOpen(true);
+                setOptionsMenuOpen((prev) => !prev);
               }}
-              title="Field & Biome Codex (Shortcut: R)"
-              className="w-full min-h-[38px] px-2.5 xl:px-3 py-2 rounded-[3px] flex items-center justify-center xl:justify-start gap-3 text-xs font-[var(--font-display)] tracking-wide text-[#cbbba0] hover:text-[#f4d494] hover:bg-[#221a13]/80 border border-transparent hover:border-[#423426] transition-colors cursor-pointer"
-            >
-              <BookOpen className="w-4 h-4 text-[#d8a64c] shrink-0" />
-              <span className="hidden xl:inline flex-1 text-left">Field Codex</span>
-              <span className="hidden xl:inline text-[10px] font-mono text-[#7c6b56]">R</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => {
-                sound.select();
-                setMusicModalOpen(true);
-              }}
-              title="Soundtrack & Music"
-              className={`w-full min-h-[38px] px-2.5 xl:px-3 py-2 rounded-[3px] flex items-center justify-center xl:justify-start gap-3 text-xs font-[var(--font-display)] tracking-wide border transition-colors cursor-pointer ${
-                musicEnabled
-                  ? 'text-[#f2d28f] bg-[#2a1f13] border-[#6e5025] hover:bg-[#332617]'
-                  : 'text-[#9e8c72] border-transparent hover:text-[#efe3cd] hover:bg-[#221a13]/80 hover:border-[#423426]'
+              aria-expanded={optionsMenuOpen}
+              aria-label="Open options menu"
+              title="Options, Audio & Save Vault"
+              className={`relative w-11 h-11 flex items-center justify-center transition-all cursor-pointer ${
+                optionsMenuOpen
+                  ? 'brass-btn'
+                  : 'iron-btn text-[#cbb89a] hover:text-[#f5dfb2]'
               }`}
             >
-              <span className="relative shrink-0">
-                <Music className="w-4 h-4" />
-                {musicEnabled && (
-                  <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-                )}
-              </span>
-              <span className="hidden xl:inline flex-1 text-left">Soundtrack</span>
-              <span className="hidden xl:inline text-[10px] font-mono text-[#a69275]">
-                {musicEnabled ? 'ON' : 'OFF'}
-              </span>
-            </button>
-
-            <button
-              type="button"
-              onClick={toggleSound}
-              title={
-                profile.soundEnabled
-                  ? 'Mute sound effects (Shortcut: M)'
-                  : 'Enable sound effects (Shortcut: M)'
-              }
-              className="w-full min-h-[38px] px-2.5 xl:px-3 py-2 rounded-[3px] flex items-center justify-center xl:justify-start gap-3 text-xs font-[var(--font-display)] tracking-wide text-[#9e8c72] hover:text-[#efe3cd] hover:bg-[#221a13]/80 border border-transparent hover:border-[#423426] transition-colors cursor-pointer"
-            >
-              {profile.soundEnabled ? (
-                <Volume2 className="w-4 h-4 text-[#d8a64c] shrink-0" />
-              ) : (
-                <VolumeX className="w-4 h-4 shrink-0" />
-              )}
-              <span className="hidden xl:inline flex-1 text-left">Sound FX</span>
-              <span className="hidden xl:inline text-[10px] font-mono text-[#82715b]">
-                {profile.soundEnabled ? 'ON' : 'MUTE'}
-              </span>
-            </button>
-
-            <button
-              type="button"
-              onClick={toggleClickToPlace}
-              title={
-                profile.clickToPlace
-                  ? 'Accessibility: Click Card → Click Tile is ON (Click to switch back to Drag to Place + Click to Inspect)'
-                  : 'Accessibility: Enable Click Card → Click Tile placement (Default: Drag to Place, Click Card to Inspect)'
-              }
-              className={`w-full min-h-[38px] px-2.5 xl:px-3 py-2 rounded-[3px] flex items-center justify-center xl:justify-start gap-3 text-xs font-[var(--font-display)] tracking-wide border transition-colors cursor-pointer ${
-                profile.clickToPlace
-                  ? 'text-[#f2d28f] bg-[#2a1f13] border-[#6e5025] hover:bg-[#332617]'
-                  : 'text-[#9e8c72] border-transparent hover:text-[#efe3cd] hover:bg-[#221a13]/80 hover:border-[#423426]'
-              }`}
-            >
-              <MousePointerClick
-                className={`w-4 h-4 shrink-0 ${
-                  profile.clickToPlace ? 'text-[#f0c76e]' : ''
+              <Settings
+                className={`w-5 h-5 transition-transform duration-200 ${
+                  optionsMenuOpen ? 'rotate-45' : ''
                 }`}
               />
-              <span className="hidden xl:inline flex-1 text-left">Click-Place</span>
-              <span className="hidden xl:inline text-[10px] font-mono text-[#a69275]">
-                {profile.clickToPlace ? 'ON' : 'DRAG'}
-              </span>
+              {musicEnabled && (
+                <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-emerald-400" />
+              )}
             </button>
 
-            <button
-              type="button"
-              onClick={() => {
-                sound.select();
-                setSaveVaultOpen(true);
-              }}
-              title="Campaign Save Backup & Reset"
-              className="w-full min-h-[38px] px-2.5 xl:px-3 py-2 rounded-[3px] flex items-center justify-center xl:justify-start gap-3 text-xs font-[var(--font-display)] tracking-wide text-[#9e8c72] hover:text-[#f4d494] hover:bg-[#221a13]/80 border border-transparent hover:border-[#423426] transition-colors cursor-pointer"
-            >
-              <HardDrive className="w-4 h-4 text-[#d8a64c] shrink-0" />
-              <span className="hidden xl:inline flex-1 text-left">Save Vault</span>
-            </button>
+            {optionsMenuOpen && (
+              <div className="absolute bottom-0 left-[calc(100%+10px)] z-50 animate-preview-pop">
+                {renderOptionsMenuItems(() => setOptionsMenuOpen(false))}
+              </div>
+            )}
           </div>
         </aside>
 
-        {/* COMPACT FALLBACK HEADER FOR NARROW WINDOWS (< md) */}
+        {/* COMPACT MOBILE HEADER (< md): ICON TABS + COGWHEEL MENU */}
         {!lockViewportForMatch && (
           <header className="md:hidden shrink-0 h-[52px] war-rail border-b px-3 flex items-center justify-between gap-2 z-30">
             <button
               type="button"
-              onClick={() => switchTab('home')}
+              onClick={handleNavHome}
               className="font-[var(--font-display)] text-base font-bold tracking-widest text-[#f2d394] cursor-pointer"
             >
               GridDuel
             </button>
+
             <div className="flex items-center gap-1.5">
               <button
                 type="button"
-                onClick={() => launchPlayFlow('choose')}
-                className={`px-2 py-1 rounded-[3px] text-xs font-[var(--font-display)] font-semibold cursor-pointer ${
-                  activeTab === 'arena' ? 'brass-btn' : 'text-[#c9b89c]'
+                onClick={handleNavHome}
+                aria-label="Home and Battle"
+                title="Home & Battle"
+                className={`w-8 h-8 flex items-center justify-center cursor-pointer ${
+                  activeTab === 'home' ? 'brass-btn' : 'iron-btn text-[#c9b89c]'
                 }`}
               >
-                Battle
+                <Home className="w-4 h-4" />
               </button>
+
               <button
                 type="button"
-                onClick={() => switchTab('gallery')}
-                className={`px-2 py-1 rounded-[3px] text-xs font-[var(--font-display)] font-semibold cursor-pointer ${
-                  activeTab === 'gallery' ? 'brass-btn' : 'text-[#c9b89c]'
+                onClick={() => switchSecondaryTab('gallery')}
+                aria-label="Compendium"
+                title="Compendium"
+                className={`w-8 h-8 flex items-center justify-center cursor-pointer ${
+                  activeTab === 'gallery' ? 'brass-btn' : 'iron-btn text-[#c9b89c]'
                 }`}
               >
-                Cards
+                <LayoutGrid className="w-4 h-4" />
               </button>
+
               <button
                 type="button"
-                onClick={() => switchTab('shop')}
-                className={`px-2 py-1 rounded-[3px] text-xs font-[var(--font-display)] font-semibold cursor-pointer ${
-                  activeTab === 'shop' ? 'brass-btn' : 'text-[#c9b89c]'
+                onClick={() => switchSecondaryTab('shop')}
+                aria-label="Vault and Runeforge"
+                title="Vault & Runeforge"
+                className={`w-8 h-8 flex items-center justify-center cursor-pointer ${
+                  activeTab === 'shop' ? 'brass-btn' : 'iron-btn text-[#c9b89c]'
                 }`}
               >
-                Forge
+                <ShoppingBag className="w-4 h-4" />
               </button>
-              <button
-                type="button"
-                onClick={() => {
-                  sound.select();
-                  setSaveVaultOpen(true);
-                }}
-                aria-label="Open Save Vault"
-                title="Save Vault"
-                className="p-1.5 rounded-[3px] text-[#c9b89c] hover:text-[#f2d394] cursor-pointer"
-              >
-                <HardDrive className="w-3.5 h-3.5" />
-              </button>
-              <span className="inline-flex items-center gap-1 px-2 py-1 rounded-[3px] brass-plaque text-[#f0c76e] font-mono text-xs font-bold">
+
+              <span className="inline-flex items-center gap-1 px-2 py-1 brass-plaque text-[#f0c76e] font-mono text-xs font-bold">
                 <Coins className="w-3 h-3 text-[#d9a242]" />
                 {profile.gold.toLocaleString()}
               </span>
+
+              <div ref={mobileOptionsRef} className="relative">
+                <button
+                  type="button"
+                  onClick={() => {
+                    sound.select();
+                    setMobileOptionsOpen((prev) => !prev);
+                  }}
+                  aria-expanded={mobileOptionsOpen}
+                  aria-label="Open options menu"
+                  className={`w-8 h-8 flex items-center justify-center cursor-pointer ${
+                    mobileOptionsOpen ? 'brass-btn' : 'iron-btn text-[#c9b89c]'
+                  }`}
+                >
+                  <Settings className="w-4 h-4" />
+                </button>
+
+                {mobileOptionsOpen && (
+                  <div className="absolute right-0 top-[calc(100%+8px)] z-50 animate-preview-pop">
+                    {renderOptionsMenuItems(() => setMobileOptionsOpen(false))}
+                  </div>
+                )}
+              </div>
             </div>
           </header>
         )}
@@ -458,18 +558,16 @@ export default function App() {
             lockViewportForMatch ? 'overflow-hidden' : 'overflow-y-auto'
           }`}
         >
-          {activeTab === 'home' && (
+          {activeTab === 'home' && !battleFlowActive && (
             <HomeView
               profile={profile}
               ownedUniqueCount={ownedUniqueCount}
               totalCards={totalCards}
+              onSelectBoardScale={setBoardScale}
               onStartFlow={launchPlayFlow}
-              onOpenGallery={() => switchTab('gallery')}
-              onOpenShop={() => switchTab('shop')}
-              onOpenRules={() => setRulesOpen(true)}
             />
           )}
-          {activeTab === 'arena' && (
+          {activeTab === 'home' && battleFlowActive && (
             <Suspense fallback={<StageLoadingFallback />}>
               <ArenaView
                 profile={profile}
@@ -489,8 +587,11 @@ export default function App() {
                 onClaimSpoil={claimSpoilCard}
                 onSellCardInstance={sellCardInstance}
                 onSellExtraCopies={sellExtraCopies}
-                onGoHome={() => switchTab('home')}
-                onGoToGallery={() => switchTab('gallery')}
+                onGoHome={() => {
+                  setIsMatchActive(false);
+                  setBattleFlowActive(false);
+                }}
+                onGoToGallery={() => switchSecondaryTab('gallery')}
                 onOpenRules={() => setRulesOpen(true)}
                 onToggleSound={toggleSound}
                 onToggleClickToPlace={toggleClickToPlace}
@@ -517,7 +618,7 @@ export default function App() {
                 onAutoBuildDeck={autoBuildActiveDeck}
                 onSellCardInstance={sellCardInstance}
                 onSellExtraCopies={sellExtraCopies}
-                onGoToShop={() => switchTab('shop')}
+                onGoToShop={() => switchSecondaryTab('shop')}
               />
             </Suspense>
           )}

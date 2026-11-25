@@ -128,7 +128,7 @@ const HAND_HOTKEY_LABELS = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '-
 export const ArenaView: React.FC<ArenaViewProps> = ({
   profile,
   activeDeck,
-  initialIntent = 'choose',
+  initialIntent = 'arena',
   launchNonce = 0,
   onSelectBoardScale,
   onSelectDeckSlot,
@@ -151,9 +151,7 @@ export const ArenaView: React.FC<ArenaViewProps> = ({
   onMatchActiveChange,
   onMatchThemeChange,
 }) => {
-  const [setupStep, setSetupStep] = useState<SetupStep>(
-    initialIntent === 'choose' ? 'mode' : 'details'
-  );
+  const [setupStep, setSetupStep] = useState<SetupStep>('details');
   const [gameMode, setGameMode] = useState<MatchMode>(
     initialIntent === 'quick' ? 'quick' : 'arena'
   );
@@ -965,18 +963,14 @@ export const ArenaView: React.FC<ArenaViewProps> = ({
   );
 
   useEffect(() => {
-    if (launchNonce === 0) return;
     setPhase('setup');
     setConfirmingRetreat(false);
+    setSetupStep('details');
     if (initialIntent === 'quick') {
       setGameMode('quick');
-      setSetupStep('details');
       rollRandomFighter();
-    } else if (initialIntent === 'arena') {
-      setGameMode('arena');
-      setSetupStep('details');
     } else {
-      setSetupStep('mode');
+      setGameMode('arena');
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [launchNonce, initialIntent]);

@@ -8,7 +8,6 @@ import {
   LayoutGrid,
   Lock,
   Sparkles,
-  Trophy,
   Wand2,
 } from 'lucide-react';
 import { useCardPreview } from '../../context/cardPreviewContext';
@@ -44,7 +43,7 @@ import { sound } from '../../utils/sound';
 import { BiomePill } from '../BiomeBadge';
 import { DeckBuilderWorkspace } from '../DeckBuilderWorkspace';
 
-export type SetupStep = 'mode' | 'details' | 'deck';
+export type SetupStep = 'details' | 'deck';
 export type MatchMode = 'arena' | 'quick';
 
 interface ArenaSetupFlowProps {
@@ -143,9 +142,8 @@ export const ArenaSetupFlow: React.FC<ArenaSetupFlowProps> = ({
   const tierPowerRelics = getPowerCardsForTier(currentTier.tierNumber);
 
   const stepOrder: { id: SetupStep; num: number; label: string }[] = [
-    { id: 'mode', num: 1, label: 'Mode & Scale' },
-    { id: 'details', num: 2, label: gameMode === 'quick' ? 'Random Rival' : 'Challenger' },
-    { id: 'deck', num: 3, label: 'Deck' },
+    { id: 'details', num: 1, label: gameMode === 'quick' ? 'Random Rival' : 'Challenger' },
+    { id: 'deck', num: 2, label: 'Deck' },
   ];
   const currentStepIdx = stepOrder.findIndex((s) => s.id === setupStep);
 
@@ -153,8 +151,6 @@ export const ArenaSetupFlow: React.FC<ArenaSetupFlowProps> = ({
     sound.select();
     if (setupStep === 'deck') {
       setSetupStep('details');
-    } else if (setupStep === 'details') {
-      setSetupStep('mode');
     } else {
       onGoHome();
     }
@@ -185,190 +181,71 @@ export const ArenaSetupFlow: React.FC<ArenaSetupFlowProps> = ({
           className="iron-btn inline-flex items-center gap-1.5 min-h-[38px] px-3.5 py-1.5 rounded-[3px] font-[var(--font-display)] text-xs sm:text-sm font-semibold tracking-wide cursor-pointer"
         >
           <ArrowLeft className="w-4 h-4 text-[#d8a64c]" />
-          <span>
-            {setupStep === 'mode'
-              ? 'Campaign'
-              : setupStep === 'details'
-              ? 'Mode & Scale'
-              : 'Change Opponent'}
-          </span>
+          <span>{setupStep === 'details' ? 'Home' : 'Change Opponent'}</span>
         </button>
 
-        <nav aria-label="Match setup steps" className="flex items-center gap-1.5 sm:gap-2">
-          {stepOrder.map((step, idx) => {
-            const isCurrent = step.id === setupStep;
-            const isCompleted = idx < currentStepIdx;
-            const canJump = idx < currentStepIdx;
-            return (
-              <React.Fragment key={step.id}>
-                <button
-                  type="button"
-                  disabled={!canJump}
-                  onClick={() => {
-                    if (!canJump) return;
-                    sound.select();
-                    setSetupStep(step.id);
-                  }}
-                  className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-[3px] font-[var(--font-display)] text-xs tracking-wide transition-colors ${
-                    isCurrent
-                      ? 'brass-plaque text-[#f5d593] font-bold'
-                      : isCompleted
-                      ? 'iron-btn text-[#d9c9ae] hover:text-[#f5d593] cursor-pointer'
-                      : 'text-[#6e5f4c] border border-transparent cursor-default'
-                  }`}
-                >
-                  <span className="font-mono text-[11px]">{step.num}.</span>
-                  <span>{step.label}</span>
-                </button>
-                {idx < stepOrder.length - 1 && (
-                  <ChevronRight className="w-3.5 h-3.5 text-[#66543f] shrink-0" />
-                )}
-              </React.Fragment>
-            );
-          })}
-        </nav>
-      </div>
-
-      {/* STEP 1: MODE & BATTLEFIELD SCALE SELECTION */}
-      {setupStep === 'mode' && (
-        <div className="space-y-6">
-          <div className="text-center space-y-2 max-w-2xl mx-auto">
-            <h1 className="font-[var(--font-display)] text-2xl sm:text-3xl font-bold text-[#f3dfb6] tracking-[0.08em]">
-              Choose Battle Mode &amp; Scale
-            </h1>
-            <div className="ornate-divider max-w-[220px] mx-auto" />
-            <p className="font-[var(--font-serif)] text-base sm:text-lg text-[#bfa98b]">
-              Pick your preferred battlefield grid scale, then climb the 10-Tier Arena ladder to
-              unlock Power Relics or jump into a random exhibition.
-            </p>
-          </div>
-
-          {/* Battlefield Scale Selector (6x3 / 7x3 / 6x4) */}
-          <div className="max-w-4xl mx-auto brass-panel p-4 sm:p-5 space-y-3">
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <div className="flex items-center gap-2">
-                <LayoutGrid className="w-4 h-4 text-[#e2b053]" />
-                <span className="font-[var(--font-display)] text-xs sm:text-sm font-bold uppercase tracking-[0.14em] text-[#f5dfb2]">
-                  Battlefield Scale
-                </span>
-              </div>
-              <span className="font-[var(--font-serif)] italic text-xs sm:text-sm text-[#b7a285]">
-                Applies to both Championship Arena &amp; Quick Duels
-              </span>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <div className="flex flex-wrap items-center gap-2">
+          {/* Quick Scale Switcher in Breadcrumb Bar */}
+          {setupStep === 'details' && (
+            <div className="inline-flex items-center gap-1 mr-1">
+              <LayoutGrid className="w-3.5 h-3.5 text-[#d8a64c] mr-0.5 hidden sm:inline" />
               {ALL_BOARD_SCALES.map((sc) => {
                 const s = BOARD_SCALES[sc];
-                const isSelected = sc === activeScale;
+                const isCur = sc === activeScale;
                 return (
                   <button
                     key={sc}
                     type="button"
                     onClick={() => onSelectBoardScale(sc)}
-                    className={`p-3.5 text-left flex flex-col justify-between gap-2 transition-transform cursor-pointer ${
-                      isSelected
-                        ? 'brass-btn font-bold'
-                        : 'iron-btn text-[#e5d5b7] hover:-translate-y-0.5'
+                    title={s.subtitle}
+                    className={`px-2 py-0.5 text-[11px] font-mono font-bold cursor-pointer ${
+                      isCur ? 'brass-btn' : 'iron-btn text-[#c9b79b]'
                     }`}
                   >
-                    <div className="flex items-center justify-between gap-2">
-                      <span className="font-[var(--font-display)] text-sm sm:text-base font-bold">
-                        {s.name}
-                      </span>
-                      {isSelected && <Check className="w-4 h-4 shrink-0" />}
-                    </div>
-                    <div
-                      className={`font-mono text-[11px] ${
-                        isSelected ? 'text-[#251707]' : 'text-[#cbb89a]'
-                      }`}
-                    >
-                      {s.rows * s.cols} Tiles · {s.unitSlots} Units + 1 Relic · {s.biomeCount} Biomes
-                    </div>
+                    {s.shortLabel}
                   </button>
                 );
               })}
             </div>
-          </div>
+          )}
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-5 max-w-4xl mx-auto">
-            <button
-              type="button"
-              onClick={() => {
-                sound.select();
-                setGameMode('arena');
-                setSetupStep('details');
-              }}
-              className="group brass-panel riveted-frame rounded-[4px] hover:border-[#b38338] p-6 text-left flex flex-col justify-between gap-6 transition-transform duration-200 hover:-translate-y-1 cursor-pointer"
-            >
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <div className="w-12 h-12 rounded-[3px] brass-plaque flex items-center justify-center text-[#eab95d]">
-                    <Trophy className="w-6 h-6" />
-                  </div>
-                  <span className="organic-tag px-2.5 py-1 bg-[#1e150c] font-mono text-xs font-bold text-[#f0c76e]">
-                    {totalConqueredFighters}/{ALL_FIGHTERS.length} Conquered
-                  </span>
-                </div>
-
-                <div className="space-y-2">
-                  <h2 className="font-[var(--font-display)] text-xl font-bold tracking-wide text-[#f6dfb0] group-hover:text-[#fde9be] transition-colors">
-                    Championship Arena
-                  </h2>
-                  <p className="font-[var(--font-serif)] text-base text-[#cbb89a] leading-relaxed">
-                    Conquer 10 themed sanctuaries on a {scaleSpec.shortLabel} battlefield, clear full
-                    tiers to unlock 12 directional Power Relics, and hunt Mythic drops.
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex items-center justify-between pt-4 border-t border-[#4b3a26]/70 font-[var(--font-display)] text-xs uppercase tracking-wider font-bold text-[#e9ba62]">
-                <span>Select Tier &amp; Challenger</span>
-                <ChevronRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
-              </div>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => {
-                sound.select();
-                setGameMode('quick');
-                onRollRandomFighter();
-                setSetupStep('details');
-              }}
-              className="group iron-panel riveted-frame rounded-[4px] hover:border-[#9e7538] p-6 text-left flex flex-col justify-between gap-6 transition-transform duration-200 hover:-translate-y-1 cursor-pointer"
-            >
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <div className="w-12 h-12 rounded-[3px] brass-plaque flex items-center justify-center text-[#d8a752]">
-                    <Dices className="w-6 h-6" />
-                  </div>
-                  <span className="organic-tag px-2.5 py-1 bg-[#18120c] font-mono text-xs font-bold text-[#dfcca9]">
-                    {scaleSpec.name}
-                  </span>
-                </div>
-
-                <div className="space-y-2">
-                  <h2 className="font-[var(--font-display)] text-xl font-bold tracking-wide text-[#f2e2c4] group-hover:text-[#f8e1b0] transition-colors">
-                    Quick Random Duel
-                  </h2>
-                  <p className="font-[var(--font-serif)] text-base text-[#cbb89a] leading-relaxed">
-                    Draw a surprise opponent from your unlocked ladder tiers for a brisk{' '}
-                    {scaleSpec.shortLabel} duel with Gold &amp; Spoil rewards.
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex items-center justify-between pt-4 border-t border-[#3c3024]/80 font-[var(--font-display)] text-xs uppercase tracking-wider font-bold text-[#d8b068]">
-                <span>Roll Random Opponent</span>
-                <ChevronRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
-              </div>
-            </button>
-          </div>
+          <nav aria-label="Match setup steps" className="flex items-center gap-1.5 sm:gap-2">
+            {stepOrder.map((step, idx) => {
+              const isCurrent = step.id === setupStep;
+              const isCompleted = idx < currentStepIdx;
+              const canJump = idx < currentStepIdx;
+              return (
+                <React.Fragment key={step.id}>
+                  <button
+                    type="button"
+                    disabled={!canJump}
+                    onClick={() => {
+                      if (!canJump) return;
+                      sound.select();
+                      setSetupStep(step.id);
+                    }}
+                    className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-[3px] font-[var(--font-display)] text-xs tracking-wide transition-colors ${
+                      isCurrent
+                        ? 'brass-plaque text-[#f5d593] font-bold'
+                        : isCompleted
+                        ? 'iron-btn text-[#d9c9ae] hover:text-[#f5d593] cursor-pointer'
+                        : 'text-[#6e5f4c] border border-transparent cursor-default'
+                    }`}
+                  >
+                    <span className="font-mono text-[11px]">{step.num}.</span>
+                    <span>{step.label}</span>
+                  </button>
+                  {idx < stepOrder.length - 1 && (
+                    <ChevronRight className="w-3.5 h-3.5 text-[#66543f] shrink-0" />
+                  )}
+                </React.Fragment>
+              );
+            })}
+          </nav>
         </div>
-      )}
+      </div>
 
-      {/* STEP 2A: CHAMPIONSHIP ARENA DETAILS */}
+      {/* STEP 1A: CHAMPIONSHIP ARENA DETAILS */}
       {setupStep === 'details' && gameMode === 'arena' && (
         <div className="max-w-5xl mx-auto space-y-4">
           <div className="flex flex-wrap items-end justify-between gap-3">

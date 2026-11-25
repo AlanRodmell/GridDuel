@@ -103,13 +103,6 @@ const RARITY_TEXT_COLOR: Record<Rarity, string> = {
   mythic: 'text-amber-300',
 };
 
-const RARITY_BAR_COLOR: Record<Rarity, string> = {
-  common: 'bg-slate-400',
-  rare: 'bg-sky-400',
-  epic: 'bg-violet-400',
-  mythic: 'bg-amber-400',
-};
-
 const TYPE_DESCR: Record<AttackType, string> = {
   P: 'Physical (targets P.Def)',
   M: 'Magical (targets M.Def)',
@@ -212,22 +205,6 @@ export const GalleryView: React.FC<GalleryViewProps> = ({
 
   const totalOwnedCopies = useMemo(() => {
     return Object.values(profile.inventory).reduce((sum, list) => sum + list.length, 0);
-  }, [profile.inventory]);
-
-  const rarityStats = useMemo(() => {
-    const totals: Record<Rarity, { owned: number; total: number }> = {
-      common: { owned: 0, total: 0 },
-      rare: { owned: 0, total: 0 },
-      epic: { owned: 0, total: 0 },
-      mythic: { owned: 0, total: 0 },
-    };
-    for (const c of CARDS) {
-      totals[c.rarity].total += 1;
-      if ((profile.inventory[c.id]?.length ?? 0) > 0) {
-        totals[c.rarity].owned += 1;
-      }
-    }
-    return totals;
   }, [profile.inventory]);
 
   const filteredCards = useMemo(() => {
@@ -367,51 +344,6 @@ export const GalleryView: React.FC<GalleryViewProps> = ({
             </button>
           )}
         </div>
-      </div>
-
-      {/* Interactive Rarity Tier Progress Plaques */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
-        {(['common', 'rare', 'epic', 'mythic'] as Rarity[]).map((r) => {
-          const st = rarityStats[r];
-          const tierPct = st.total > 0 ? Math.round((st.owned / st.total) * 100) : 0;
-          const isSelected = rarityFilter === r;
-          const rollRange = RARITY_STAT_RANGE[r];
-          const arrowRange = RARITY_ARROW_RANGE[r];
-          return (
-            <button
-              key={r}
-              type="button"
-              onClick={() => {
-                sound.select();
-                setRarityFilter(isSelected ? 'all' : r);
-              }}
-              className={`rounded-[4px] p-3 text-left border transition-all cursor-pointer ${
-                isSelected
-                  ? 'brass-panel border-[#d9a44b]'
-                  : 'iron-panel hover:border-[#6e522b]'
-              }`}
-            >
-              <div className="flex items-center justify-between text-xs">
-                <span className={`font-[var(--font-display)] font-bold capitalize ${RARITY_TEXT_COLOR[r]}`}>
-                  {r}
-                </span>
-                <span className="font-mono tabular-nums text-[#dfd0b6]">
-                  {st.owned}/{st.total}
-                </span>
-              </div>
-              <div className="text-[11px] font-mono text-[#9b896f] mt-0.5">
-                Stats <strong className="text-[#ebe0ca]">{rollRange.label}</strong> · Arrows{' '}
-                <strong className="text-[#f0c76e]">{arrowRange.label}</strong>
-              </div>
-              <div className="mt-1.5 h-1.5 rounded-[1px] bg-[#0d0a08] border border-[#2f251c] overflow-hidden">
-                <div
-                  className={`h-full ${RARITY_BAR_COLOR[r]} transition-all duration-300`}
-                  style={{ width: `${tierPct}%` }}
-                />
-              </div>
-            </button>
-          );
-        })}
       </div>
 
       {/* Saved Decks Shelf & Active Deck Showcase */}

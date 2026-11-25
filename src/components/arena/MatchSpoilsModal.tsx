@@ -495,7 +495,7 @@ export const MatchSpoilsModal: React.FC<MatchSpoilsModalProps> = ({
               className="iron-btn min-h-[44px] px-4 rounded-[3px] font-[var(--font-display)] font-semibold text-xs sm:text-sm flex items-center gap-1.5 cursor-pointer"
             >
               <Home className="w-4 h-4 text-[#d8a64c]" />
-              <span>Campaign</span>
+              <span>Home</span>
             </button>
             <button
               type="button"
