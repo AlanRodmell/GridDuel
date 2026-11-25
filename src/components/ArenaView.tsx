@@ -273,7 +273,7 @@ export const ArenaView: React.FC<ArenaViewProps> = ({
       setInitialPlayerIds(pHand.map((h) => h.cardId));
       setInitialRivalCards(rHand);
       setTurn(starter);
-      setSelectedHandUid(pHand[0]?.uid ?? null);
+      setSelectedHandUid(null);
       setActiveClash(null);
       setPlayerFlipsCount(0);
       setPlayerCombosCount(0);
@@ -424,7 +424,7 @@ export const ArenaView: React.FC<ArenaViewProps> = ({
       setBoard(resolution.nextBoard);
       if (owner === 'player') {
         setPlayerHand(nextPlayerHand);
-        setSelectedHandUid(nextPlayerHand[0]?.uid ?? null);
+        setSelectedHandUid(null);
       } else {
         setRivalHand(nextRivalHand);
       }
@@ -621,10 +621,17 @@ export const ArenaView: React.FC<ArenaViewProps> = ({
         return;
       }
 
-      if (e.key === 'Escape' && confirmingRetreat) {
-        e.preventDefault();
-        setConfirmingRetreat(false);
-        return;
+      if (e.key === 'Escape') {
+        if (confirmingRetreat) {
+          e.preventDefault();
+          setConfirmingRetreat(false);
+          return;
+        }
+        if (selectedHandUid) {
+          e.preventDefault();
+          setSelectedHandUid(null);
+          return;
+        }
       }
 
       if (e.key >= '1' && e.key <= '7') {
@@ -633,14 +640,14 @@ export const ArenaView: React.FC<ArenaViewProps> = ({
         if (targetCard) {
           e.preventDefault();
           sound.select();
-          setSelectedHandUid(targetCard.uid);
+          setSelectedHandUid((cur) => (cur === targetCard.uid ? null : targetCard.uid));
         }
       }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [confirmingRetreat, phase, playerHand]);
+  }, [confirmingRetreat, phase, playerHand, selectedHandUid]);
 
   const handleCellClick = (row: number, col: number) => {
     if (phase !== 'playing' || turn !== 'player' || isAnimating) return;
@@ -1005,7 +1012,7 @@ export const ArenaView: React.FC<ArenaViewProps> = ({
       </div>
 
       {/* CENTER STAGE: FULL-WIDTH 5x3 LANDSCAPE BATTLEFIELD (ZERO SIDEBARS!) */}
-      <div className="mobile-board-stage desktop-board-stage flex-1 min-h-0 relative flex items-center justify-center w-full py-1">
+      <div className="mobile-board-stage desktop-board-stage flex-1 min-h-0 relative z-10 flex items-center justify-center w-full py-1">
         {/* Animated Floating Callout Banner */}
         {callout && (
           <div
@@ -1061,12 +1068,12 @@ export const ArenaView: React.FC<ArenaViewProps> = ({
               {board.map((row, rIdx) =>
                 row.map((cell, cIdx) => {
                   const key = `${rIdx}-${cIdx}`;
-                  const canPlaceHere =
+                  const isOpenSocket =
                     phase === 'playing' &&
                     turn === 'player' &&
                     !isAnimating &&
-                    Boolean(selectedHandUid) &&
                     !cell.card;
+                  const canClickPlaceHere = isOpenSocket && Boolean(selectedHandUid);
                   const biomeMeta = cell.terrain ? BIOME_META[cell.terrain] : null;
                   const activePreviewDef =
                     phase === 'playing' && turn === 'player' && !isAnimating
@@ -1133,16 +1140,16 @@ export const ArenaView: React.FC<ArenaViewProps> = ({
                   }
 
                   const isDropTarget =
-                    hoverCell?.row === rIdx && hoverCell?.col === cIdx && canPlaceHere;
+                    hoverCell?.row === rIdx && hoverCell?.col === cIdx && isOpenSocket;
                   const isDragActive = Boolean(draggingCard && !draggingCard.returning);
 
                   return (
                     <button
                       key={key}
                       type="button"
-                      data-drop-row={canPlaceHere ? rIdx : undefined}
-                      data-drop-col={canPlaceHere ? cIdx : undefined}
-                      aria-disabled={!canPlaceHere}
+                      data-drop-row={isOpenSocket ? rIdx : undefined}
+                      data-drop-col={isOpenSocket ? cIdx : undefined}
+                      aria-disabled={!canClickPlaceHere && !isDragActive}
                       onMouseEnter={(e) => {
                         if (biomeMeta && !isDragActive) {
                           const rect = e.currentTarget.getBoundingClientRect();
@@ -1161,7 +1168,7 @@ export const ArenaView: React.FC<ArenaViewProps> = ({
                             preview: terrainPreview,
                           });
                         }
-                        if (canPlaceHere && !isDragActive) {
+                        if (canClickPlaceHere && !isDragActive) {
                           sound.hover();
                           setHoverCell({ row: rIdx, col: cIdx });
                         }
@@ -1176,7 +1183,7 @@ export const ArenaView: React.FC<ArenaViewProps> = ({
                       }}
                       onClick={() => {
                         setHoveredBiomeTile(null);
-                        if (canPlaceHere) {
+                        if (canClickPlaceHere) {
                           handleCellClick(rIdx, cIdx);
                         }
                       }}
@@ -1188,11 +1195,11 @@ export const ArenaView: React.FC<ArenaViewProps> = ({
                       className={`battle-stone-socket group relative aspect-[5/7] border transition-all duration-150 overflow-hidden bg-transparent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 ${
                         isDropTarget
                           ? 'border-[#f3c569] ring-2 ring-[#e5b353]/80 shadow-[0_0_24px_rgba(235,176,68,0.45)] scale-[1.03] cursor-pointer z-20'
-                          : isDragActive && canPlaceHere
+                          : isDragActive && isOpenSocket
                           ? 'border-[#d6a348]/45 bg-amber-500/[0.05]'
-                          : canPlaceHere
-                          ? 'border-[#d8c098]/[0.18] hover:border-[#e5b55a]/75 cursor-pointer active:scale-[0.97]'
-                          : 'border-[#d8c098]/[0.09] cursor-default'
+                          : canClickPlaceHere
+                          ? 'border-[#d8c098]/[0.24] hover:border-[#e5b55a]/80 cursor-pointer active:scale-[0.97]'
+                          : 'border-[#d8c098]/[0.11] cursor-default'
                       }`}
                     >
                       {biomeMeta && (
@@ -1235,13 +1242,13 @@ export const ArenaView: React.FC<ArenaViewProps> = ({
         </div>
       </div>
 
-      {/* BOTTOM STAGE: FANNED 7-CARD PLAYER HAND ACROSS THE BOTTOM */}
-      <div className="shrink-0 w-full flex flex-col items-center justify-end pb-safe relative z-20">
-        {/* Subtle Contextual Whisper Pill (Only appears if focused card has a Rune or Biome effect) */}
+      {/* BOTTOM STAGE: FIXED-HEIGHT FANNED 7-CARD HAND (z-40 OVER BOARD RIM · ZERO LAYOUT SHIFT!) */}
+      <div className="shrink-0 h-[112px] sm:h-[126px] lg:h-[168px] xl:h-[184px] w-full flex items-end justify-center pb-safe relative z-40">
+        {/* Absolutely Positioned Whisper Pill — ZERO Impact on Flex Height or Board Size! */}
         {(activeFocusAugment || activeFocusBiomeMatchups.length > 0) && !scrubCardUid && (
-          <div className="pointer-events-none mb-1 flex flex-wrap items-center justify-center gap-1.5 max-w-full px-2">
+          <div className="pointer-events-none absolute -top-6 inset-x-0 z-50 flex flex-wrap items-center justify-center gap-1.5 max-w-full px-2">
             {activeFocusAugment && (
-              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 bg-[#221528]/95 border border-violet-400/50 text-[10.5px] text-violet-100 shadow">
+              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 bg-[#221528]/95 border border-violet-400/50 text-[10.5px] text-violet-100 shadow-lg">
                 <Wand2 className="w-3 h-3 text-violet-300 shrink-0" />
                 <strong className="text-violet-200">{activeFocusAugment.name}:</strong>
                 <span className="truncate max-w-[260px] sm:max-w-[380px]">
@@ -1252,10 +1259,10 @@ export const ArenaView: React.FC<ArenaViewProps> = ({
             {activeFocusBiomeMatchups.map((m) => (
               <span
                 key={m.biome}
-                className={`hidden sm:inline-flex items-center gap-1 px-2 py-0.5 border font-mono text-[10px] font-semibold ${
+                className={`hidden sm:inline-flex items-center gap-1 px-2 py-0.5 border font-mono text-[10px] font-semibold shadow-lg ${
                   m.isPositive
-                    ? 'bg-emerald-950/90 border-emerald-500/50 text-emerald-200'
-                    : 'bg-rose-950/90 border-rose-500/45 text-rose-200'
+                    ? 'bg-emerald-950/95 border-emerald-500/55 text-emerald-200'
+                    : 'bg-rose-950/95 border-rose-500/50 text-rose-200'
                 }`}
               >
                 <BiomeIcon biome={m.biome} className="w-2.5 h-2.5 shrink-0" />
@@ -1270,7 +1277,7 @@ export const ArenaView: React.FC<ArenaViewProps> = ({
         {/* Mobile Zero-Scroll Overlapping Fan (< lg) */}
         <div
           ref={mobileHandFanRef}
-          className="flex lg:hidden items-end justify-center pt-3 pb-1 px-1 touch-none select-none w-full"
+          className="flex lg:hidden items-end justify-center pb-1 px-1 touch-none select-none w-full"
         >
           {playerHand.map((hCard) => {
             const isSelected = hCard.uid === selectedHandUid;
@@ -1295,7 +1302,7 @@ export const ArenaView: React.FC<ArenaViewProps> = ({
                     : isScrubbed
                     ? '-translate-y-4 scale-[1.16]'
                     : activeHighlight
-                    ? '-translate-y-2.5 scale-[1.1]'
+                    ? '-translate-y-3 scale-[1.1]'
                     : scrubCardUid
                     ? 'opacity-65'
                     : ''
@@ -1309,11 +1316,16 @@ export const ArenaView: React.FC<ArenaViewProps> = ({
                   owner="player"
                   size="sm"
                   showName={false}
-                  selected={activeHighlight}
+                  selected={false}
+                  className={
+                    activeHighlight
+                      ? 'drop-shadow-[0_0_10px_rgba(245,190,78,0.85)]'
+                      : ''
+                  }
                   onClick={() => {
                     if (Date.now() < suppressHandClickUntilRef.current) return;
                     sound.select();
-                    setSelectedHandUid(hCard.uid);
+                    setSelectedHandUid((cur) => (cur === hCard.uid ? null : hCard.uid));
                   }}
                 />
               </div>
@@ -1324,7 +1336,7 @@ export const ArenaView: React.FC<ArenaViewProps> = ({
         {/* Desktop Wide Arc-Fanned 7-Card Tabletop Hand (lg+) */}
         <div
           onMouseLeave={() => setHoveredDesktopHandIdx(null)}
-          className="hidden lg:flex items-end justify-center pt-4 pb-1 px-4 select-none"
+          className="hidden lg:flex items-end justify-center pb-1 px-4 select-none"
         >
           {playerHand.map((hCard, idx) => {
             const isSelected = hCard.uid === selectedHandUid;
@@ -1347,13 +1359,13 @@ export const ArenaView: React.FC<ArenaViewProps> = ({
                 onPointerDown={(e) => handleHandCardPointerDown(e, hCard)}
                 style={{
                   marginLeft: overlapMargin,
-                  zIndex: isHovered ? 50 : lifted ? 40 : idx + 10,
+                  zIndex: isHovered ? 60 : lifted ? 50 : idx + 10,
                   transform: isBeingDragged
                     ? 'scale(0.94)'
                     : isHovered
-                    ? 'translate3d(0, -22px, 0) scale(1.14) rotate(0deg)'
+                    ? 'translate3d(0, -24px, 0) scale(1.14) rotate(0deg)'
                     : lifted
-                    ? 'translate3d(0, -14px, 0) scale(1.07) rotate(0deg)'
+                    ? 'translate3d(0, -16px, 0) scale(1.08) rotate(0deg)'
                     : isLeftOfHovered
                     ? `translate3d(-14px, ${restDropY}px, 0) rotate(${restRotate}deg)`
                     : isRightOfHovered
@@ -1361,11 +1373,11 @@ export const ArenaView: React.FC<ArenaViewProps> = ({
                     : `translate3d(0, ${restDropY}px, 0) rotate(${restRotate}deg)`,
                   transition:
                     'transform 190ms cubic-bezier(0.22, 1, 0.36, 1), opacity 150ms ease',
-                  filter: isHovered
-                    ? 'drop-shadow(0 20px 28px rgba(0, 0, 0, 0.9))'
+                  filter: lifted
+                    ? 'drop-shadow(0 18px 26px rgba(0, 0, 0, 0.92)) drop-shadow(0 0 10px rgba(245, 190, 78, 0.55))'
                     : 'drop-shadow(-4px 8px 14px rgba(0, 0, 0, 0.65))',
                 }}
-                className={`relative w-[108px] xl:w-[122px] 2xl:w-[134px] shrink-0 will-change-transform ${
+                className={`relative w-[108px] xl:w-[120px] 2xl:w-[132px] shrink-0 will-change-transform ${
                   phase === 'playing' && turn === 'player' && !isAnimating
                     ? 'cursor-grab active:cursor-grabbing'
                     : 'cursor-pointer'
@@ -1390,11 +1402,11 @@ export const ArenaView: React.FC<ArenaViewProps> = ({
                   owner="player"
                   size="md"
                   showName
-                  selected={lifted}
+                  selected={false}
                   onClick={() => {
                     if (Date.now() < suppressHandClickUntilRef.current) return;
                     sound.select();
-                    setSelectedHandUid(hCard.uid);
+                    setSelectedHandUid((cur) => (cur === hCard.uid ? null : hCard.uid));
                   }}
                 />
               </div>

@@ -8,7 +8,7 @@ interface UseBoardDragParams {
   turn: Owner;
   isAnimating: boolean;
   playerHand: HandCard[];
-  onSelectHandUid: (uid: string) => void;
+  onSelectHandUid: (uid: string | null) => void;
   onExecutePlayerMove: (uid: string, row: number, col: number) => void;
   timersRef: React.MutableRefObject<number[]>;
 }
@@ -387,6 +387,7 @@ export function useBoardDrag({
         }
       }
 
+      onSelectHandUid(null);
       setDraggingCard({
         card: draggedCard,
         width,
