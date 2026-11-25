@@ -377,13 +377,7 @@ const GameCardInner: React.FC<GameCardProps> = ({
       );
     }
 
-    const pInnerInset = size === 'xs' ? 'p-[5px]' : 'px-[8.4%] py-[7%]';
-    const pNameText =
-      size === 'sm'
-        ? 'text-[6.5px] sm:text-[8px] lg:text-[9px]'
-        : size === 'lg'
-        ? 'text-[9px] sm:text-[10.5px]'
-        : 'text-[8px] sm:text-[9px]';
+    const pInnerInset = size === 'xs' ? 'p-[5px]' : 'px-[6.8%] py-[6.8%]';
 
     return (
       <RelicTag
@@ -415,7 +409,7 @@ const GameCardInner: React.FC<GameCardProps> = ({
       >
         <div
           style={{ background: pTheme.surfaceGradient }}
-          className="card-weathered-rim relative w-full h-full overflow-hidden"
+          className="card-weathered-rim relative w-full h-full overflow-hidden [container-type:inline-size]"
         >
           <div
             className="pointer-events-none absolute inset-0 z-0"
@@ -425,13 +419,13 @@ const GameCardInner: React.FC<GameCardProps> = ({
           <div className={`relative z-10 w-full h-full ${pInnerInset}`}>
             <div
               style={{ borderColor: 'rgba(125, 211, 252, 0.55)' }}
-              className="relative w-full h-full rounded-[4px] border flex flex-col items-center justify-between p-[3px] sm:p-[4px] gap-[2px] sm:gap-[3px] bg-black/25"
+              className="relative w-full h-full rounded-[4px] border flex flex-col items-center justify-between p-[2.5px] sm:p-[3.5px] gap-[2px] sm:gap-[3px] bg-black/25"
             >
               {showName && size !== 'xs' && (
-                <div className="organic-tag w-full bg-sky-950/80 px-1.5 py-[1.5px] text-center shrink-0">
+                <div className="organic-tag w-full bg-sky-950/80 px-1 py-[1.5px] text-center shrink-0">
                   <div
                     style={{ color: pTheme.titleColor }}
-                    className={`font-[var(--font-display)] font-bold uppercase tracking-[0.04em] leading-[1.12] [text-wrap:balance] break-words ${pNameText}`}
+                    className="font-[var(--font-display)] text-[clamp(5.5px,6.3cqw,9.5px)] font-bold uppercase tracking-[0.015em] leading-[1.12] [text-wrap:balance] break-normal"
                   >
                     {powerCard.name}
                   </div>
@@ -904,7 +898,7 @@ const GameCardInner: React.FC<GameCardProps> = ({
   // SQUARE TACTICAL BOARD / HAND / GALLERY / SHOP VARIANT
   // =========================================================================
   const innerInsetClass =
-    size === 'xs' ? 'p-[5px]' : 'px-[8.4%] py-[7%]';
+    size === 'xs' ? 'p-[5px]' : 'px-[6.8%] py-[6.8%]';
 
   const orbMaxClass =
     size === 'sm'
@@ -912,13 +906,6 @@ const GameCardInner: React.FC<GameCardProps> = ({
       : size === 'lg'
       ? 'max-w-[38px] sm:max-w-[44px] text-sm sm:text-base'
       : 'max-w-[30px] sm:max-w-[36px] text-xs sm:text-sm';
-
-  const nameplateTextClass =
-    size === 'sm'
-      ? 'text-[6.5px] sm:text-[8px] lg:text-[9px]'
-      : size === 'lg'
-      ? 'text-[9px] sm:text-[10.5px]'
-      : 'text-[8px] sm:text-[9px]';
 
   const squareOrbs = [
     {
@@ -997,7 +984,7 @@ const GameCardInner: React.FC<GameCardProps> = ({
       <div
         key={flipKey ?? 'steady'}
         style={{ background: theme.surfaceGradient }}
-        className={`card-weathered-rim relative w-full h-full overflow-hidden ${
+        className={`card-weathered-rim relative w-full h-full overflow-hidden [container-type:inline-size] ${
           flipKey ? 'animate-card-flip' : ''
         }`}
       >
@@ -1034,14 +1021,14 @@ const GameCardInner: React.FC<GameCardProps> = ({
                   ? 'rgba(253, 164, 175, 0.55)'
                   : theme.hairline,
             }}
-            className="relative w-full h-full rounded-[4px] border flex flex-col items-center justify-between p-[3px] sm:p-[4px] gap-[2px] sm:gap-[3px] bg-black/15"
+            className="relative w-full h-full rounded-[4px] border flex flex-col items-center justify-between p-[2.5px] sm:p-[3.5px] gap-[2px] sm:gap-[3px] bg-black/15"
           >
-            {/* Optional Serif Nameplate — Standardized Uniform Font Size, Never Truncated */}
+            {/* Optional Serif Nameplate — Scales Proportionally to Card Width, Never Mid-Word Wraps */}
             {showName && !isCompact && !targetStatus && !hasActiveBuff && !hasActiveDebuff && (
-              <div className="organic-tag w-full bg-black/50 px-1.5 py-[1.5px] text-center shrink-0">
+              <div className="organic-tag w-full bg-black/50 px-1 py-[1.5px] text-center shrink-0">
                 <div
                   style={{ color: theme.titleColor }}
-                  className={`font-[var(--font-display)] font-bold uppercase tracking-[0.04em] leading-[1.12] [text-wrap:balance] break-words ${nameplateTextClass}`}
+                  className="font-[var(--font-display)] text-[clamp(5.5px,6.3cqw,9.5px)] font-bold uppercase tracking-[0.015em] leading-[1.12] [text-wrap:balance] break-normal"
                 >
                   {card.name}
                 </div>
