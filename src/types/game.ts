@@ -17,7 +17,14 @@ export type CardElement =
   | 'shadow'
   | 'neutral';
 
-export type CardTribe = 'mortal' | 'fey' | 'undead' | 'construct' | 'beast';
+export type CardTribe =
+  | 'mortal'
+  | 'elf'
+  | 'fey'
+  | 'dragon'
+  | 'undead'
+  | 'construct'
+  | 'beast';
 
 export type BiomeType =
   | 'water'

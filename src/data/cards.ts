@@ -1382,6 +1382,278 @@ const RAW_CARDS: RawEntry[] = [
     price: 680,
     accentGradient: 'from-violet-950 via-emerald-950 to-slate-950',
   },
+
+  // =========================================================================
+  // EXPANSION IV — ELVEN CONCLAVE (#121 to #132 · Wide Asymmetric Spreads)
+  // =========================================================================
+  {
+    id: 'glade-longbow',
+    name: 'Glade Longbow',
+    rarity: 'common',
+    stats: [6, 'P', 1, 3],
+    arrows: ['n', 'ne'],
+    image: IMG.ranger,
+    artFilter: 'hue-rotate-15 saturate-125 brightness-105',
+    price: 85,
+    accentGradient: 'from-emerald-950 via-lime-950 to-slate-950',
+  },
+  {
+    id: 'silverleaf-warder',
+    name: 'Silverleaf Warder',
+    rarity: 'common',
+    stats: [1, 'M', 3, 6],
+    arrows: ['n', 'e', 's', 'w'],
+    image: IMG.cleric,
+    artFilter: 'hue-rotate-60 saturate-110 brightness-105',
+    price: 85,
+    accentGradient: 'from-teal-950 via-amber-950 to-slate-950',
+  },
+  {
+    id: 'duskwood-dancer',
+    name: 'Duskwood Dancer',
+    rarity: 'common',
+    stats: [3, 'X', 2, 2],
+    arrows: ['n', 'ne', 'se', 'sw', 'nw'],
+    image: IMG.rogue,
+    artFilter: 'hue-rotate-90 saturate-125',
+    price: 95,
+    accentGradient: 'from-violet-950 via-emerald-950 to-slate-950',
+  },
+  {
+    id: 'sunspire-deadeye',
+    name: 'Sunspire Deadeye',
+    rarity: 'rare',
+    stats: [9, 'X', 4, 5],
+    arrows: ['n', 'nw', 'ne'],
+    image: IMG.ranger,
+    artFilter: '-hue-rotate-30 saturate-150 brightness-110',
+    price: 190,
+    accentGradient: 'from-amber-900 via-yellow-950 to-slate-950',
+  },
+  {
+    id: 'moonwell-spellweaver',
+    name: 'Moonwell Spellweaver',
+    rarity: 'rare',
+    stats: [5, 'M', 4, 9],
+    arrows: ['n', 'ne', 'e', 'se', 'sw', 'w'],
+    image: IMG.mage,
+    artFilter: 'hue-rotate-60 saturate-125 brightness-105',
+    price: 185,
+    accentGradient: 'from-sky-950 via-indigo-950 to-slate-950',
+  },
+  {
+    id: 'thornveil-blademaster',
+    name: 'Thornveil Blademaster',
+    rarity: 'rare',
+    stats: [8, 'X', 4, 4],
+    arrows: ['n', 'ne', 'e', 'se', 'sw', 'nw'],
+    image: IMG.samurai,
+    artFilter: 'hue-rotate-90 saturate-125',
+    price: 195,
+    accentGradient: 'from-emerald-950 via-teal-950 to-slate-950',
+  },
+  {
+    id: 'starfall-oracle',
+    name: 'Starfall Oracle',
+    rarity: 'rare',
+    stats: [9, 'M', 4, 6],
+    arrows: ['n', 'ne', 'se', 's', 'nw'],
+    image: IMG.empress,
+    artFilter: 'hue-rotate-30 saturate-125',
+    price: 190,
+    accentGradient: 'from-indigo-950 via-cyan-950 to-slate-950',
+  },
+  {
+    id: 'silvermoon-archbow',
+    name: 'Silvermoon Archbow',
+    rarity: 'epic',
+    stats: [12, 'X', 8, 8],
+    arrows: ['n', 'nw', 'ne', 's'],
+    image: IMG.ranger,
+    artFilter: 'hue-rotate-180 saturate-150 brightness-110',
+    price: 340,
+    accentGradient: 'from-sky-900 via-amber-950 to-slate-950',
+  },
+  {
+    id: 'astral-bladesinger',
+    name: 'Astral Bladesinger',
+    rarity: 'epic',
+    stats: [11, 'A', 7, 7],
+    arrows: ['n', 'ne', 'e', 'se', 's', 'sw', 'nw'],
+    image: IMG.valkyrie,
+    artFilter: 'hue-rotate-180 saturate-150',
+    price: 355,
+    accentGradient: 'from-cyan-900 via-indigo-950 to-slate-950',
+  },
+  {
+    id: 'elderwood-wardlord',
+    name: 'Elderwood Wardlord',
+    rarity: 'epic',
+    stats: [7, 'X', 11, 12],
+    arrows: ['n', 'e', 's', 'w', 'ne'],
+    image: IMG.knight,
+    artFilter: 'hue-rotate-90 saturate-125 brightness-105',
+    price: 345,
+    accentGradient: 'from-emerald-900 via-stone-900 to-slate-950',
+  },
+  {
+    id: 'duskveil-shadowweaver',
+    name: 'Duskveil Shadowweaver',
+    rarity: 'epic',
+    stats: [12, 'M', 7, 11],
+    arrows: ['nw', 'ne', 'e', 'se', 'sw'],
+    image: IMG.empress,
+    artFilter: 'hue-rotate-60 saturate-125 brightness-95',
+    price: 345,
+    accentGradient: 'from-violet-950 via-purple-950 to-slate-950',
+  },
+  {
+    id: 'starlight-high-queen',
+    name: 'Aeloria, Starlight Queen',
+    rarity: 'mythic',
+    stats: [12, 'A', 11, 15],
+    arrows: ['n', 'ne', 'e', 'se', 's', 'sw', 'nw'],
+    image: IMG.empress,
+    artFilter: '-hue-rotate-30 saturate-150 brightness-110',
+    price: 640,
+    accentGradient: 'from-amber-800 via-emerald-950 to-slate-950',
+  },
+
+  // =========================================================================
+  // EXPANSION V — DRAGONFLIGHT BROOD (#133 to #144 · Heavy & Breath Extremes)
+  // =========================================================================
+  {
+    id: 'ember-whelpling',
+    name: 'Ember Whelpling',
+    rarity: 'common',
+    stats: [6, 'M', 2, 1],
+    arrows: ['nw', 'n', 'ne'],
+    image: IMG.drake,
+    artFilter: 'hue-rotate-15 saturate-150 brightness-105',
+    price: 85,
+    accentGradient: 'from-orange-950 via-red-950 to-slate-950',
+  },
+  {
+    id: 'cragscale-hatchling',
+    name: 'Cragscale Hatchling',
+    rarity: 'common',
+    stats: [2, 'P', 6, 2],
+    arrows: ['e', 's', 'w'],
+    image: IMG.drake,
+    artFilter: 'sepia-[.35] saturate-75 contrast-115',
+    price: 85,
+    accentGradient: 'from-stone-800 via-amber-950 to-slate-950',
+  },
+  {
+    id: 'mistscale-drakelet',
+    name: 'Mistscale Drakelet',
+    rarity: 'common',
+    stats: [4, 'X', 1, 4],
+    arrows: ['ne', 'se', 'sw', 'nw'],
+    image: IMG.wyvern,
+    artFilter: 'hue-rotate-15 saturate-125 brightness-105',
+    price: 90,
+    accentGradient: 'from-sky-950 via-teal-950 to-slate-950',
+  },
+  {
+    id: 'basalt-wyvern',
+    name: 'Basalt Wyvern',
+    rarity: 'rare',
+    stats: [7, 'P', 9, 4],
+    arrows: ['n', 'e', 's', 'w'],
+    image: IMG.wyvern,
+    artFilter: 'hue-rotate-180 saturate-75 contrast-120',
+    price: 185,
+    accentGradient: 'from-stone-800 via-slate-900 to-slate-950',
+  },
+  {
+    id: 'stormcrest-drake',
+    name: 'Stormcrest Drake',
+    rarity: 'rare',
+    stats: [9, 'P', 6, 5],
+    arrows: ['nw', 'n', 'ne', 's'],
+    image: IMG.drake,
+    artFilter: 'hue-rotate-180 saturate-150',
+    price: 190,
+    accentGradient: 'from-cyan-950 via-indigo-950 to-slate-950',
+  },
+  {
+    id: 'venomscale-hydra',
+    name: 'Venomscale Hydra',
+    rarity: 'rare',
+    stats: [5, 'X', 7, 7],
+    arrows: ['n', 'ne', 'e', 'se', 'sw', 'w'],
+    image: IMG.serpent,
+    artFilter: 'hue-rotate-90 saturate-150 contrast-110',
+    price: 195,
+    accentGradient: 'from-lime-950 via-emerald-950 to-slate-950',
+  },
+  {
+    id: 'sunfire-amphithere',
+    name: 'Sunfire Amphithere',
+    rarity: 'rare',
+    stats: [6, 'M', 5, 9],
+    arrows: ['n', 'nw', 'ne', 'se', 'sw'],
+    image: IMG.phoenix,
+    artFilter: 'hue-rotate-30 saturate-125 brightness-105',
+    price: 190,
+    accentGradient: 'from-amber-900 via-orange-950 to-slate-950',
+  },
+  {
+    id: 'infernal-hellkite',
+    name: 'Infernal Hellkite',
+    rarity: 'epic',
+    stats: [12, 'A', 9, 7],
+    arrows: ['n', 'nw', 'ne', 'e'],
+    image: IMG.drake,
+    artFilter: '-hue-rotate-15 saturate-150 contrast-115',
+    price: 350,
+    accentGradient: 'from-red-900 via-orange-950 to-slate-950',
+  },
+  {
+    id: 'obsidian-earthwyrm',
+    name: 'Obsidian Earthwyrm',
+    rarity: 'epic',
+    stats: [10, 'P', 12, 8],
+    arrows: ['e', 'se', 's', 'sw', 'w'],
+    image: IMG.voidDragon,
+    artFilter: 'sepia-[.3] hue-rotate-30 contrast-115',
+    price: 335,
+    accentGradient: 'from-stone-800 via-orange-950 to-slate-950',
+  },
+  {
+    id: 'tempest-skywyrm',
+    name: 'Tempest Skywyrm',
+    rarity: 'epic',
+    stats: [10, 'X', 7, 11],
+    arrows: ['n', 'ne', 'e', 'se', 'sw', 'w', 'nw'],
+    image: IMG.leviathan,
+    artFilter: 'hue-rotate-15 saturate-150 brightness-105',
+    price: 345,
+    accentGradient: 'from-cyan-900 via-sky-950 to-slate-950',
+  },
+  {
+    id: 'crystalline-frostwyrm',
+    name: 'Crystalline Frostwyrm',
+    rarity: 'epic',
+    stats: [8, 'M', 10, 12],
+    arrows: ['n', 'nw', 'w', 'sw', 's', 'se'],
+    image: IMG.wyvern,
+    artFilter: '-hue-rotate-15 saturate-150 brightness-110',
+    price: 340,
+    accentGradient: 'from-sky-900 via-blue-950 to-slate-950',
+  },
+  {
+    id: 'cataclysm-elder-dragon',
+    name: 'Ignivar, Cataclysm Wyrm',
+    rarity: 'mythic',
+    stats: [15, 'A', 15, 10],
+    arrows: ['n', 'nw', 'ne', 'e', 'w'],
+    image: IMG.voidDragon,
+    artFilter: '-hue-rotate-60 saturate-150 contrast-115',
+    price: 680,
+    accentGradient: 'from-orange-800 via-red-950 to-slate-950',
+  },
 ];
 
 function computeCardShopPrice(entry: RawEntry, cardNumber: number): number {
@@ -1391,9 +1663,13 @@ function computeCardShopPrice(entry: RawEntry, cardNumber: number): number {
   }
   const arrowCount = entry.arrows.length;
   const type = entry.stats[1];
+  const statSum = entry.stats[0] + entry.stats[2] + entry.stats[3];
 
   if (entry.rarity === 'common') {
-    const tierOffset = Math.min(29, Math.max(0, cardNumber - 1));
+    const tierOffset =
+      cardNumber <= 90
+        ? Math.min(29, Math.max(0, cardNumber - 1))
+        : Math.min(29, Math.max(4, (statSum - 7) * 5 + 6));
     const raw =
       140 +
       tierOffset * 5 +
@@ -1403,7 +1679,10 @@ function computeCardShopPrice(entry: RawEntry, cardNumber: number): number {
   }
 
   if (entry.rarity === 'rare') {
-    const tierOffset = Math.min(29, Math.max(0, cardNumber - 31));
+    const tierOffset =
+      cardNumber <= 90
+        ? Math.min(29, Math.max(0, cardNumber - 31))
+        : Math.min(29, Math.max(4, (statSum - 16) * 5 + 6));
     const raw =
       950 +
       tierOffset * 26 +
@@ -1413,7 +1692,10 @@ function computeCardShopPrice(entry: RawEntry, cardNumber: number): number {
   }
 
   // Epic: Major prestige investment (3,800g – 6,500g)
-  const tierOffset = Math.min(19, Math.max(0, cardNumber - 61));
+  const tierOffset =
+    cardNumber <= 90
+      ? Math.min(19, Math.max(0, cardNumber - 61))
+      : Math.min(19, Math.max(3, (statSum - 25) * 3 + 4));
   const raw =
     3800 +
     tierOffset * 95 +
@@ -1516,6 +1798,28 @@ export const CARD_AUGMENTS: Record<string, CardAugment> = {
     powerDelta: -2,
     pDefDelta: -3,
     mDefDelta: -3,
+  },
+  'starlight-high-queen': {
+    id: 'aug-starlight-benediction',
+    name: 'Starfall Halo',
+    shortTag: '+3 ALL (Adj. Allies)',
+    badgeLabel: 'ADJ +3 ALL',
+    description: 'On Play: Adjacent friendly cards on the board gain +3 Power, +3 P.Def & +3 M.Def.',
+    scope: 'adjacent_allies',
+    powerDelta: 3,
+    pDefDelta: 3,
+    mDefDelta: 3,
+  },
+  'cataclysm-elder-dragon': {
+    id: 'aug-cataclysm-scorch',
+    name: 'Cataclysm Breath',
+    shortTag: '-3 ATK/-2 DEF (Adj. Foes)',
+    badgeLabel: 'FOE -3P/-2D',
+    description: 'On Play: Adjacent rival cards on the board lose -3 Power, -2 P.Def & -2 M.Def.',
+    scope: 'adjacent_rivals',
+    powerDelta: -3,
+    pDefDelta: -2,
+    mDefDelta: -2,
   },
 };
 
@@ -1699,7 +2003,7 @@ const CARD_TRAITS: Record<string, { element: CardElement; tribe: CardTribe }> = 
   'crystal-slime': { element: 'water', tribe: 'beast' },
   'briar-sprite': { element: 'nature', tribe: 'fey' },
   'clockwork-owl': { element: 'neutral', tribe: 'construct' },
-  'timber-bowman': { element: 'nature', tribe: 'mortal' },
+  'timber-bowman': { element: 'nature', tribe: 'elf' },
   'copper-cannoneer': { element: 'fire', tribe: 'mortal' },
   'crypt-acolyte': { element: 'shadow', tribe: 'mortal' },
   'cinder-fiend': { element: 'fire', tribe: 'beast' },
@@ -1716,24 +2020,24 @@ const CARD_TRAITS: Record<string, { element: CardElement; tribe: CardTribe }> = 
   'reef-eel': { element: 'water', tribe: 'beast' },
   'razor-tusk': { element: 'neutral', tribe: 'beast' },
   'shrine-novice': { element: 'light', tribe: 'mortal' },
-  'mist-archer': { element: 'water', tribe: 'mortal' },
+  'mist-archer': { element: 'water', tribe: 'elf' },
   'slag-gunner': { element: 'fire', tribe: 'mortal' },
   'bone-chanter': { element: 'shadow', tribe: 'mortal' },
   // #31–#60 Rares
   'runic-knight': { element: 'light', tribe: 'mortal' },
   'glacial-mage': { element: 'water', tribe: 'mortal' },
-  'cinder-drake': { element: 'fire', tribe: 'beast' },
+  'cinder-drake': { element: 'fire', tribe: 'dragon' },
   'storm-griffin': { element: 'storm', tribe: 'beast' },
   'shadow-rogue': { element: 'shadow', tribe: 'mortal' },
   'tide-serpent': { element: 'water', tribe: 'beast' },
   'ironclad-boar': { element: 'neutral', tribe: 'beast' },
   'sun-cleric': { element: 'light', tribe: 'mortal' },
-  'sylvan-pathfinder': { element: 'nature', tribe: 'mortal' },
+  'sylvan-pathfinder': { element: 'nature', tribe: 'elf' },
   'forge-artillerist': { element: 'fire', tribe: 'mortal' },
   'grave-warlock': { element: 'shadow', tribe: 'mortal' },
   'silver-paladin': { element: 'light', tribe: 'mortal' },
   'rime-enchanter': { element: 'water', tribe: 'mortal' },
-  'magma-wyrm': { element: 'fire', tribe: 'beast' },
+  'magma-wyrm': { element: 'fire', tribe: 'dragon' },
   'sky-skirmisher': { element: 'storm', tribe: 'beast' },
   'nightblade-duelist': { element: 'shadow', tribe: 'mortal' },
   'abyssal-eel': { element: 'water', tribe: 'beast' },
@@ -1749,24 +2053,24 @@ const CARD_TRAITS: Record<string, { element: CardElement; tribe: CardTribe }> = 
   'prismatic-jelly': { element: 'water', tribe: 'beast' },
   'elder-heartwood': { element: 'nature', tribe: 'fey' },
   'chronos-owl': { element: 'light', tribe: 'construct' },
-  'moonlit-marksman': { element: 'light', tribe: 'mortal' },
+  'moonlit-marksman': { element: 'light', tribe: 'elf' },
   // #61–#80 Epics
   'stone-behemoth': { element: 'neutral', tribe: 'construct' },
   'valkyrie-lancer': { element: 'storm', tribe: 'mortal' },
   'obsidian-gargoyle': { element: 'shadow', tribe: 'construct' },
   'tempest-djinn': { element: 'storm', tribe: 'fey' },
   'crimson-samurai': { element: 'fire', tribe: 'mortal' },
-  'frost-wyvern': { element: 'water', tribe: 'beast' },
+  'frost-wyvern': { element: 'water', tribe: 'dragon' },
   'abyssal-lich': { element: 'shadow', tribe: 'undead' },
   'void-necromancer': { element: 'shadow', tribe: 'mortal' },
-  'emerald-sharpshooter': { element: 'nature', tribe: 'mortal' },
+  'emerald-sharpshooter': { element: 'nature', tribe: 'elf' },
   'ironforge-bombardier': { element: 'fire', tribe: 'mortal' },
   'molten-colossus': { element: 'fire', tribe: 'construct' },
   'seraphic-dragoon': { element: 'light', tribe: 'mortal' },
   'cathedral-sentinel': { element: 'light', tribe: 'construct' },
   'maelstrom-invoker': { element: 'storm', tribe: 'fey' },
   'oni-blademaster': { element: 'shadow', tribe: 'mortal' },
-  'aurora-drake': { element: 'storm', tribe: 'beast' },
+  'aurora-drake': { element: 'storm', tribe: 'dragon' },
   'soulfire-monarch': { element: 'fire', tribe: 'undead' },
   'aegis-crusader': { element: 'light', tribe: 'mortal' },
   'astral-archmage': { element: 'shadow', tribe: 'mortal' },
@@ -1778,7 +2082,7 @@ const CARD_TRAITS: Record<string, { element: CardElement; tribe: CardTribe }> = 
   'glacial-empress': { element: 'water', tribe: 'mortal' },
   'solar-sovereign': { element: 'light', tribe: 'mortal' },
   'celestial-archon': { element: 'light', tribe: 'fey' },
-  'void-bahamut': { element: 'shadow', tribe: 'beast' },
+  'void-bahamut': { element: 'shadow', tribe: 'dragon' },
   'astral-phoenix': { element: 'fire', tribe: 'beast' },
   'abyssal-kraken': { element: 'water', tribe: 'beast' },
   'eternal-overlord': { element: 'shadow', tribe: 'mortal' },
@@ -1815,6 +2119,32 @@ const CARD_TRAITS: Record<string, { element: CardElement; tribe: CardTribe }> = 
   'dread-deathknight': { element: 'shadow', tribe: 'undead' },
   'bone-behemoth': { element: 'shadow', tribe: 'undead' },
   'skeletal-dracolich': { element: 'shadow', tribe: 'undead' },
+  // #121–#132 Elven Conclave
+  'glade-longbow': { element: 'nature', tribe: 'elf' },
+  'silverleaf-warder': { element: 'light', tribe: 'elf' },
+  'duskwood-dancer': { element: 'shadow', tribe: 'elf' },
+  'sunspire-deadeye': { element: 'light', tribe: 'elf' },
+  'moonwell-spellweaver': { element: 'water', tribe: 'elf' },
+  'thornveil-blademaster': { element: 'nature', tribe: 'elf' },
+  'starfall-oracle': { element: 'storm', tribe: 'elf' },
+  'silvermoon-archbow': { element: 'light', tribe: 'elf' },
+  'astral-bladesinger': { element: 'storm', tribe: 'elf' },
+  'elderwood-wardlord': { element: 'nature', tribe: 'elf' },
+  'duskveil-shadowweaver': { element: 'shadow', tribe: 'elf' },
+  'starlight-high-queen': { element: 'light', tribe: 'elf' },
+  // #133–#144 Dragonflight Brood
+  'ember-whelpling': { element: 'fire', tribe: 'dragon' },
+  'cragscale-hatchling': { element: 'neutral', tribe: 'dragon' },
+  'mistscale-drakelet': { element: 'water', tribe: 'dragon' },
+  'basalt-wyvern': { element: 'neutral', tribe: 'dragon' },
+  'stormcrest-drake': { element: 'storm', tribe: 'dragon' },
+  'venomscale-hydra': { element: 'nature', tribe: 'dragon' },
+  'sunfire-amphithere': { element: 'light', tribe: 'dragon' },
+  'infernal-hellkite': { element: 'fire', tribe: 'dragon' },
+  'obsidian-earthwyrm': { element: 'neutral', tribe: 'dragon' },
+  'tempest-skywyrm': { element: 'storm', tribe: 'dragon' },
+  'crystalline-frostwyrm': { element: 'water', tribe: 'dragon' },
+  'cataclysm-elder-dragon': { element: 'fire', tribe: 'dragon' },
 };
 
 export const CARDS: CardDef[] = RAW_CARDS.map((entry, idx) => {

@@ -1,4 +1,5 @@
 import { BiomeType, LadderFighter, LadderTier } from '../types/game';
+import { CARDS } from './cards';
 
 export const LADDER_TIERS: LadderTier[] = [
   // =========================================================================
@@ -356,9 +357,9 @@ export const LADDER_TIERS: LadderTier[] = [
         orderInTier: 3,
         name: 'Drakehandler Ignis',
         title: 'Foundry Tamer',
-        specialty: '8-Power Cinder Drakes (#29–#36)',
+        specialty: 'Cinder & Stormcrest Drakes (#29–#36)',
         avatarCardId: 'cinder-drake',
-        signatureCardIds: ['cinder-drake', 'tide-serpent'],
+        signatureCardIds: ['cinder-drake', 'stormcrest-drake'],
         minCardNumber: 29,
         maxCardNumber: 36,
         winGold: 100,
@@ -423,9 +424,9 @@ export const LADDER_TIERS: LadderTier[] = [
         orderInTier: 1,
         name: 'Ranger Sylvanus',
         title: 'Canopy Scout',
-        specialty: 'Flexible Pathfinders (#35–#42)',
+        specialty: 'Elven Pathfinders & Deadeyes (#35–#42)',
         avatarCardId: 'sylvan-pathfinder',
-        signatureCardIds: ['sylvan-pathfinder', 'forge-artillerist'],
+        signatureCardIds: ['sylvan-pathfinder', 'sunspire-deadeye'],
         minCardNumber: 35,
         maxCardNumber: 42,
         winGold: 125,
@@ -732,9 +733,9 @@ export const LADDER_TIERS: LadderTier[] = [
         orderInTier: 2,
         name: 'Dragoon Caelum',
         title: 'Seraphic Knight',
-        specialty: 'Assault Dragoons & Sentinels (#69–#75)',
+        specialty: 'Assault Dragoons & Hellkites (#69–#75)',
         avatarCardId: 'seraphic-dragoon',
-        signatureCardIds: ['seraphic-dragoon', 'cathedral-sentinel'],
+        signatureCardIds: ['seraphic-dragoon', 'infernal-hellkite'],
         minCardNumber: 69,
         maxCardNumber: 75,
         winGold: 265,
@@ -840,9 +841,9 @@ export const LADDER_TIERS: LadderTier[] = [
         orderInTier: 3,
         name: 'Archon Valdris',
         title: 'Overseer of the Spire (Boss)',
-        specialty: '8-Arrow Solar Sovereign & Archon (#79–#86)',
+        specialty: 'Solar Sovereign & Starlight Queen (#79–#86)',
         avatarCardId: 'celestial-archon',
-        signatureCardIds: ['solar-sovereign', 'celestial-archon'],
+        signatureCardIds: ['solar-sovereign', 'starlight-high-queen', 'celestial-archon'],
         minCardNumber: 79,
         maxCardNumber: 86,
         winGold: 380,
@@ -874,9 +875,9 @@ export const LADDER_TIERS: LadderTier[] = [
         orderInTier: 1,
         name: 'Phantom Dragonlord',
         title: 'Master of the Void (Boss)',
-        specialty: 'Mythic Void Wyrmlord & Kraken (#81–#89)',
+        specialty: 'Void Wyrmlord & Cataclysm Wyrm (#81–#89)',
         avatarCardId: 'void-bahamut',
-        signatureCardIds: ['void-bahamut', 'skeletal-dracolich', 'abyssal-kraken'],
+        signatureCardIds: ['void-bahamut', 'cataclysm-elder-dragon', 'skeletal-dracolich'],
         minCardNumber: 81,
         maxCardNumber: 89,
         winGold: 450,
@@ -933,7 +934,7 @@ export function getFighterPoolLabel(fighter: LadderFighter): string {
   if (fighter.tierNumber === 1 && fighter.orderInTier <= 3) {
     return base;
   }
-  return `${base} + Realms #91–#120`;
+  return `${base} + Realms #91–#${CARDS.length}`;
 }
 
 export function isTierUnlocked(
