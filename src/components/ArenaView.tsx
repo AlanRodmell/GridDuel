@@ -1351,7 +1351,7 @@ export const ArenaView: React.FC<ArenaViewProps> = ({
           >
             <BattlefieldMonolithFrame />
 
-            <div className="arena-monolith-bed relative p-1 sm:p-1.5 lg:p-2">
+            <div className="arena-monolith-bed relative z-10 p-1 sm:p-1.5 lg:p-2">
               <div
                 aria-hidden="true"
                 className="pointer-events-none absolute inset-0 overflow-hidden"
@@ -1560,7 +1560,7 @@ export const ArenaView: React.FC<ArenaViewProps> = ({
                                 filter: biomeMeta.tileImageFilter,
                                 opacity: 0.96,
                               }}
-                              className={`battlefield-biome-art pointer-events-none absolute inset-0 w-full h-full object-cover select-none transition-transform duration-500 ${
+                              className={`battlefield-biome-art pointer-events-none absolute inset-0 w-full h-full object-cover select-none transition-transform duration-200 ${
                                 isDropTarget ? 'scale-[1.06]' : 'group-hover:scale-[1.04]'
                               }`}
                             />
@@ -1571,10 +1571,10 @@ export const ArenaView: React.FC<ArenaViewProps> = ({
                           </>
                         )}
 
-                        <div className="pointer-events-none absolute inset-0 shadow-[inset_0_1px_8px_rgba(0,0,0,0.48)]" />
+                        <div className="pointer-events-none absolute inset-0 z-[2] shadow-[inset_0_1px_8px_rgba(0,0,0,0.48)]" />
 
                         {isDropTarget && (
-                          <div className="pointer-events-none absolute inset-0 bg-amber-400/15 shadow-[inset_0_0_18px_rgba(240,185,78,0.45)]" />
+                          <div className="pointer-events-none absolute inset-0 z-10 bg-amber-400/18 shadow-[inset_0_0_18px_rgba(240,185,78,0.5)]" />
                         )}
                       </button>
                     );
@@ -1646,9 +1646,9 @@ export const ArenaView: React.FC<ArenaViewProps> = ({
                       'transform 190ms cubic-bezier(0.22, 1, 0.36, 1), opacity 150ms ease',
                     filter: lifted
                       ? isRelic
-                        ? 'drop-shadow(0 18px 26px rgba(0, 0, 0, 0.92)) drop-shadow(0 0 12px rgba(56, 189, 248, 0.65))'
-                        : 'drop-shadow(0 18px 26px rgba(0, 0, 0, 0.92)) drop-shadow(0 0 10px rgba(245, 190, 78, 0.55))'
-                      : 'drop-shadow(-6px 8px 14px rgba(0, 0, 0, 0.72))',
+                        ? 'drop-shadow(0 14px 20px rgba(0, 0, 0, 0.88))'
+                        : 'drop-shadow(0 14px 20px rgba(0, 0, 0, 0.88))'
+                      : undefined,
                   }}
                   className={`relative w-[96px] xl:w-[108px] 2xl:w-[118px] shrink-0 will-change-transform ${
                     phase === 'playing' && turn === 'player' && !isAnimating

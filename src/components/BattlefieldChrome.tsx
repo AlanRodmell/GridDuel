@@ -6,13 +6,17 @@ import React from 'react';
  * Renders splintered oak war-stakes, rope lashings, iron brackets, and creeping thorny bramble vines.
  */
 
-/** Monumental carved-stone frame for the battle board. */
+/**
+ * Monumental carved-stone plinth & gilded perimeter frame for the battle board.
+ * Rendered BEHIND `.arena-monolith-bed` (`z-0`) with zero SVG blur filters so it never
+ * obscures tiles/cards and incurs zero GPU filter overhead during card drag/animations.
+ */
 export const BattlefieldMonolithFrame: React.FC = () => (
   <svg
     aria-hidden="true"
     viewBox="0 0 1000 700"
     preserveAspectRatio="none"
-    className="pointer-events-none absolute -inset-[10px] sm:-inset-[14px] lg:-inset-[18px] w-[calc(100%+20px)] sm:w-[calc(100%+28px)] lg:w-[calc(100%+36px)] h-[calc(100%+20px)] sm:h-[calc(100%+28px)] lg:h-[calc(100%+36px)] z-30 overflow-visible select-none"
+    className="pointer-events-none absolute -inset-[10px] sm:-inset-[14px] lg:-inset-[18px] w-[calc(100%+20px)] sm:w-[calc(100%+28px)] lg:w-[calc(100%+36px)] h-[calc(100%+20px)] sm:h-[calc(100%+28px)] lg:h-[calc(100%+36px)] z-0 overflow-visible select-none"
   >
     <defs>
       <linearGradient id="monolith-edge" x1="0" y1="0" x2="0" y2="1">
@@ -27,30 +31,42 @@ export const BattlefieldMonolithFrame: React.FC = () => (
         <stop offset=".5" stopColor="#80663c" />
         <stop offset="1" stopColor="#d2b477" />
       </linearGradient>
-      <filter id="monolith-shadow" x="-20%" y="-20%" width="140%" height="140%">
-        <feGaussianBlur stdDeviation="8" />
-      </filter>
     </defs>
-    <path d="M22 26 L978 26 L990 42 L984 658 L968 674 L32 674 L10 654 L16 44 Z" fill="#000" opacity=".72" filter="url(#monolith-shadow)" />
-    <path d="M22 22 L978 22 L990 38 L984 662 L968 678 L32 678 L10 658 L16 40 Z" fill="url(#monolith-edge)" stroke="#0b0b09" strokeWidth="12" />
-    <path d="M34 34 L966 34 L976 46 L970 650 L958 664 L42 664 L24 648 L28 48 Z" fill="none" stroke="#b5a17b" strokeOpacity=".42" strokeWidth="2" />
-    <path d="M45 44 L955 44 M40 655 L960 655" stroke="url(#monolith-gold)" strokeOpacity=".55" strokeWidth="2" />
-    <path d="M42 44 L84 44 L112 72 L112 98 M958 44 L916 44 L888 72 L888 98 M42 656 L84 656 L112 628 L112 602 M958 656 L916 656 L888 628 L888 602" fill="none" stroke="url(#monolith-gold)" strokeWidth="4" />
-    <g fill="#171714" stroke="url(#monolith-gold)" strokeWidth="2">
-      <path d="M42 44 L88 44 L112 68 L88 92 L42 92 L20 68 Z" />
-      <path d="M958 44 L912 44 L888 68 L912 92 L958 92 L980 68 Z" />
-      <path d="M42 656 L88 656 L112 632 L88 608 L42 608 L20 632 Z" />
-      <path d="M958 656 L912 656 L888 632 L912 608 L958 608 L980 632 Z" />
+    {/* Chiseled stone outer plinth */}
+    <path
+      d="M18 14 L982 14 L994 30 L988 670 L972 686 L28 686 L6 666 L12 32 Z"
+      fill="url(#monolith-edge)"
+      stroke="#0b0b09"
+      strokeWidth="8"
+    />
+    {/* Outer gilded bevel hairline */}
+    <path
+      d="M26 24 L974 24 L984 36 L978 662 L966 676 L34 676 L16 660 L20 38 Z"
+      fill="none"
+      stroke="#c8b282"
+      strokeOpacity=".48"
+      strokeWidth="2"
+    />
+    {/* Top & bottom center keystone ticks + corner bronze brackets along outer bevel */}
+    <path
+      d="M24 62 L24 26 L68 26 M932 26 L976 26 L976 62 M24 638 L24 674 L68 674 M932 674 L976 674 L976 638"
+      fill="none"
+      stroke="url(#monolith-gold)"
+      strokeWidth="3.5"
+    />
+    <g fill="#191814" stroke="url(#monolith-gold)" strokeWidth="2">
+      <polygon points="24,18 38,32 24,46 10,32" />
+      <polygon points="976,18 990,32 976,46 962,32" />
+      <polygon points="24,654 38,668 24,682 10,668" />
+      <polygon points="976,654 990,668 976,682 962,668" />
     </g>
-    <g fill="none" stroke="#d8c28e" strokeOpacity=".7" strokeWidth="2">
-      <path d="M52 68 L66 54 L80 68 L66 82 Z M934 68 L948 54 L962 68 L948 82 Z M52 632 L66 618 L80 632 L66 646 Z M934 632 L948 618 L962 632 L948 646 Z" />
-      <path d="M500 26 L500 43 M500 657 L500 674" />
-    </g>
-    <g fill="#c9a96b" opacity=".82">
-      <circle cx="66" cy="68" r="3" />
-      <circle cx="948" cy="68" r="3" />
-      <circle cx="66" cy="632" r="3" />
-      <circle cx="948" cy="632" r="3" />
+    <g fill="#e0c58b">
+      <circle cx="24" cy="32" r="2.8" />
+      <circle cx="976" cy="32" r="2.8" />
+      <circle cx="24" cy="668" r="2.8" />
+      <circle cx="976" cy="668" r="2.8" />
+      <rect x="496" y="15" width="8" height="10" rx="1" />
+      <rect x="496" y="675" width="8" height="10" rx="1" />
     </g>
   </svg>
 );
