@@ -544,7 +544,11 @@ export const ArenaView: React.FC<ArenaViewProps> = ({
             affectedCount > 0 ? ` — affecting ${affectedCount} unit${affectedCount > 1 ? 's' : ''}!` : '!'
           }`
         );
-        sound.select();
+        if (affectedCount > 0) {
+          const hasDebuff = resolution.augments.some((a) => !a.isBuff);
+          const relicSoundTimer = window.setTimeout(() => sound.augment(hasDebuff), 95);
+          timersRef.current.push(relicSoundTimer);
+        }
         showCallout(`${chosenPowerDef.name} (${chosenPowerDef.badgeLabel})`);
       } else {
         const comboFlips = resolution.flips.filter((f) => f.reason === 'combo').length;
@@ -644,7 +648,11 @@ export const ArenaView: React.FC<ArenaViewProps> = ({
               augCount > 1 ? 's' : ''
             }!`
           );
-          sound.select();
+          const isDebuffAug = activeAugment.scope === 'adjacent_rivals';
+          const augSoundTimer = window.setTimeout(() => {
+            sound.augment(isDebuffAug);
+          }, 95);
+          timersRef.current.push(augSoundTimer);
           showCallout(`${activeAugment.name} (${activeAugment.shortTag})`);
         } else {
           setActiveClash(null);

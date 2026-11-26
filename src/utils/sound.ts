@@ -4,6 +4,14 @@
 
 import { Rarity } from '../types/game';
 
+type SampleKey = 'stoneSlam' | 'bladeSlash' | 'bladeRing';
+
+const SAMPLE_URLS: Record<SampleKey, string> = {
+  stoneSlam: new URL('../assets/sfx/stone_slam.wav', import.meta.url).href,
+  bladeSlash: new URL('../assets/sfx/blade_slash.wav', import.meta.url).href,
+  bladeRing: new URL('../assets/sfx/blade_ring.wav', import.meta.url).href,
+};
+
 class SoundEngine {
   private ctx: AudioContext | null = null;
   private masterGain: GainNode | null = null;
@@ -12,9 +20,57 @@ class SoundEngine {
   private reverbSend: GainNode | null = null;
   private pinkNoiseBuffer: AudioBuffer | null = null;
   private whiteNoiseBuffer: AudioBuffer | null = null;
+  private rawSampleBytes: Partial<Record<SampleKey, ArrayBuffer>> = {};
+  private sampleBuffers: Partial<Record<SampleKey, AudioBuffer>> = {};
+  private decodingSamples: Partial<Record<SampleKey, boolean>> = {};
   private lastHoverAt = 0;
 
   public enabled = true;
+
+  constructor() {
+    if (typeof window !== 'undefined' && typeof fetch === 'function') {
+      this.prefetchSampleBytes();
+    }
+  }
+
+  private prefetchSampleBytes() {
+    (Object.keys(SAMPLE_URLS) as SampleKey[]).forEach((key) => {
+      fetch(SAMPLE_URLS[key])
+        .then((res) => (res.ok ? res.arrayBuffer() : Promise.reject()))
+        .then((buf) => {
+          this.rawSampleBytes[key] = buf;
+          if (this.ctx) {
+            this.decodeSingleSample(this.ctx, key);
+          }
+        })
+        .catch(() => {
+          // Graceful procedural fallback if offline/blocked
+        });
+    });
+  }
+
+  private decodeSingleSample(ctx: AudioContext, key: SampleKey) {
+    if (this.sampleBuffers[key] || this.decodingSamples[key]) return;
+    const raw = this.rawSampleBytes[key];
+    if (!raw) return;
+
+    this.decodingSamples[key] = true;
+    ctx
+      .decodeAudioData(raw.slice(0))
+      .then((decoded) => {
+        this.sampleBuffers[key] = decoded;
+      })
+      .catch(() => {})
+      .finally(() => {
+        this.decodingSamples[key] = false;
+      });
+  }
+
+  private decodeAllSamples(ctx: AudioContext) {
+    (Object.keys(SAMPLE_URLS) as SampleKey[]).forEach((key) => {
+      this.decodeSingleSample(ctx, key);
+    });
+  }
 
   private ensureContext(): AudioContext | null {
     if (!this.enabled || typeof window === 'undefined') return null;
@@ -52,10 +108,69 @@ class SoundEngine {
       this.buildReverbBus(ctx, comp);
     }
 
+    this.decodeAllSamples(this.ctx);
+
     if (this.ctx.state === 'suspended') {
       this.ctx.resume().catch(() => {});
     }
     return this.ctx;
+  }
+
+  /**
+   * Plays a pre-decoded studio foley sample buffer through optional filter sculpting,
+   * pitch/playback-rate scaling, stereo panning, dynamics compression, and hall reverb.
+   */
+  private playSample(
+    key: SampleKey,
+    params: {
+      gain?: number;
+      playbackRate?: number;
+      offset?: number;
+      duration?: number;
+      delay?: number;
+      wet?: number;
+      pan?: number;
+      lowpassFreq?: number;
+    } = {}
+  ): boolean {
+    const ctx = this.ensureContext();
+    if (!ctx) return false;
+    const buffer = this.sampleBuffers[key];
+    if (!buffer) return false;
+
+    const now = ctx.currentTime + (params.delay ?? 0);
+    const rate = Math.max(0.5, Math.min(2.0, params.playbackRate ?? 1));
+    const offset = Math.max(0, Math.min(buffer.duration - 0.02, params.offset ?? 0));
+    const maxPlayDur = (buffer.duration - offset) / rate;
+    const playDur = params.duration ? Math.min(maxPlayDur, params.duration) : maxPlayDur;
+
+    const src = ctx.createBufferSource();
+    src.buffer = buffer;
+    src.playbackRate.setValueAtTime(rate, now);
+
+    const env = ctx.createGain();
+    const peakGain = params.gain ?? 0.85;
+    env.gain.setValueAtTime(peakGain, now);
+    if (params.duration && params.duration < maxPlayDur) {
+      const fadeStart = now + Math.max(0.01, playDur - 0.045);
+      env.gain.setValueAtTime(peakGain, fadeStart);
+      env.gain.exponentialRampToValueAtTime(0.0001, now + playDur);
+    }
+
+    if (params.lowpassFreq) {
+      const lp = ctx.createBiquadFilter();
+      lp.type = 'lowpass';
+      lp.frequency.setValueAtTime(params.lowpassFreq, now);
+      src.connect(lp);
+      lp.connect(env);
+    } else {
+      src.connect(env);
+    }
+
+    this.connectOutput(env, params.wet ?? 0.14, params.pan ?? 0);
+    src.start(now, offset, playDur + 0.02);
+    src.stop(now + playDur + 0.03);
+    return true;
   }
 
   private buildNoiseBuffers(ctx: AudioContext) {
@@ -454,210 +569,137 @@ class SoundEngine {
   }
 
   /**
-   * Heavy carved stone slab slam onto the battlefield socket, scaled in seismic weight
-   * and harmonic resonance by card Rarity ('common' | 'rare' | 'epic' | 'mythic') + Power Relic chime.
+   * Heavy carved stone slab slam onto the battlefield socket, powered by studio stone-slam foley
+   * scaled in seismic pitch/weight and harmonic resonance by card Rarity + Power Relic chime.
    */
   placeSlab(rarity: Rarity = 'common', isRelic = false, pan = 0) {
-    const jitter = 0.95 + Math.random() * 0.09;
+    const jitter = 0.97 + Math.random() * 0.06;
     const clampedPan = Math.max(-0.65, Math.min(0.65, pan));
 
-    const weightGain =
-      rarity === 'mythic'
-        ? 0.42
-        : rarity === 'epic'
-        ? 0.36
-        : rarity === 'rare'
-        ? 0.32
-        : 0.28;
-    const subEndFreq =
-      rarity === 'mythic' ? 24 : rarity === 'epic' ? 27 : rarity === 'rare' ? 30 : 34;
-    const subDuration =
-      rarity === 'mythic'
-        ? 0.34
-        : rarity === 'epic'
-        ? 0.26
-        : rarity === 'rare'
-        ? 0.21
-        : 0.17;
+    const sampleRateByRarity: Record<Rarity, number> = {
+      common: 1.05,
+      rare: 0.99,
+      epic: 0.92,
+      mythic: 0.85,
+    };
+    const sampleGainByRarity: Record<Rarity, number> = {
+      common: 0.78,
+      rare: 0.85,
+      epic: 0.92,
+      mythic: 1.0,
+    };
 
-    // 1. Fast downward air-displacement whoosh right as the heavy slab drops (0 -> 20ms)
-    this.playSculptedNoise({
-      color: 'pink',
-      filterType: 'bandpass',
-      startFreq: 540 * jitter,
-      endFreq: 135,
-      q: 1.6,
-      attack: 0.003,
-      duration: 0.048,
-      gain: 0.16,
-      wet: 0.12,
+    const playedSample = this.playSample('stoneSlam', {
+      gain: sampleGainByRarity[rarity],
+      playbackRate: sampleRateByRarity[rarity] * jitter,
+      wet: rarity === 'mythic' ? 0.24 : 0.14,
       pan: clampedPan,
     });
 
-    // 2. Seismic monolith sub-bass chest thump (+16ms)
-    this.playImpactBody({
-      startFreq: 108 * jitter,
-      endFreq: subEndFreq,
-      duration: subDuration,
-      gain: weightGain,
-      delay: 0.016,
-      wet: rarity === 'mythic' ? 0.32 : 0.22,
-      pan: clampedPan * 0.5,
-    });
-
-    // 3. Dense granite / basalt slab-on-stone knock (+17ms)
-    this.playImpactBody({
-      startFreq: 265 * jitter,
-      endFreq: 74,
-      duration: 0.095,
-      gain: 0.24,
-      delay: 0.017,
-      wet: 0.2,
-      pan: clampedPan,
-    });
-
-    // 4. Grinding stone-on-stone grit & rock dust burst (+18ms)
-    this.playSculptedNoise({
-      color: 'pink',
-      filterType: 'bandpass',
-      startFreq: 780 * jitter,
-      endFreq: 195,
-      q: 1.25,
-      attack: 0.002,
-      duration: 0.125,
-      gain: 0.26,
-      delay: 0.018,
-      wet: 0.26,
-      pan: clampedPan,
-    });
-
-    // 5. Sharp chiseled stone-edge crack transient (+18ms)
-    this.playSculptedNoise({
-      color: 'white',
-      filterType: 'bandpass',
-      startFreq: 2650 * jitter,
-      endFreq: 880,
-      q: 2.1,
-      attack: 0.001,
-      duration: 0.045,
-      gain: 0.13,
-      delay: 0.018,
-      wet: 0.18,
-      pan: clampedPan,
-    });
-
-    // 6. Micro-pebble / stone-chip scatter clicks settling onto the table (+52ms & +84ms)
-    [0.052, 0.084].forEach((d, i) => {
-      this.playSculptedNoise({
-        color: 'white',
-        filterType: 'highpass',
-        startFreq: 3100 - i * 500,
-        endFreq: 1900,
-        q: 1.8,
-        attack: 0.001,
-        duration: 0.022,
-        gain: 0.048 - i * 0.014,
-        delay: d + Math.random() * 0.012,
-        wet: 0.16,
-        pan: clampedPan + (i === 0 ? -0.14 : 0.14),
+    if (!playedSample) {
+      // Procedural stone fallback while sample decodes on cold first millisecond
+      const weightGain =
+        rarity === 'mythic' ? 0.42 : rarity === 'epic' ? 0.36 : rarity === 'rare' ? 0.32 : 0.28;
+      this.playImpactBody({
+        startFreq: 108 * jitter,
+        endFreq: rarity === 'mythic' ? 24 : 32,
+        duration: rarity === 'mythic' ? 0.34 : 0.2,
+        gain: weightGain,
+        delay: 0.012,
+        wet: 0.22,
+        pan: clampedPan * 0.5,
       });
-    });
-
-    // 7. Rarity-Specific Resonance Signature
-    if (rarity === 'common') {
-      // Grounded earthen low-stone resonance
-      this.playWarmVoice({
-        freq: 110 * jitter, // A2
-        duration: 0.19,
-        attack: 0.008,
-        gain: 0.055,
-        delay: 0.02,
-        timbre: 'cello',
-        wet: 0.28,
-        pan: clampedPan,
-      });
-    } else if (rarity === 'rare') {
-      // Crystalline sapphire frost-quartz ring
-      this.playMetallicPartials({
-        frequencies: [1318.5 * jitter, 1975.5 * jitter, 2960 * jitter],
-        duration: 0.26,
-        gain: 0.085,
-        delay: 0.022,
-        wet: 0.38,
-        pan: clampedPan,
-      });
-      this.playWarmVoice({
-        freq: 293.66, // D4
-        duration: 0.28,
-        attack: 0.008,
-        gain: 0.065,
-        delay: 0.024,
-        timbre: 'celesta',
-        wet: 0.42,
-        pan: clampedPan,
-      });
-    } else if (rarity === 'epic') {
-      // Deep amethyst arcane rift swell + dark brass fifth
       this.playSculptedNoise({
         color: 'pink',
         filterType: 'bandpass',
-        startFreq: 320,
-        endFreq: 1850,
-        q: 2.6,
-        attack: 0.02,
-        duration: 0.28,
-        gain: 0.12,
-        delay: 0.024,
-        wet: 0.45,
+        startFreq: 780 * jitter,
+        endFreq: 195,
+        q: 1.25,
+        attack: 0.002,
+        duration: 0.125,
+        gain: 0.26,
+        delay: 0.014,
+        wet: 0.24,
         pan: clampedPan,
       });
+    } else if (rarity === 'epic' || rarity === 'mythic') {
+      // Reinforce Epic & Mythic slams with extra chest sub-bass weight beneath the stone foley
+      this.playImpactBody({
+        startFreq: 96 * jitter,
+        endFreq: rarity === 'mythic' ? 24 : 28,
+        duration: rarity === 'mythic' ? 0.34 : 0.24,
+        gain: rarity === 'mythic' ? 0.26 : 0.18,
+        delay: 0.02,
+        wet: 0.22,
+        pan: clampedPan * 0.4,
+      });
+    }
+
+    // Rarity-Specific Harmonic Signature layered subtly over the stone impact
+    if (rarity === 'rare') {
+      this.playMetallicPartials({
+        frequencies: [1318.5 * jitter, 1975.5 * jitter, 2960 * jitter],
+        duration: 0.24,
+        gain: 0.055,
+        delay: 0.03,
+        wet: 0.36,
+        pan: clampedPan,
+      });
+    } else if (rarity === 'epic') {
       [146.83, 220.0, 329.63].forEach((freq, idx) => {
         this.playWarmVoice({
           freq,
-          duration: 0.36,
+          duration: 0.34,
           attack: 0.012,
-          gain: 0.065,
-          delay: 0.024 + idx * 0.02,
+          gain: 0.05,
+          delay: 0.03 + idx * 0.02,
           timbre: idx === 0 ? 'brass' : 'harp',
-          wet: 0.48,
+          wet: 0.45,
           pan: clampedPan + (idx - 1) * 0.15,
         });
       });
     } else if (rarity === 'mythic') {
-      // Sovereign gilded monolith earthshaker: sanctum bell gong + solar brass/celesta chord
       this.playMetallicPartials({
-        frequencies: [880, 1318.5, 1760, 2637, 3520],
-        duration: 0.48,
-        gain: 0.13,
-        delay: 0.02,
-        wet: 0.55,
+        frequencies: [880, 1318.5, 1760, 2637],
+        duration: 0.44,
+        gain: 0.085,
+        delay: 0.028,
+        wet: 0.5,
         pan: clampedPan,
       });
       [146.83, 293.66, 440.0, 587.33, 739.99].forEach((freq, idx) => {
         this.playWarmVoice({
           freq,
-          duration: 0.5,
+          duration: 0.48,
           attack: 0.012,
-          gain: 0.072,
-          delay: 0.022 + idx * 0.018,
+          gain: 0.058,
+          delay: 0.028 + idx * 0.018,
           timbre: idx < 2 ? 'brass' : 'celesta',
-          wet: 0.55,
+          wet: 0.52,
           pan: clampedPan + ((idx % 2) * 2 - 1) * 0.2,
         });
       });
     }
 
-    // 8. Optional Power Relic Totem Anchor Resonance
+    // Optional Power Relic Totem Anchor Chime
     if (isRelic) {
+      this.playSample('bladeRing', {
+        offset: 0.2,
+        playbackRate: 1.06,
+        gain: 0.42,
+        delay: 0.04,
+        wet: 0.32,
+        pan: clampedPan,
+      });
       [523.25, 783.99, 1046.5].forEach((freq, idx) => {
         this.playWarmVoice({
           freq,
-          duration: 0.38,
+          duration: 0.36,
           attack: 0.008,
-          gain: 0.06,
-          delay: 0.03 + idx * 0.028,
+          gain: 0.05,
+          delay: 0.035 + idx * 0.028,
           timbre: 'celesta',
-          wet: 0.5,
+          wet: 0.48,
           pan: clampedPan,
         });
       });
@@ -665,223 +707,184 @@ class SoundEngine {
   }
 
   /**
-   * Heavy physical card slam onto an engraved stone socket on the board.
+   * Crisp stone socket lock when initializing the battlefield.
    */
   place() {
     const jitter = 0.96 + Math.random() * 0.08;
-    // 1. Sub-bass physical table thud
-    this.playImpactBody({
-      startFreq: 130 * jitter,
-      endFreq: 36,
-      duration: 0.135,
-      gain: 0.28,
-      wet: 0.18,
+    const played = this.playSample('stoneSlam', {
+      gain: 0.52,
+      playbackRate: 1.18 * jitter,
+      duration: 0.58,
+      wet: 0.14,
     });
-    // 2. Mid-range stone socket knock
-    this.playImpactBody({
-      startFreq: 310 * jitter,
-      endFreq: 115,
-      duration: 0.065,
-      gain: 0.15,
-      delay: 0.004,
-      wet: 0.15,
-    });
-    // 3. Stone dust / cardstock slap transient
-    this.playSculptedNoise({
-      color: 'pink',
-      filterType: 'bandpass',
-      startFreq: 950,
-      endFreq: 380,
-      q: 1.4,
-      attack: 0.002,
-      duration: 0.075,
-      gain: 0.18,
-      wet: 0.2,
-    });
-    // 4. Crisp card edge snap as it settles flat
-    this.playSculptedNoise({
-      color: 'white',
-      filterType: 'highpass',
-      startFreq: 2200,
-      endFreq: 1600,
-      q: 1.0,
-      attack: 0.002,
-      duration: 0.035,
-      gain: 0.07,
-      delay: 0.012,
-      wet: 0.15,
-    });
-    // 5. Subtle runic socket lock resonance
-    this.playWarmVoice({
-      freq: 220,
-      duration: 0.22,
-      attack: 0.01,
-      gain: 0.05,
-      delay: 0.015,
-      timbre: 'harp',
-      wet: 0.4,
-    });
-  }
-
-  /**
-   * Dedicated Sword & Shield Clash sound when opposing arrows collide on the board.
-   */
-  clash(attackerWon = true) {
-    // 1. Sharp steel blade ring partials
-    this.playMetallicPartials({
-      frequencies: [1280, 1940, 2890, 4120, 5640],
-      duration: 0.28,
-      gain: 0.16,
-      wet: 0.35,
-      pan: -0.15,
-    });
-    // 2. Metallic scrape transient
-    this.playSculptedNoise({
-      color: 'white',
-      filterType: 'bandpass',
-      startFreq: 3800,
-      endFreq: 1200,
-      q: 3.8,
-      attack: 0.002,
-      duration: 0.09,
-      gain: 0.16,
-      wet: 0.25,
-    });
-    // 3. Heavy shield impact punch
-    this.playImpactBody({
-      startFreq: 165,
-      endFreq: 42,
-      duration: 0.15,
-      gain: 0.26,
-      delay: 0.01,
-      wet: 0.2,
-    });
-    // 4. Heroic power chord on win or dark armor recoil on counter
-    if (attackerWon) {
-      this.playWarmVoice({
-        freq: 293.66, // D4
-        duration: 0.26,
-        attack: 0.012,
-        gain: 0.08,
-        delay: 0.04,
-        timbre: 'brass',
-        wet: 0.35,
-        pan: 0.15,
-      });
-      this.playWarmVoice({
-        freq: 440, // A4
-        duration: 0.3,
-        attack: 0.015,
-        gain: 0.08,
-        delay: 0.06,
-        timbre: 'brass',
-        wet: 0.4,
-        pan: 0.2,
-      });
-    } else {
-      this.playWarmVoice({
-        freq: 196.0, // G3
-        duration: 0.24,
-        attack: 0.01,
-        gain: 0.09,
-        delay: 0.03,
-        timbre: 'cello',
-        wet: 0.3,
-      });
-      this.playWarmVoice({
-        freq: 146.83, // D3
-        duration: 0.32,
-        attack: 0.015,
-        gain: 0.1,
-        delay: 0.09,
-        timbre: 'cello',
-        wet: 0.35,
+    if (!played) {
+      this.playImpactBody({
+        startFreq: 130 * jitter,
+        endFreq: 36,
+        duration: 0.135,
+        gain: 0.26,
+        wet: 0.18,
       });
     }
   }
 
   /**
-   * Kinetic card whoosh through the air + physical board re-slap + warm harmonic shimmer.
+   * Dedicated Sword & Shield Clash sound when opposing arrows collide on the board:
+   * - Attacker Won: Studio steel clash + victorious singing sword ring (`blade_ring.wav`)
+   * - Countered: Studio deflected steel blade slash/parry (`blade_slash.wav`) + dark recoil
+   */
+  clash(attackerWon = true) {
+    const jitter = 0.97 + Math.random() * 0.06;
+
+    if (attackerWon) {
+      const played = this.playSample('bladeRing', {
+        offset: 0.03,
+        playbackRate: 1.0 * jitter,
+        gain: 0.88,
+        wet: 0.22,
+        pan: 0.08,
+      });
+      if (!played) {
+        this.playMetallicPartials({
+          frequencies: [1280, 1940, 2890, 4120, 5640],
+          duration: 0.28,
+          gain: 0.16,
+          wet: 0.35,
+        });
+      }
+      // Subtle shield punch + warm brass fifth beneath the singing blade
+      this.playImpactBody({
+        startFreq: 165,
+        endFreq: 42,
+        duration: 0.14,
+        gain: 0.2,
+        delay: 0.05,
+        wet: 0.18,
+      });
+      this.playWarmVoice({
+        freq: 293.66,
+        duration: 0.26,
+        attack: 0.012,
+        gain: 0.06,
+        delay: 0.08,
+        timbre: 'brass',
+        wet: 0.35,
+        pan: 0.15,
+      });
+    } else {
+      const played = this.playSample('bladeSlash', {
+        offset: 0.12,
+        playbackRate: 0.92 * jitter,
+        gain: 0.84,
+        wet: 0.18,
+        pan: -0.08,
+      });
+      if (!played) {
+        this.playSculptedNoise({
+          color: 'white',
+          filterType: 'bandpass',
+          startFreq: 3800,
+          endFreq: 1200,
+          q: 3.8,
+          attack: 0.002,
+          duration: 0.09,
+          gain: 0.16,
+          wet: 0.25,
+        });
+      }
+      // Dark parried recoil
+      this.playImpactBody({
+        startFreq: 150,
+        endFreq: 40,
+        duration: 0.16,
+        gain: 0.22,
+        delay: 0.06,
+        wet: 0.2,
+      });
+      this.playWarmVoice({
+        freq: 146.83,
+        duration: 0.28,
+        attack: 0.012,
+        gain: 0.08,
+        delay: 0.08,
+        timbre: 'cello',
+        wet: 0.32,
+      });
+    }
+  }
+
+  /**
+   * Kinetic blade-cut capture whoosh (`blade_slash.wav`) + rising harmonic note when flipping cards.
    */
   flip(wave = 0) {
     const scaleNotes = [293.66, 329.63, 369.99, 440.0, 493.88, 587.33, 659.25];
     const note = scaleNotes[Math.min(wave, scaleNotes.length - 1)];
     const pan = ((wave % 3) - 1) * 0.22;
+    const rate = Math.min(1.28, 1.05 + wave * 0.04);
 
-    // 1. Aerodynamic card flip air whoosh
-    this.playSculptedNoise({
-      color: 'pink',
-      filterType: 'bandpass',
-      startFreq: 420,
-      endFreq: 2100,
-      q: 1.8,
-      attack: 0.02,
-      duration: 0.13,
-      gain: 0.15,
-      wet: 0.18,
+    const played = this.playSample('bladeSlash', {
+      offset: 0.24,
+      duration: 0.62,
+      playbackRate: rate,
+      gain: 0.64,
+      wet: 0.16,
       pan,
     });
-    // 2. Physical card slap as it lands face-up in its new owner's color
+
+    if (!played) {
+      this.playSculptedNoise({
+        color: 'pink',
+        filterType: 'bandpass',
+        startFreq: 420,
+        endFreq: 2100,
+        q: 1.8,
+        attack: 0.02,
+        duration: 0.13,
+        gain: 0.15,
+        wet: 0.18,
+        pan,
+      });
+    }
+
+    // Physical card settle + warm harp pitch step
     this.playImpactBody({
       startFreq: 140,
       endFreq: 48,
-      duration: 0.085,
-      gain: 0.18,
-      delay: 0.065,
-      wet: 0.15,
+      duration: 0.08,
+      gain: 0.14,
+      delay: 0.075,
+      wet: 0.14,
       pan,
     });
-    this.playSculptedNoise({
-      color: 'white',
-      filterType: 'bandpass',
-      startFreq: 2400,
-      endFreq: 1400,
-      q: 1.5,
-      attack: 0.002,
-      duration: 0.035,
-      gain: 0.07,
-      delay: 0.068,
-      wet: 0.12,
-      pan,
-    });
-    // 3. Warm acoustic harp harmonic accent
     this.playWarmVoice({
       freq: note,
-      duration: 0.28,
+      duration: 0.26,
       attack: 0.008,
-      gain: 0.085,
-      delay: 0.055,
+      gain: 0.075,
+      delay: 0.06,
       timbre: 'harp',
-      wet: 0.38,
+      wet: 0.36,
       pan,
     });
   }
 
   /**
-   * Arcane Chain Combo eruption: swirling wind rush + cascading stereo harp & celesta notes.
+   * Arcane Chain Combo eruption: resonant sword-ring bell (`blade_ring.wav`) + cascading stereo arpeggio.
    */
   combo() {
-    // 1. Pressurized arcane wind rush
-    this.playSculptedNoise({
-      color: 'pink',
-      filterType: 'bandpass',
-      startFreq: 350,
-      endFreq: 2800,
-      q: 2.0,
-      attack: 0.03,
-      duration: 0.28,
-      gain: 0.16,
-      wet: 0.35,
+    this.playSample('bladeRing', {
+      offset: 0.12,
+      playbackRate: 1.08,
+      gain: 0.76,
+      wet: 0.28,
     });
-    // 2. Deep kinetic pulse
     this.playImpactBody({
       startFreq: 135,
       endFreq: 38,
       duration: 0.2,
-      gain: 0.24,
+      gain: 0.22,
       wet: 0.25,
     });
-    // 3. Cascading stereo harp & celesta arpeggio (D Major 9)
     const arpeggio = [293.66, 369.99, 440.0, 587.33, 659.25, 880.0];
     arpeggio.forEach((freq, idx) => {
       const pan = (idx % 2 === 0 ? -1 : 1) * (0.15 + idx * 0.08);
@@ -889,11 +892,35 @@ class SoundEngine {
         freq,
         duration: 0.36,
         attack: 0.006,
-        gain: 0.08,
+        gain: 0.075,
         delay: idx * 0.048,
         timbre: idx >= 3 ? 'celesta' : 'harp',
         wet: 0.45,
         pan,
+      });
+    });
+  }
+
+  /**
+   * Resonant chime & shimmer when a Battlefield Augment or Power Relic Aura triggers on units.
+   */
+  augment(isDebuff = false) {
+    this.playSample('bladeRing', {
+      offset: 0.19,
+      playbackRate: isDebuff ? 0.86 : 1.08,
+      gain: 0.62,
+      wet: 0.32,
+    });
+    const freqs = isDebuff ? [261.63, 196.0] : [523.25, 659.25, 783.99];
+    freqs.forEach((freq, idx) => {
+      this.playWarmVoice({
+        freq,
+        duration: 0.3,
+        attack: 0.01,
+        gain: 0.055,
+        delay: 0.03 + idx * 0.035,
+        timbre: isDebuff ? 'cello' : 'celesta',
+        wet: 0.42,
       });
     });
   }
@@ -988,6 +1015,13 @@ class SoundEngine {
     this.flip(isRareOrNew ? 3 : 1);
 
     if (isRareOrNew) {
+      this.playSample('bladeRing', {
+        offset: 0.18,
+        playbackRate: 1.05,
+        gain: 0.48,
+        delay: 0.03,
+        wet: 0.3,
+      });
       // Deep cinematic sub-drop
       this.playImpactBody({
         startFreq: 105,
