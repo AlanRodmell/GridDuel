@@ -303,10 +303,10 @@ const GameCardInner: React.FC<GameCardProps> = ({
 
     const relicShadow =
       owner === 'player'
-        ? '0 0 0 2px rgba(56, 189, 248, 0.92), 0 6px 18px rgba(14, 165, 233, 0.4)'
+        ? '0 0 0 2px rgba(56, 189, 248, 0.96), 0 0 22px 4px rgba(14, 165, 233, 0.58), 0 8px 20px rgba(0, 0, 0, 0.75)'
         : owner === 'rival'
-        ? '0 0 0 2px rgba(244, 114, 182, 0.92), 0 6px 18px rgba(225, 29, 72, 0.4)'
-        : '0 0 0 1.5px rgba(56, 189, 248, 0.65), 0 8px 20px rgba(0, 0, 0, 0.7)';
+        ? '0 0 0 2px rgba(244, 114, 182, 0.96), 0 0 22px 4px rgba(225, 29, 72, 0.55), 0 8px 20px rgba(0, 0, 0, 0.75)'
+        : '0 0 0 1.5px rgba(56, 189, 248, 0.72), 0 0 18px 3px rgba(14, 165, 233, 0.42), 0 8px 20px rgba(0, 0, 0, 0.72)';
 
     const relicWash =
       owner === 'player'
@@ -337,13 +337,13 @@ const GameCardInner: React.FC<GameCardProps> = ({
             background: pTheme.bezelGradient,
             boxShadow: relicShadow,
           }}
-          className={`card-contain card-weathered-rim group relative aspect-[5/7] w-full p-[3.5px] text-left select-none no-touch-callout transition-transform duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400 ${
+          className={`card-contain rounded-[6px] group relative aspect-[5/7] w-full p-[3.5px] text-left select-none no-touch-callout transition-transform duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400 ${
             justPlaced ? 'animate-card-drop' : ''
           } ${className}`}
         >
           <div
             style={{ background: pTheme.surfaceGradient }}
-            className="card-weathered-rim relative w-full h-full overflow-hidden"
+            className="rounded-[4px] relative w-full h-full overflow-hidden"
           >
             <div
               className="pointer-events-none absolute inset-0 z-0"
@@ -466,10 +466,10 @@ const GameCardInner: React.FC<GameCardProps> = ({
           background: pTheme.bezelGradient,
           boxShadow: relicShadow,
         }}
-        className={`card-contain card-weathered-rim group relative aspect-[5/7] w-full overflow-hidden p-[2px] sm:p-[2.5px] text-left select-none no-touch-callout transition-transform duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400 ${
+        className={`card-contain rounded-[5px] group relative aspect-[5/7] w-full p-[2px] sm:p-[2.5px] text-left select-none no-touch-callout transition-transform duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400 ${
           selected
             ? '-translate-y-2.5 scale-[1.05] drop-shadow-[0_0_12px_rgba(56,189,248,0.85)] z-20'
-            : onClick && !disabled
+            : isRelicInteractive && !disabled
             ? 'cursor-pointer hover:-translate-y-1 hover:scale-[1.02] active:scale-[0.97]'
             : ''
         } ${disabled ? 'opacity-50 cursor-not-allowed' : ''} ${
@@ -478,7 +478,7 @@ const GameCardInner: React.FC<GameCardProps> = ({
       >
         <div
           style={{ background: pTheme.surfaceGradient }}
-          className="card-weathered-rim relative w-full h-full overflow-hidden [container-type:inline-size]"
+          className="rounded-[3.5px] relative w-full h-full overflow-hidden [container-type:inline-size]"
         >
           <div
             className="pointer-events-none absolute inset-0 z-0"
@@ -633,11 +633,20 @@ const GameCardInner: React.FC<GameCardProps> = ({
   const pDefHex = toHexDigit(effectiveStats.pDef);
   const mDefHex = toHexDigit(effectiveStats.mDef);
 
+  const rarityAuraBoost =
+    card.rarity === 'mythic'
+      ? ', 0 0 24px 4px rgba(245, 158, 11, 0.38)'
+      : card.rarity === 'epic'
+      ? ', 0 0 20px 3px rgba(168, 85, 247, 0.34)'
+      : card.rarity === 'rare'
+      ? ', 0 0 16px 2px rgba(14, 165, 233, 0.28)'
+      : '';
+
   const ownerShadow =
     owner === 'player'
-      ? '0 0 0 2px rgba(96, 165, 250, 0.92), 0 6px 16px rgba(37, 99, 235, 0.36)'
+      ? `0 0 0 2px rgba(96, 165, 250, 0.95), 0 0 18px 3px rgba(59, 130, 246, 0.56)${rarityAuraBoost}, 0 8px 18px rgba(0, 0, 0, 0.72)`
       : owner === 'rival'
-      ? '0 0 0 2px rgba(251, 113, 133, 0.92), 0 6px 16px rgba(225, 29, 72, 0.36)'
+      ? `0 0 0 2px rgba(251, 113, 133, 0.95), 0 0 18px 3px rgba(244, 63, 94, 0.56)${rarityAuraBoost}, 0 8px 18px rgba(0, 0, 0, 0.72)`
       : theme.outerGlow;
 
   const ownerWash =
@@ -752,14 +761,14 @@ const GameCardInner: React.FC<GameCardProps> = ({
           background: theme.bezelGradient,
           boxShadow: ownerShadow,
         }}
-        className={`card-contain card-weathered-rim group relative aspect-[5/7] w-full p-[3.5px] text-left select-none no-touch-callout transition-transform duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 ${
+        className={`card-contain rounded-[6px] group relative aspect-[5/7] w-full p-[3.5px] text-left select-none no-touch-callout transition-transform duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 ${
           justPlaced ? 'animate-card-drop' : ''
         } ${className}`}
       >
         <div
           key={flipKey ?? 'steady'}
           style={{ background: theme.surfaceGradient }}
-          className={`card-weathered-rim relative w-full h-full overflow-hidden ${
+          className={`rounded-[4px] relative w-full h-full overflow-hidden ${
             flipKey ? 'animate-card-flip' : ''
           }`}
         >
@@ -977,11 +986,11 @@ const GameCardInner: React.FC<GameCardProps> = ({
         background: theme.bezelGradient,
         boxShadow: ownerShadow,
       }}
-      className={`card-contain card-weathered-rim group relative aspect-[5/7] w-full overflow-hidden p-[2px] sm:p-[2.5px] ${
+      className={`card-contain rounded-[5px] group relative aspect-[5/7] w-full p-[2px] sm:p-[2.5px] ${
         hasActiveBuff
-          ? 'ring-2 ring-emerald-400/90'
+          ? 'ring-2 ring-emerald-400/95'
           : hasActiveDebuff
-          ? 'ring-2 ring-rose-400/90'
+          ? 'ring-2 ring-rose-400/95'
           : ''
       } text-left select-none no-touch-callout transition-transform duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 ${
         selected
@@ -1002,7 +1011,7 @@ const GameCardInner: React.FC<GameCardProps> = ({
       <div
         key={flipKey ?? 'steady'}
         style={{ background: theme.surfaceGradient }}
-        className={`card-weathered-rim relative w-full h-full overflow-hidden [container-type:inline-size] ${
+        className={`rounded-[3.5px] relative w-full h-full overflow-hidden [container-type:inline-size] ${
           flipKey ? 'animate-card-flip' : ''
         }`}
       >

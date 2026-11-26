@@ -1425,10 +1425,12 @@ export const ArenaView: React.FC<ArenaViewProps> = ({
                             biomeMeta
                               ? `battlefield-occupied-${biomeMeta.id}`
                               : 'battlefield-occupied-neutral'
-                          } ${cellFlare ? 'z-30' : ''} ${
-                            isRelicAuraTarget
+                          } ${
+                            cellFlare
+                              ? 'z-30'
+                              : isRelicAuraTarget
                               ? 'ring-2 ring-sky-300 shadow-[0_0_20px_rgba(56,189,248,0.55)] z-20 scale-[1.02]'
-                              : ''
+                              : 'z-10'
                           }`}
                         >
                           {cellFlare && (

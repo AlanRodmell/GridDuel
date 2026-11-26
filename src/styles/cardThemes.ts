@@ -27,7 +27,7 @@ export const CARD_RARITY_THEMES: Record<Rarity, CardRarityTheme> = {
       'linear-gradient(142deg, #b8af9e 0%, #5c5449 28%, #988e7c 64%, #3f3930 100%)',
     surfaceGradient:
       'radial-gradient(ellipse 95% 70% at 50% 34%, #26221c 0%, #171410 64%, #0d0b09 100%)',
-    outerGlow: '0 8px 20px rgba(0, 0, 0, 0.65)',
+    outerGlow: '0 8px 20px rgba(0, 0, 0, 0.68)',
     hairline: 'rgba(189, 177, 154, 0.42)',
     archBorder: 'rgba(204, 192, 168, 0.68)',
     archBackdrop:
@@ -49,7 +49,8 @@ export const CARD_RARITY_THEMES: Record<Rarity, CardRarityTheme> = {
       'linear-gradient(142deg, #9ec9d8 0%, #2a5973 30%, #6ba3ba 66%, #1b3b4f 100%)',
     surfaceGradient:
       'radial-gradient(ellipse 95% 70% at 50% 34%, #152b38 0%, #0b1821 64%, #070e14 100%)',
-    outerGlow: '0 10px 24px rgba(22, 78, 99, 0.42)',
+    outerGlow:
+      '0 0 0 1px rgba(125, 211, 252, 0.42), 0 0 18px 2px rgba(14, 165, 233, 0.38), 0 10px 24px rgba(0, 0, 0, 0.7)',
     hairline: 'rgba(136, 196, 218, 0.48)',
     archBorder: 'rgba(142, 204, 226, 0.78)',
     archBackdrop:
@@ -71,7 +72,8 @@ export const CARD_RARITY_THEMES: Record<Rarity, CardRarityTheme> = {
       'linear-gradient(142deg, #d8addf 0%, #692f7d 30%, #b37cc2 66%, #421952 100%)',
     surfaceGradient:
       'radial-gradient(ellipse 95% 70% at 50% 34%, #2d163b 0%, #180b21 64%, #0f0615 100%)',
-    outerGlow: '0 11px 28px rgba(107, 33, 138, 0.44)',
+    outerGlow:
+      '0 0 0 1px rgba(216, 180, 254, 0.5), 0 0 22px 4px rgba(168, 85, 247, 0.46), 0 11px 26px rgba(0, 0, 0, 0.74)',
     hairline: 'rgba(206, 162, 224, 0.5)',
     archBorder: 'rgba(216, 152, 232, 0.8)',
     archBackdrop:
@@ -93,7 +95,8 @@ export const CARD_RARITY_THEMES: Record<Rarity, CardRarityTheme> = {
       'linear-gradient(142deg, #f5dca0 0%, #a87220 30%, #e0b75e 66%, #754b10 100%)',
     surfaceGradient:
       'radial-gradient(ellipse 95% 70% at 50% 34%, #361614 0%, #1e0b0a 64%, #120605 100%)',
-    outerGlow: '0 12px 32px rgba(204, 138, 38, 0.46)',
+    outerGlow:
+      '0 0 0 1.5px rgba(253, 224, 71, 0.65), 0 0 26px 6px rgba(245, 158, 11, 0.56), 0 12px 28px rgba(0, 0, 0, 0.78)',
     hairline: 'rgba(232, 186, 94, 0.58)',
     archBorder: 'rgba(242, 204, 108, 0.88)',
     archBackdrop:

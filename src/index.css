@@ -877,7 +877,7 @@ select.organic-control {
 }
 
 .card-contain {
-  contain: layout style paint;
+  contain: layout style;
 }
 
 .card-grid-item {
@@ -1114,7 +1114,7 @@ select.organic-control {
 
 /* Placed cards sit in a shallow, biome-coloured stone recess (box-shadow only, no drop-shadow filter). */
 .battlefield-occupied-stage {
-  isolation: isolate;
+  position: relative;
 }
 .battlefield-occupied-stage::before,
 .battlefield-occupied-stage::after {
