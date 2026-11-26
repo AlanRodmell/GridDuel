@@ -908,6 +908,8 @@ export function useProfile() {
         return {
           ...prev,
           gold: prev.gold - card.price,
+          totalGoldSpent: (prev.totalGoldSpent ?? 0) + card.price,
+          cardsForged: (prev.cardsForged ?? 0) + 1,
           inventory: nextInv,
           owned: syncOwnedCounts(nextInv),
           discovered: syncDiscoveredMap(prev.discovered, nextInv),
@@ -970,6 +972,8 @@ export function useProfile() {
         return {
           ...prev,
           gold: prev.gold - cost,
+          totalGoldSpent: (prev.totalGoldSpent ?? 0) + cost,
+          cardsForged: (prev.cardsForged ?? 0) + 1,
           inventory: nextInv,
           owned: syncOwnedCounts(nextInv),
           discovered: syncDiscoveredMap(prev.discovered, nextInv),
@@ -1031,6 +1035,8 @@ export function useProfile() {
         return {
           ...prev,
           gold: prev.gold + goldEarned,
+          totalGoldEarned: (prev.totalGoldEarned ?? 0) + goldEarned,
+          cardsSold: (prev.cardsSold ?? 0) + 1,
           inventory: nextInv,
           owned: syncOwnedCounts(nextInv),
           decks: nextDecks,
@@ -1088,6 +1094,8 @@ export function useProfile() {
         return {
           ...prev,
           gold: prev.gold + goldEarned,
+          totalGoldEarned: (prev.totalGoldEarned ?? 0) + goldEarned,
+          cardsSold: (prev.cardsSold ?? 0) + soldCount,
           inventory: nextInv,
           owned: syncOwnedCounts(nextInv),
         };
@@ -1143,6 +1151,8 @@ export function useProfile() {
       setProfile((prev) => ({
         ...prev,
         gold: prev.gold - pack.price,
+        totalGoldSpent: (prev.totalGoldSpent ?? 0) + pack.price,
+        packsOpened: (prev.packsOpened ?? 0) + 1,
         inventory: nextInv,
         owned: syncOwnedCounts(nextInv),
         discovered: syncDiscoveredMap(prev.discovered, nextInv),
@@ -1159,6 +1169,8 @@ export function useProfile() {
       winner: 'player' | 'rival' | 'draw';
       goldEarned: number;
       flipsMade: number;
+      combosMade?: number;
+      isPerfect?: boolean;
       usedCardIds: string[];
     }) => {
       setProfile((prev) => {
@@ -1177,12 +1189,17 @@ export function useProfile() {
         return {
           ...prev,
           gold: prev.gold + params.goldEarned,
+          totalGoldEarned: (prev.totalGoldEarned ?? 0) + params.goldEarned,
           wins: prev.wins + (params.winner === 'player' ? 1 : 0),
           losses: prev.losses + (params.winner === 'rival' ? 1 : 0),
           draws: prev.draws + (params.winner === 'draw' ? 1 : 0),
           streak: nextStreak,
           bestStreak: Math.max(prev.bestStreak, nextStreak),
           totalFlips: prev.totalFlips + params.flipsMade,
+          totalCombos: (prev.totalCombos ?? 0) + (params.combosMade ?? 0),
+          perfectWins:
+            (prev.perfectWins ?? 0) +
+            (params.winner === 'player' && params.isPerfect ? 1 : 0),
           cardWins: nextCardWins,
           fighterWins: nextFighterWins,
         };
@@ -1306,6 +1323,8 @@ export function useProfile() {
         return {
           ...prev,
           gold: prev.gold - rune.craftCost,
+          totalGoldSpent: (prev.totalGoldSpent ?? 0) + rune.craftCost,
+          runesCrafted: (prev.runesCrafted ?? 0) + 1,
           inventory: {
             ...prev.inventory,
             [targetInst.cardId]: updatedList,

@@ -60,7 +60,6 @@ interface GalleryViewProps {
   profile: PlayerProfile;
   activeDeck: DeckSlot;
   ownedUniqueCount: number;
-  totalCards: number;
   onSelectBoardScale: (scale: BoardScale) => void;
   onSelectDeckSlot: (index: number) => void;
   onCreateDeck: (name?: string, duplicateFromIndex?: number) => { ok: boolean; message?: string };
@@ -115,7 +114,6 @@ export const GalleryView: React.FC<GalleryViewProps> = ({
   profile,
   activeDeck,
   ownedUniqueCount,
-  totalCards,
   onSelectBoardScale,
   onSelectDeckSlot,
   onCreateDeck,
@@ -229,7 +227,34 @@ export const GalleryView: React.FC<GalleryViewProps> = ({
     () => CARDS.filter((c) => discoveredSet.has(c.id)).length,
     [discoveredSet]
   );
-  const unknownCount = Math.max(0, totalCards - discoveredCount);
+
+  const handleToggleCardInDeck = (card: CardDef) => {
+    const copies = sortCardCopies(profile.inventory[card.id] ?? []);
+    if (copies.length === 0) {
+      sound.select();
+      showToast(
+        `No owned copies of ${card.name} — double-click to inspect or forge a fresh roll.`
+      );
+      return;
+    }
+    const equippedCopy = copies.find((c) => activeDeck.cards.includes(c.uid));
+    sound.select();
+    if (equippedCopy) {
+      onToggleDeckCard(equippedCopy.uid);
+      return;
+    }
+    const res = onToggleDeckCard(copies[0].uid);
+    if (!res.ok && res.message) {
+      showToast(res.message);
+    }
+  };
+
+  const handleOpenCardInspector = (card: CardDef) => {
+    const best = bestCopyByCardId[card.id];
+    sound.drawer(true);
+    setInspectedId(card.id);
+    setSelectedCopyUid(best?.uid ?? null);
+  };
 
   const filteredCards = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
@@ -314,8 +339,6 @@ export const GalleryView: React.FC<GalleryViewProps> = ({
     [activeDeckSlots]
   );
 
-  const pct = Math.round((discoveredCount / totalCards) * 100);
-
   return (
     <div className="w-full px-4 sm:px-6 lg:px-8 py-5 lg:py-7 space-y-6">
       {/* Floating Action Toast */}
@@ -330,23 +353,21 @@ export const GalleryView: React.FC<GalleryViewProps> = ({
       <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-4">
         <div>
           <h1 className="font-[var(--font-display)] text-2xl sm:text-3xl font-bold text-[#f3dfb6] tracking-[0.06em]">
-            Compendium &amp; Rolled Vault
+            Card Library &amp; Warbands
           </h1>
           <div className="flex flex-wrap items-center gap-2 text-xs sm:text-sm text-[#a69277] mt-1">
             <span className="font-mono tabular-nums text-[#f0c76e] font-semibold">
-              {discoveredCount} Discovered ({pct}%)
+              {discoveredCount} Discovered
             </span>
-            {unknownCount > 0 && (
-              <>
-                <span aria-hidden="true">·</span>
-                <span className="font-mono tabular-nums text-[#9e8a6f]">
-                  ??? {unknownCount} Unknown
-                </span>
-              </>
-            )}
             <span aria-hidden="true">·</span>
             <span className="font-mono tabular-nums text-[#d6c5a9]">
-              {ownedUniqueCount} Owned ({totalOwnedCopies} Rolls)
+              {ownedUniqueCount} In Vault ({totalOwnedCopies} Rolls)
+            </span>
+            <span aria-hidden="true" className="hidden sm:inline">
+              ·
+            </span>
+            <span className="font-[var(--font-serif)] italic text-[#cbb89a]">
+              Click card to equip/unequip · Double-click to open details
             </span>
           </div>
         </div>
@@ -662,6 +683,14 @@ export const GalleryView: React.FC<GalleryViewProps> = ({
                           const res = onSetDeckPowerCard(isEquipped ? null : pCard.id);
                           if (!res.ok && res.message) showToast(res.message);
                         }}
+                        onDoubleClick={() => {
+                          sound.select();
+                          openPreview({
+                            cardId: pCard.id,
+                            arrows: pCard.dirs,
+                            owner: isEquipped ? 'player' : 'neutral',
+                          });
+                        }}
                       />
                       <button
                         type="button"
@@ -812,7 +841,7 @@ export const GalleryView: React.FC<GalleryViewProps> = ({
             type="search"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder={`Find card, #01–#${totalCards}, or augment...`}
+            placeholder="Find card by name, #, or augment..."
             aria-label="Search cards by name, number, or augment"
             className="organic-control w-full min-h-[38px] pl-8 pr-3 py-1.5 text-xs text-[#efe3cd] placeholder:text-[#7d6c56]"
           />
@@ -826,8 +855,8 @@ export const GalleryView: React.FC<GalleryViewProps> = ({
             No discovered cards match this filter.
           </p>
           <p className="font-[var(--font-serif)] text-sm text-[#a69277]">
-            Unknown cards remain hidden until you discover them in battle, Sealed Reliquaries, or
-            the Sanctuary Forge&apos;s Mystery Crucible ({unknownCount} unknown remaining).
+            Unknown cards remain hidden until you uncover them in battle, Sealed Reliquaries, or
+            the Sanctuary Forge&apos;s Mystery Crucible.
           </p>
           <button
             type="button"
@@ -867,11 +896,8 @@ export const GalleryView: React.FC<GalleryViewProps> = ({
                     owner={inDeck ? 'player' : 'neutral'}
                     showName
                     size="md"
-                    onClick={() => {
-                      sound.drawer(true);
-                      setInspectedId(card.id);
-                      setSelectedCopyUid(bestCopy?.uid ?? null);
-                    }}
+                    onClick={() => handleToggleCardInDeck(card)}
+                    onDoubleClick={() => handleOpenCardInspector(card)}
                   />
                   {/* Copy Count Badge */}
                   <span
@@ -887,7 +913,7 @@ export const GalleryView: React.FC<GalleryViewProps> = ({
                   </span>
                   {inDeck && (
                     <span
-                      title={`In ${activeDeck.name}`}
+                      title={`In ${activeDeck.name} (Click card to remove)`}
                       className="organic-tag pointer-events-none absolute top-2 right-2 z-20 px-2 h-5 bg-[#e2b053] text-[#170f06] font-mono text-[10px] font-bold flex items-center justify-center gap-0.5 shadow"
                     >
                       <Check className="w-3 h-3 stroke-[3]" />
@@ -899,21 +925,15 @@ export const GalleryView: React.FC<GalleryViewProps> = ({
                   <span className={RARITY_TEXT_COLOR[card.rarity]}>
                     #{String(card.number).padStart(2, '0')} · {RARITY_LABEL[card.rarity]}
                   </span>
-                  {count > 1 ? (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        sound.drawer(true);
-                        setInspectedId(card.id);
-                        setSelectedCopyUid(bestCopy?.uid ?? null);
-                      }}
-                      className="font-[var(--font-display)] text-[11px] font-semibold text-[#f0c76e] hover:text-[#fde5ad] transition-colors cursor-pointer"
-                    >
-                      Compare {count} →
-                    </button>
-                  ) : count === 0 ? (
-                    <span className="text-[10.5px] text-[#8d7a61] italic">Smelted</span>
-                  ) : null}
+                  <button
+                    type="button"
+                    onClick={() => handleOpenCardInspector(card)}
+                    className="font-[var(--font-display)] text-[11px] font-semibold text-[#f0c76e] hover:text-[#fde5ad] inline-flex items-center gap-1 transition-colors cursor-pointer"
+                    title={`Open ${card.name} details & rolls`}
+                  >
+                    <Eye className="w-3 h-3" />
+                    <span>{count > 1 ? `Rolls (${count})` : 'Open'}</span>
+                  </button>
                 </div>
               </div>
             );

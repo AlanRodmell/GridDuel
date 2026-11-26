@@ -39,6 +39,7 @@ interface GameCardProps {
   };
   disableLongPress?: boolean;
   onClick?: () => void;
+  onDoubleClick?: () => void;
   className?: string;
 }
 
@@ -95,6 +96,7 @@ const GameCardInner: React.FC<GameCardProps> = ({
   lastAugmented,
   disableLongPress = false,
   onClick,
+  onDoubleClick,
   className = '',
 }) => {
   const [imgStage, setImgStage] = useState<'thumb' | 'full' | 'failed'>(
@@ -136,6 +138,8 @@ const GameCardInner: React.FC<GameCardProps> = ({
         )
       : null;
   const longPressTimerRef = useRef<number | null>(null);
+  const singleClickTimerRef = useRef<number | null>(null);
+  const lastTapTimeRef = useRef<number>(0);
   const pressStartRef = useRef<{ x: number; y: number; pointerId: number } | null>(null);
   const suppressClickUntilRef = useRef<number>(0);
 
@@ -159,8 +163,49 @@ const GameCardInner: React.FC<GameCardProps> = ({
       if (longPressTimerRef.current !== null) {
         window.clearTimeout(longPressTimerRef.current);
       }
+      if (singleClickTimerRef.current !== null) {
+        window.clearTimeout(singleClickTimerRef.current);
+      }
     };
   }, []);
+
+  const dispatchCardActivation = (e: React.MouseEvent) => {
+    if (Date.now() < suppressClickUntilRef.current) {
+      e.preventDefault();
+      e.stopPropagation();
+      return;
+    }
+    if (disabled) return;
+
+    if (!onDoubleClick) {
+      onClick?.();
+      return;
+    }
+
+    const now = Date.now();
+    const isSecondClick = e.detail >= 2 || now - lastTapTimeRef.current < 260;
+
+    if (isSecondClick) {
+      if (singleClickTimerRef.current !== null) {
+        window.clearTimeout(singleClickTimerRef.current);
+        singleClickTimerRef.current = null;
+      }
+      lastTapTimeRef.current = 0;
+      onDoubleClick();
+      return;
+    }
+
+    lastTapTimeRef.current = now;
+    if (!onClick) return;
+    if (singleClickTimerRef.current !== null) {
+      window.clearTimeout(singleClickTimerRef.current);
+    }
+    singleClickTimerRef.current = window.setTimeout(() => {
+      singleClickTimerRef.current = null;
+      lastTapTimeRef.current = 0;
+      onClick();
+    }, 190);
+  };
 
   if (!card && !powerCard) return null;
 
@@ -202,14 +247,7 @@ const GameCardInner: React.FC<GameCardProps> = ({
     };
 
     const handleRelicClick = (e: React.MouseEvent) => {
-      if (Date.now() < suppressClickUntilRef.current) {
-        e.preventDefault();
-        e.stopPropagation();
-        return;
-      }
-      if (!disabled && onClick) {
-        onClick();
-      }
+      dispatchCardActivation(e);
     };
 
     const relicShadow =
@@ -226,14 +264,15 @@ const GameCardInner: React.FC<GameCardProps> = ({
         ? 'radial-gradient(ellipse 100% 90% at 50% 0%, rgba(236, 72, 153, 0.3) 0%, rgba(159, 18, 57, 0.14) 55%, rgba(15, 23, 42, 0.14) 100%)'
         : 'radial-gradient(ellipse 100% 90% at 50% 0%, rgba(56, 189, 248, 0.18) 0%, rgba(15, 23, 42, 0.15) 100%)';
 
-    const RelicTag = onClick ? 'button' : 'div';
+    const isRelicInteractive = Boolean(onClick || onDoubleClick);
+    const RelicTag = isRelicInteractive ? 'button' : 'div';
 
     if (variant === 'tarot') {
       return (
         <RelicTag
-          type={onClick ? 'button' : undefined}
-          disabled={onClick ? disabled : undefined}
-          onClick={onClick ? handleRelicClick : undefined}
+          type={isRelicInteractive ? 'button' : undefined}
+          disabled={isRelicInteractive ? disabled : undefined}
+          onClick={isRelicInteractive ? handleRelicClick : undefined}
           onPointerDown={handleRelicPointerDown}
           onPointerMove={handleRelicPointerMove}
           onPointerUp={clearLongPress}
@@ -381,9 +420,9 @@ const GameCardInner: React.FC<GameCardProps> = ({
 
     return (
       <RelicTag
-        type={onClick ? 'button' : undefined}
-        disabled={onClick ? disabled : undefined}
-        onClick={onClick ? handleRelicClick : undefined}
+        type={isRelicInteractive ? 'button' : undefined}
+        disabled={isRelicInteractive ? disabled : undefined}
+        onClick={isRelicInteractive ? handleRelicClick : undefined}
         onPointerDown={handleRelicPointerDown}
         onPointerMove={handleRelicPointerMove}
         onPointerUp={clearLongPress}
@@ -578,14 +617,7 @@ const GameCardInner: React.FC<GameCardProps> = ({
   };
 
   const handleCardClick = (e: React.MouseEvent) => {
-    if (Date.now() < suppressClickUntilRef.current) {
-      e.preventDefault();
-      e.stopPropagation();
-      return;
-    }
-    if (!disabled && onClick) {
-      onClick();
-    }
+    dispatchCardActivation(e);
   };
 
   const isCompact = size === 'xs';
@@ -650,7 +682,8 @@ const GameCardInner: React.FC<GameCardProps> = ({
     );
   }
 
-  const Tag = onClick ? 'button' : 'div';
+  const isInteractive = Boolean(onClick || onDoubleClick);
+  const Tag = isInteractive ? 'button' : 'div';
   const typeRule = ATTACK_TYPE_RULES[effectiveStats.type];
 
   const renderStatValueColor = (delta: number, fallback: string) =>
@@ -696,9 +729,9 @@ const GameCardInner: React.FC<GameCardProps> = ({
 
     return (
       <Tag
-        type={onClick ? 'button' : undefined}
-        disabled={onClick ? disabled : undefined}
-        onClick={onClick ? handleCardClick : undefined}
+        type={isInteractive ? 'button' : undefined}
+        disabled={isInteractive ? disabled : undefined}
+        onClick={isInteractive ? handleCardClick : undefined}
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}
         onPointerUp={handlePointerEnd}
@@ -939,9 +972,9 @@ const GameCardInner: React.FC<GameCardProps> = ({
 
   return (
     <Tag
-      type={onClick ? 'button' : undefined}
-      disabled={onClick ? disabled : undefined}
-      onClick={onClick ? handleCardClick : undefined}
+      type={isInteractive ? 'button' : undefined}
+      disabled={isInteractive ? disabled : undefined}
+      onClick={isInteractive ? handleCardClick : undefined}
       onPointerDown={handlePointerDown}
       onPointerMove={handlePointerMove}
       onPointerUp={handlePointerEnd}
@@ -968,7 +1001,7 @@ const GameCardInner: React.FC<GameCardProps> = ({
       } text-left select-none no-touch-callout transition-transform duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 ${
         selected
           ? '-translate-y-2.5 scale-[1.05] drop-shadow-[0_0_12px_rgba(245,190,78,0.8)] z-20'
-          : onClick && !disabled
+          : isInteractive && !disabled
           ? 'cursor-pointer hover:-translate-y-1 hover:scale-[1.02] active:scale-[0.97]'
           : ''
       } ${

@@ -820,15 +820,10 @@ export const ShopView: React.FC<ShopViewProps> = ({
                     <h2 className="font-[var(--font-display)] text-xs sm:text-sm font-bold uppercase tracking-[0.12em] text-[#f6e1b5]">
                       Mystery Crucible — Random Card Forge
                     </h2>
-                    {undiscoveredBlueprintCount > 0 && (
-                      <span className="organic-tag px-2 py-0.5 bg-[#281b10] border border-[#b98739]/50 font-mono text-[10px] font-bold text-[#f0c76e]">
-                        ??? {undiscoveredBlueprintCount} Unknown Blueprints
-                      </span>
-                    )}
                   </div>
                   <p className="font-[var(--font-serif)] text-xs sm:text-sm text-[#c8b496]">
-                    Forge a random card by Rarity Tier and optional Attack Type to discover unknown
-                    blueprints (heavily favors undiscovered cards in that pool!).
+                    Forge a random card by Rarity Tier and optional Attack Type to uncover hidden
+                    blueprints without spoiling what awaits.
                   </p>
                 </div>
 
@@ -887,10 +882,10 @@ export const ShopView: React.FC<ShopViewProps> = ({
                             </span>
                           ) : poolInfo.undiscovered > 0 ? (
                             <span className="text-emerald-300 font-semibold">
-                              ??? {poolInfo.undiscovered} Unknown of {poolInfo.total} in pool
+                              Uncharted blueprints await
                             </span>
                           ) : (
-                            <span>All {poolInfo.total} discovered · Fresh roll</span>
+                            <span>All blueprints discovered · Fresh roll</span>
                           )}
                         </p>
                       </div>
@@ -932,9 +927,6 @@ export const ShopView: React.FC<ShopViewProps> = ({
                   </h2>
                   <span className="text-[11px] font-mono text-[#9b896f]">
                     {marketCards.length} shown
-                    {undiscoveredBlueprintCount > 0
-                      ? ` · ??? ${undiscoveredBlueprintCount} unknown`
-                      : ''}
                   </span>
                 </div>
 

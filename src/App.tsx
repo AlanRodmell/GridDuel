@@ -1,5 +1,6 @@
 import { Suspense, lazy, useCallback, useEffect, useRef, useState } from 'react';
 import {
+  BarChart3,
   BookOpen,
   Coins,
   Crown,
@@ -29,6 +30,9 @@ const GalleryView = lazy(() =>
 const ShopView = lazy(() =>
   import('./components/ShopView').then((m) => ({ default: m.ShopView }))
 );
+const StatsView = lazy(() =>
+  import('./components/StatsView').then((m) => ({ default: m.StatsView }))
+);
 const RulesModal = lazy(() =>
   import('./components/RulesModal').then((m) => ({ default: m.RulesModal }))
 );
@@ -39,7 +43,7 @@ const SaveVaultModal = lazy(() =>
   import('./components/SaveVaultModal').then((m) => ({ default: m.SaveVaultModal }))
 );
 
-type TabId = 'home' | 'gallery' | 'shop';
+type TabId = 'home' | 'gallery' | 'shop' | 'stats';
 
 function StageLoadingFallback() {
   return (
@@ -270,7 +274,7 @@ export default function App() {
     setActiveTab('home');
   };
 
-  const switchSecondaryTab = (tab: 'gallery' | 'shop') => {
+  const switchSecondaryTab = (tab: 'gallery' | 'shop' | 'stats') => {
     sound.nav();
     setOptionsMenuOpen(false);
     setMobileOptionsOpen(false);
@@ -426,7 +430,7 @@ export default function App() {
 
             {/* Compact Gold Treasury Badge */}
             <div
-              title={`Treasury: ${profile.gold.toLocaleString()} Gold (${profile.wins}W · ${profile.losses}L)`}
+              title={`Treasury: ${profile.gold.toLocaleString()} Gold`}
               className="w-full brass-plaque py-1.5 px-1 flex flex-col items-center justify-center gap-0.5 text-center"
             >
               <Coins className="w-3.5 h-3.5 text-[#d9a242]" />
@@ -439,7 +443,7 @@ export default function App() {
 
             <div className="ornate-divider w-full" />
 
-            {/* 3 Primary Navigation Icons: Home, Compendium, Vault & Forge */}
+            {/* 4 Primary Navigation Icons: Home, Cards, Forge, Stats */}
             <nav className="w-full space-y-2">
               <button
                 type="button"
@@ -468,8 +472,8 @@ export default function App() {
               <button
                 type="button"
                 onClick={() => switchSecondaryTab('gallery')}
-                title={`Compendium (${ownedUniqueCount}/${totalCards} Cards)`}
-                aria-label="Compendium"
+                title="Card Library & Warbands"
+                aria-label="Card Library"
                 aria-current={activeTab === 'gallery' ? 'page' : undefined}
                 className={`w-full py-2.5 flex flex-col items-center justify-center gap-1 transition-all cursor-pointer ${
                   activeTab === 'gallery'
@@ -486,8 +490,8 @@ export default function App() {
               <button
                 type="button"
                 onClick={() => switchSecondaryTab('shop')}
-                title="Vault & Runeforge"
-                aria-label="Vault and Runeforge"
+                title="Sanctuary Forge"
+                aria-label="Sanctuary Forge"
                 aria-current={activeTab === 'shop' ? 'page' : undefined}
                 className={`w-full py-2.5 flex flex-col items-center justify-center gap-1 transition-all cursor-pointer ${
                   activeTab === 'shop'
@@ -498,6 +502,24 @@ export default function App() {
                 <ShoppingBag className="w-4 h-4" />
                 <span className="font-[var(--font-display)] text-[8.5px] uppercase tracking-wider leading-none">
                   Forge
+                </span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => switchSecondaryTab('stats')}
+                title="Battle Chronicle & Vault Stats"
+                aria-label="Stats"
+                aria-current={activeTab === 'stats' ? 'page' : undefined}
+                className={`w-full py-2.5 flex flex-col items-center justify-center gap-1 transition-all cursor-pointer ${
+                  activeTab === 'stats'
+                    ? 'brass-btn font-bold'
+                    : 'iron-btn text-[#b9a588] hover:text-[#f5dfb2]'
+                }`}
+              >
+                <BarChart3 className="w-4 h-4" />
+                <span className="font-[var(--font-display)] text-[8.5px] uppercase tracking-wider leading-none">
+                  Stats
                 </span>
               </button>
             </nav>
@@ -646,13 +668,25 @@ export default function App() {
               <button
                 type="button"
                 onClick={() => switchSecondaryTab('shop')}
-                aria-label="Vault and Runeforge"
-                title="Vault & Runeforge"
+                aria-label="Sanctuary Forge"
+                title="Sanctuary Forge"
                 className={`w-8 h-8 flex items-center justify-center cursor-pointer ${
                   activeTab === 'shop' ? 'brass-btn' : 'iron-btn text-[#c9b89c]'
                 }`}
               >
                 <ShoppingBag className="w-4 h-4" />
+              </button>
+
+              <button
+                type="button"
+                onClick={() => switchSecondaryTab('stats')}
+                aria-label="Stats"
+                title="Battle Chronicle & Vault Stats"
+                className={`w-8 h-8 flex items-center justify-center cursor-pointer ${
+                  activeTab === 'stats' ? 'brass-btn' : 'iron-btn text-[#c9b89c]'
+                }`}
+              >
+                <BarChart3 className="w-4 h-4" />
               </button>
 
               <span className="inline-flex items-center gap-1 px-2 py-1 brass-plaque text-[#f0c76e] font-mono text-xs font-bold">
@@ -697,8 +731,6 @@ export default function App() {
           {activeTab === 'home' && !battleFlowActive && (
             <HomeView
               profile={profile}
-              ownedUniqueCount={ownedUniqueCount}
-              totalCards={totalCards}
               onSelectBoardScale={setBoardScale}
               onStartFlow={launchPlayFlow}
             />
@@ -745,7 +777,6 @@ export default function App() {
                 profile={profile}
                 activeDeck={activeDeck}
                 ownedUniqueCount={ownedUniqueCount}
-                totalCards={totalCards}
                 onSelectBoardScale={setBoardScale}
                 onSelectDeckSlot={selectDeckSlot}
                 onCreateDeck={createDeck}
@@ -773,6 +804,11 @@ export default function App() {
                 onSellCardInstance={sellCardInstance}
                 onSellExtraCopies={sellExtraCopies}
               />
+            </Suspense>
+          )}
+          {activeTab === 'stats' && (
+            <Suspense fallback={<StageLoadingFallback />}>
+              <StatsView profile={profile} activeDeck={activeDeck} />
             </Suspense>
           )}
         </main>

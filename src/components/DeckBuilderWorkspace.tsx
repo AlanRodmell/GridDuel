@@ -1210,6 +1210,14 @@ export const DeckBuilderWorkspace: React.FC<DeckBuilderWorkspaceProps> = ({
                             showToast(res.message);
                           }
                         }}
+                        onDoubleClick={() => {
+                          sound.select();
+                          openPreview({
+                            cardId: pCard.id,
+                            arrows: pCard.dirs,
+                            owner: isEquipped ? 'player' : 'neutral',
+                          });
+                        }}
                       />
 
                       <button
@@ -1327,6 +1335,10 @@ export const DeckBuilderWorkspace: React.FC<DeckBuilderWorkspaceProps> = ({
                         size="md"
                         showName
                         onClick={() => handleVaultCardClick(inst)}
+                        onDoubleClick={() => {
+                          sound.drawer(true);
+                          setCompareCardId(def.id);
+                        }}
                       />
 
                       {copyCount > 1 && (

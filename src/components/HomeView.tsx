@@ -5,49 +5,120 @@ import {
   Crown,
   Dices,
   LayoutGrid,
-  Sparkles,
   Trophy,
 } from 'lucide-react';
-import { ALL_FIGHTERS } from '../data/ladder';
-import { POWER_CARDS, getUnlockedPowerCards } from '../data/powerCards';
+import { CARD_MAP } from '../data/cards';
 import {
   ALL_BOARD_SCALES,
   BOARD_SCALES,
   DEFAULT_BOARD_SCALE,
   getBoardScaleSpec,
 } from '../engine/triadEngine';
+import { CARD_RARITY_THEMES } from '../styles/cardThemes';
 import { BoardScale, PlayerProfile } from '../types/game';
-import { sound } from '../utils/sound';
 import { BrambleCrestDivider } from './BattlefieldChrome';
-import { GameCard } from './GameCard';
 
 export type PlayLaunchIntent = 'arena' | 'quick';
 
 interface HomeViewProps {
   profile: PlayerProfile;
-  ownedUniqueCount: number;
-  totalCards: number;
   onSelectBoardScale: (scale: BoardScale) => void;
   onStartFlow: (intent: PlayLaunchIntent) => void;
 }
 
+/**
+ * Pure decorative card-art illustration plate for the Home hero fan.
+ * Renders a static framed portrait image OF a card — not an interactive GameCard component:
+ * - Zero tooltips, zero click/long-press handlers, zero clip-path + drop-shadow ghosting
+ * - GPU-composited (`backface-visibility: hidden`) with smooth spring-eased hover motion
+ */
+const HeroCardIllustration: React.FC<{
+  cardId: string;
+  className?: string;
+}> = ({ cardId, className = '' }) => {
+  const card = CARD_MAP[cardId];
+  if (!card) return null;
+  const theme = CARD_RARITY_THEMES[card.rarity];
+
+  return (
+    <div
+      aria-hidden="true"
+      style={{
+        background: theme.bezelGradient,
+        boxShadow:
+          '0 22px 38px rgba(0, 0, 0, 0.78), 0 4px 12px rgba(0, 0, 0, 0.55), inset 0 1px 0 rgba(255, 236, 190, 0.3)',
+        backfaceVisibility: 'hidden',
+        WebkitBackfaceVisibility: 'hidden',
+      }}
+      className={`pointer-events-none select-none aspect-[5/7] w-full rounded-[8px] p-[3px] ${className}`}
+    >
+      <div
+        style={{ background: theme.surfaceGradient }}
+        className="w-full h-full rounded-[6px] p-[6%] flex flex-col justify-between gap-1.5 overflow-hidden"
+      >
+        <div
+          style={{ borderColor: theme.hairline }}
+          className="w-full h-full rounded-[4px] border px-2 py-1.5 flex flex-col justify-between gap-1.5 bg-black/20"
+        >
+          {/* Decorative Nameplate */}
+          <div className="rounded-[3px] bg-black/45 px-2 py-1 text-center shrink-0 border border-white/5">
+            <div
+              style={{ color: theme.titleColor }}
+              className="font-[var(--font-display)] text-[10px] sm:text-[11.5px] font-bold uppercase tracking-[0.08em] leading-tight truncate"
+            >
+              {card.name}
+            </div>
+          </div>
+
+          {/* Arched Oil Portrait Image */}
+          <div
+            style={{
+              borderColor: theme.archBorder,
+              background: theme.archBackdrop,
+            }}
+            className="relative flex-1 min-h-0 w-full overflow-hidden rounded-t-[999px] rounded-b-[4px] border"
+          >
+            <img
+              src={card.image}
+              alt=""
+              width={512}
+              height={512}
+              loading="eager"
+              decoding="async"
+              draggable={false}
+              className={`w-full h-full object-cover object-top ${card.artFilter ?? ''}`}
+            />
+            <div className="absolute inset-x-0 bottom-0 h-8 bg-gradient-to-t from-black/65 to-transparent" />
+          </div>
+
+          {/* Decorative Engraved Role Filigree */}
+          <div className="flex items-center gap-1.5 shrink-0 px-0.5 py-0.5">
+            <span style={{ backgroundColor: theme.hairline }} className="h-px flex-1" />
+            <span
+              style={{ color: theme.labelColor }}
+              className="font-[var(--font-display)] text-[7.5px] sm:text-[8.5px] font-semibold uppercase tracking-[0.16em] whitespace-nowrap"
+            >
+              {theme.tierLabel}
+            </span>
+            <span style={{ backgroundColor: theme.hairline }} className="h-px flex-1" />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 export const HomeView: React.FC<HomeViewProps> = ({
   profile,
-  ownedUniqueCount,
-  totalCards,
   onSelectBoardScale,
   onStartFlow,
 }) => {
-  const conqueredCount = Object.values(profile.fighterWins ?? {}).filter(
-    (w) => w > 0
-  ).length;
-  const unlockedRelicsCount = getUnlockedPowerCards(profile.fighterWins).length;
   const activeScale = profile.boardScale ?? DEFAULT_BOARD_SCALE;
   const scaleSpec = getBoardScaleSpec(activeScale);
 
   return (
     <div className="w-full max-w-[1620px] mx-auto px-5 sm:px-8 lg:px-10 py-6 lg:py-9 space-y-7 lg:space-y-8">
-      {/* Top Hero & Fanned Tarot Showcase */}
+      {/* Top Hero & Smooth Fanned Card Art Showcase */}
       <section className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
         <div className="lg:col-span-6 space-y-4 text-center lg:text-left">
           <div className="war-banner-tab inline-flex items-center gap-2 pl-3.5 pr-5 py-1.5 bg-gradient-to-r from-[#3b2915] to-[#24190d] text-[#edd08e] font-[var(--font-display)] text-[11px] font-semibold uppercase tracking-[0.18em] shadow">
@@ -65,51 +136,50 @@ export const HomeView: React.FC<HomeViewProps> = ({
             </p>
             <p className="font-[var(--font-serif)] text-sm sm:text-base text-[#c7b69a] leading-relaxed max-w-xl mx-auto lg:mx-0">
               Choose your battlefield scale below, then climb the 10-tier Championship Arena to
-              unlock 12 directional Power Relic Totems or roll a Quick Random Duel.
+              unlock directional Power Relic Totems or launch a Quick Random Duel.
             </p>
-          </div>
-
-          {/* Compact Campaign Progress Strip */}
-          <div className="flex flex-wrap items-center justify-center lg:justify-start gap-2 pt-1 text-xs">
-            <span className="organic-tag px-3 py-1 bg-[#1b140d] font-mono text-[#dfd0b6]">
-              Record:{' '}
-              <strong className="text-emerald-400">{profile.wins}W</strong>
-              <span className="text-[#5e4d3a]"> · </span>
-              <strong className="text-rose-400">{profile.losses}L</strong>
-            </span>
-            <span className="organic-tag px-3 py-1 bg-[#1b140d] font-mono text-[#f0c76e]">
-              Arena: <strong>{conqueredCount}/{ALL_FIGHTERS.length}</strong>
-            </span>
-            <span className="organic-tag px-3 py-1 bg-sky-950/85 font-mono text-sky-200 inline-flex items-center gap-1">
-              <Sparkles className="w-3 h-3 text-sky-300" />
-              <span>
-                Relics: <strong>{unlockedRelicsCount}/{POWER_CARDS.length}</strong>
-              </span>
-            </span>
-            <span className="organic-tag px-3 py-1 bg-[#1b140d] font-mono text-[#e8d5b3]">
-              Cards: <strong>{ownedUniqueCount}/{totalCards}</strong>
-            </span>
           </div>
         </div>
 
-        {/* Right Fanned Collector Tarot Showcase */}
+        {/* Right Fanned Card Art Illustration Showcase (Pure Static Art · Smooth Spring Fan · Zero Tooltips) */}
         <div className="lg:col-span-6 flex items-center justify-center py-2">
-          <div className="relative w-full max-w-[500px] h-[270px] sm:h-[330px] xl:h-[360px] flex items-center justify-center">
+          <div className="group/fan relative w-full max-w-[500px] h-[270px] sm:h-[330px] xl:h-[360px] flex items-center justify-center">
             <div
               aria-hidden="true"
-              className="pointer-events-none absolute inset-6 rounded-full bg-gradient-to-tr from-[#c97c24]/20 via-[#8d4218]/14 to-[#d6a348]/18 blur-2xl"
+              className="pointer-events-none absolute inset-8 rounded-full bg-gradient-to-tr from-[#c97c24]/18 via-[#8d4218]/12 to-[#d6a348]/16 blur-2xl transition-opacity duration-700 ease-out group-hover/fan:opacity-100 opacity-80"
             />
 
-            <div className="w-[145px] sm:w-[178px] xl:w-[196px] -mr-12 sm:-mr-14 -rotate-[11deg] translate-y-3 opacity-92 transition-transform duration-300 hover:-translate-y-1 hover:z-30 drop-shadow-[0_18px_24px_rgba(0,0,0,0.8)]">
-              <GameCard cardId="glacial-mage" variant="tarot" size="md" showArrows />
+            {/* Left Wing Card Art */}
+            <div
+              style={{
+                transition: 'transform 700ms cubic-bezier(0.22, 1, 0.36, 1)',
+                backfaceVisibility: 'hidden',
+              }}
+              className="relative z-10 w-[145px] sm:w-[178px] xl:w-[196px] -mr-12 sm:-mr-14 transform-gpu will-change-transform -rotate-[11deg] translate-y-3 group-hover/fan:-translate-x-3 group-hover/fan:-rotate-[14deg] group-hover/fan:translate-y-1.5"
+            >
+              <HeroCardIllustration cardId="glacial-mage" />
             </div>
 
-            <div className="relative z-20 w-[170px] sm:w-[208px] xl:w-[228px] -translate-y-2 transition-transform duration-300 hover:-translate-y-4 drop-shadow-[0_24px_32px_rgba(0,0,0,0.88)]">
-              <GameCard cardId="solar-sovereign" variant="tarot" size="lg" showArrows />
+            {/* Center Sovereign Card Art */}
+            <div
+              style={{
+                transition: 'transform 700ms cubic-bezier(0.22, 1, 0.36, 1)',
+                backfaceVisibility: 'hidden',
+              }}
+              className="relative z-20 w-[170px] sm:w-[208px] xl:w-[228px] transform-gpu will-change-transform -translate-y-2 group-hover/fan:-translate-y-4 group-hover/fan:scale-[1.025]"
+            >
+              <HeroCardIllustration cardId="solar-sovereign" />
             </div>
 
-            <div className="w-[145px] sm:w-[178px] xl:w-[196px] -ml-12 sm:-ml-14 rotate-[11deg] translate-y-3 opacity-92 transition-transform duration-300 hover:-translate-y-1 hover:z-30 drop-shadow-[0_18px_24px_rgba(0,0,0,0.8)]">
-              <GameCard cardId="abyssal-lich" variant="tarot" size="md" showArrows />
+            {/* Right Wing Card Art */}
+            <div
+              style={{
+                transition: 'transform 700ms cubic-bezier(0.22, 1, 0.36, 1)',
+                backfaceVisibility: 'hidden',
+              }}
+              className="relative z-10 w-[145px] sm:w-[178px] xl:w-[196px] -ml-12 sm:-ml-14 transform-gpu will-change-transform rotate-[11deg] translate-y-3 group-hover/fan:translate-x-3 group-hover/fan:rotate-[14deg] group-hover/fan:translate-y-1.5"
+            >
+              <HeroCardIllustration cardId="abyssal-lich" />
             </div>
           </div>
         </div>
@@ -170,7 +240,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
           <button
             type="button"
             onClick={() => onStartFlow('arena')}
-            className="group brass-panel riveted-frame p-6 text-left flex flex-col justify-between gap-5 transition-transform duration-200 hover:-translate-y-1 cursor-pointer"
+            className="group brass-panel riveted-frame p-6 text-left flex flex-col justify-between gap-5 transition-transform duration-300 ease-out hover:-translate-y-1 cursor-pointer"
           >
             <div className="space-y-3.5">
               <div className="flex items-center justify-between gap-2">
@@ -178,7 +248,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
                   <Trophy className="w-5 h-5" />
                 </div>
                 <span className="organic-tag px-2.5 py-1 bg-[#1e150c] font-mono text-xs font-bold text-[#f0c76e]">
-                  {conqueredCount}/{ALL_FIGHTERS.length} Conquered
+                  10 Sanctuary Tiers
                 </span>
               </div>
 
@@ -188,7 +258,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
                 </h2>
                 <p className="font-[var(--font-serif)] text-base text-[#cbb89a] leading-relaxed">
                   Progress through 10 themed sanctuaries on a {scaleSpec.shortLabel} battlefield,
-                  clear full tiers to unlock all 12 Power Relics, and hunt Mythic boss drops.
+                  clear full tiers to unlock Power Relics, and hunt Mythic boss drops.
                 </p>
               </div>
             </div>
@@ -202,7 +272,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
           <button
             type="button"
             onClick={() => onStartFlow('quick')}
-            className="group iron-panel riveted-frame p-6 text-left flex flex-col justify-between gap-5 transition-transform duration-200 hover:-translate-y-1 cursor-pointer"
+            className="group iron-panel riveted-frame p-6 text-left flex flex-col justify-between gap-5 transition-transform duration-300 ease-out hover:-translate-y-1 cursor-pointer"
           >
             <div className="space-y-3.5">
               <div className="flex items-center justify-between gap-2">

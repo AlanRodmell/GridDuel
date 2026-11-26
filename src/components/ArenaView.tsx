@@ -105,6 +105,8 @@ interface ArenaViewProps {
     winner: 'player' | 'rival' | 'draw';
     goldEarned: number;
     flipsMade: number;
+    combosMade?: number;
+    isPerfect?: boolean;
     usedCardIds: string[];
   }) => void;
   onClaimSpoil: (
@@ -438,6 +440,8 @@ export const ArenaView: React.FC<ArenaViewProps> = ({
         winner,
         goldEarned: totalGold,
         flipsMade,
+        combosMade,
+        isPerfect,
         usedCardIds: playerOrigIds,
       });
 

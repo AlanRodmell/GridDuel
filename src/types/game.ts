@@ -293,6 +293,14 @@ export interface PlayerProfile {
   streak: number;
   bestStreak: number;
   totalFlips: number;
+  perfectWins?: number;
+  totalCombos?: number;
+  totalGoldEarned?: number;
+  totalGoldSpent?: number;
+  packsOpened?: number;
+  cardsForged?: number;
+  runesCrafted?: number;
+  cardsSold?: number;
   cardWins: Record<string, number>;
   fighterWins: Record<string, number>;
   soundEnabled: boolean;
