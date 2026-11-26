@@ -1345,13 +1345,13 @@ export const ArenaView: React.FC<ArenaViewProps> = ({
           )}
 
           <div
-            className={`arena-monolith-frame relative ${boardFitClass} p-1.5 sm:p-2 lg:p-3 ${
+            className={`arena-monolith-frame relative ${boardFitClass} p-2 sm:p-2.5 lg:p-3.5 ${
               boardShakeRarity ? `animate-board-shake-${boardShakeRarity}` : ''
             }`}
           >
             <BattlefieldMonolithFrame />
 
-            <div className="arena-monolith-bed relative z-10 p-1 sm:p-1.5 lg:p-2">
+            <div className="arena-monolith-bed relative z-10 p-1.5 sm:p-2 lg:p-2.5">
               <div
                 aria-hidden="true"
                 className="pointer-events-none absolute inset-0 overflow-hidden"
