@@ -11,31 +11,34 @@ export interface MusicTrackMeta {
   bpm: number;
 }
 
-const BUILTIN_WARDRUMS_M4A = new URL('../assets/sfx/war_drums_loop.m4a', import.meta.url).href;
+const BUILTIN_STUDIO_LOOPS: Partial<Record<MusicThemeId, string>> = {
+  tavern: new URL('../assets/sfx/tavern_menu_loop.m4a', import.meta.url).href,
+  wardrums: new URL('../assets/sfx/war_drums_loop.m4a', import.meta.url).href,
+};
 
 export const MUSIC_TRACKS: MusicTrackMeta[] = [
   {
+    id: 'tavern',
+    title: 'Hearthfire Tavern (Menus & Forge)',
+    subtitle: 'Seamless Celtic Flute, Fiddle, Lute & Strings Score',
+    bpm: 120,
+  },
+  {
     id: 'wardrums',
-    title: 'Sanctuary War Drums',
+    title: 'Sanctuary War Drums (Battle)',
     subtitle: 'Trimmed & Attenuated 24-Bar Seamless Percussion Loop',
     bpm: 140,
   },
   {
-    id: 'tavern',
-    title: 'Hearthfire Tavern',
-    subtitle: 'Renaissance Lute, Wooden Flute & Tavern Percussion',
-    bpm: 82,
-  },
-  {
     id: 'duel',
     title: 'Crossed Blades of the Keep',
-    subtitle: 'Harpsichord Ostinato, Strings & Tactical Drums',
+    subtitle: 'Synth Harpsichord Ostinato & Strings (Alt)',
     bpm: 92,
   },
   {
     id: 'boss',
     title: 'Sovereign’s Sanctum',
-    subtitle: 'Grandmaster Brass, Timpani & Baroque Celesta',
+    subtitle: 'Synth Grandmaster Brass & Celesta (Alt)',
     bpm: 98,
   },
 ];
@@ -304,18 +307,19 @@ class MusicEngine {
   private pinkNoise: AudioBuffer | null = null;
 
   private isPlaying = false;
-  private currentTheme: MusicThemeId = 'wardrums';
+  private currentTheme: MusicThemeId = 'tavern';
   private volume = 0.36;
   private stepIndex = 0;
   private nextNoteTime = 0;
   private timerId: number | null = null;
 
-  // Built-in seamless Web Audio buffer loop for 'wardrums'
-  private warDrumsRawBytes: ArrayBuffer | null = null;
-  private warDrumsBuffer: AudioBuffer | null = null;
-  private warDrumsDecoding = false;
-  private warDrumsSource: AudioBufferSourceNode | null = null;
-  private warDrumsGain: GainNode | null = null;
+  // Built-in seamless Web Audio buffer loops ('tavern' menu score & 'wardrums' battle score)
+  private studioRawBytes: Partial<Record<MusicThemeId, ArrayBuffer>> = {};
+  private studioBuffers: Partial<Record<MusicThemeId, AudioBuffer>> = {};
+  private studioDecoding: Partial<Record<MusicThemeId, boolean>> = {};
+  private activeStudioTheme: MusicThemeId | null = null;
+  private activeStudioSource: AudioBufferSourceNode | null = null;
+  private activeStudioGain: GainNode | null = null;
   private unlockBound = false;
 
   // Optional user-loaded custom MP3/OGG URLs per theme
@@ -325,33 +329,53 @@ class MusicEngine {
 
   constructor() {
     if (typeof window !== 'undefined' && typeof fetch === 'function') {
-      fetch(BUILTIN_WARDRUMS_M4A)
-        .then((res) => (res.ok ? res.arrayBuffer() : Promise.reject()))
-        .then((bytes) => {
-          this.warDrumsRawBytes = bytes;
-          if (this.ctx) {
-            this.decodeWarDrumsBuffer(this.ctx);
-          }
-        })
-        .catch(() => {});
+      (Object.keys(BUILTIN_STUDIO_LOOPS) as MusicThemeId[]).forEach((themeKey) => {
+        const url = BUILTIN_STUDIO_LOOPS[themeKey];
+        if (!url) return;
+        fetch(url)
+          .then((res) => (res.ok ? res.arrayBuffer() : Promise.reject()))
+          .then((bytes) => {
+            this.studioRawBytes[themeKey] = bytes;
+            if (this.ctx) {
+              this.decodeStudioBuffer(this.ctx, themeKey);
+            }
+          })
+          .catch(() => {});
+      });
     }
   }
 
-  private decodeWarDrumsBuffer(ctx: AudioContext) {
-    if (this.warDrumsBuffer || this.warDrumsDecoding || !this.warDrumsRawBytes) return;
-    this.warDrumsDecoding = true;
+  private decodeStudioBuffer(ctx: AudioContext, themeKey: MusicThemeId) {
+    if (
+      this.studioBuffers[themeKey] ||
+      this.studioDecoding[themeKey] ||
+      !this.studioRawBytes[themeKey]
+    ) {
+      return;
+    }
+    this.studioDecoding[themeKey] = true;
     ctx
-      .decodeAudioData(this.warDrumsRawBytes.slice(0))
+      .decodeAudioData(this.studioRawBytes[themeKey]!.slice(0))
       .then((decoded) => {
-        this.warDrumsBuffer = decoded;
-        if (this.isPlaying && this.currentTheme === 'wardrums' && !this.customAudioUrls.wardrums) {
-          this.ensureWarDrumsLoopPlaying();
+        this.studioBuffers[themeKey] = decoded;
+        if (
+          this.isPlaying &&
+          this.currentTheme === themeKey &&
+          !this.customAudioUrls[themeKey]
+        ) {
+          this.ensureStudioLoopPlaying(themeKey);
         }
       })
       .catch(() => {})
       .finally(() => {
-        this.warDrumsDecoding = false;
+        this.studioDecoding[themeKey] = false;
       });
+  }
+
+  private decodeAllStudioBuffers(ctx: AudioContext) {
+    (Object.keys(BUILTIN_STUDIO_LOOPS) as MusicThemeId[]).forEach((k) => {
+      this.decodeStudioBuffer(ctx, k);
+    });
   }
 
   private bindGestureUnlock() {
@@ -361,9 +385,12 @@ class MusicEngine {
       if (!this.isPlaying) return;
       const ctx = this.initContext();
       if (ctx && ctx.state === 'suspended') {
-        ctx.resume().then(() => {
-          if (this.isPlaying) this.schedulerTick();
-        }).catch(() => {});
+        ctx
+          .resume()
+          .then(() => {
+            if (this.isPlaying) this.schedulerTick();
+          })
+          .catch(() => {});
       } else if (this.isPlaying) {
         this.schedulerTick();
       }
@@ -372,46 +399,77 @@ class MusicEngine {
     window.addEventListener('keydown', resumeAudio, { passive: true });
   }
 
-  private ensureWarDrumsLoopPlaying() {
+  private ensureStudioLoopPlaying(themeKey: MusicThemeId) {
     const ctx = this.initContext();
     if (!ctx || !this.masterGain) return;
-    this.decodeWarDrumsBuffer(ctx);
-    if (!this.warDrumsBuffer) return;
-    if (this.warDrumsSource) return;
+    this.decodeStudioBuffer(ctx, themeKey);
+    const buffer = this.studioBuffers[themeKey];
+    if (!buffer) return;
+    if (this.activeStudioSource && this.activeStudioTheme === themeKey) return;
+
+    if (this.activeStudioSource) {
+      this.stopStudioLoop();
+    }
 
     const src = ctx.createBufferSource();
-    src.buffer = this.warDrumsBuffer;
+    src.buffer = buffer;
     src.loop = true;
 
     const loopGain = ctx.createGain();
     loopGain.gain.setValueAtTime(0.0001, ctx.currentTime);
-    loopGain.gain.linearRampToValueAtTime(0.85, ctx.currentTime + 0.65);
+    loopGain.gain.linearRampToValueAtTime(0.85, ctx.currentTime + 0.55);
 
     src.connect(loopGain);
     loopGain.connect(this.masterGain);
     src.start(0);
 
-    this.warDrumsSource = src;
-    this.warDrumsGain = loopGain;
+    this.activeStudioTheme = themeKey;
+    this.activeStudioSource = src;
+    this.activeStudioGain = loopGain;
   }
 
-  private stopWarDrumsLoop() {
-    if (this.warDrumsSource) {
+  private stopStudioLoop() {
+    const src = this.activeStudioSource;
+    const gainNode = this.activeStudioGain;
+    this.activeStudioTheme = null;
+    this.activeStudioSource = null;
+    this.activeStudioGain = null;
+
+    if (src && gainNode && this.ctx) {
       try {
-        this.warDrumsSource.stop();
-        this.warDrumsSource.disconnect();
+        const now = this.ctx.currentTime;
+        gainNode.gain.cancelScheduledValues(now);
+        gainNode.gain.setValueAtTime(Math.max(0.0001, gainNode.gain.value), now);
+        gainNode.gain.linearRampToValueAtTime(0.0001, now + 0.35);
+        src.stop(now + 0.38);
+        window.setTimeout(() => {
+          try {
+            src.disconnect();
+            gainNode.disconnect();
+          } catch {
+            // Ignore
+          }
+        }, 420);
+        return;
       } catch {
-        // Ignore if already stopped
+        // Fallback below
       }
-      this.warDrumsSource = null;
     }
-    if (this.warDrumsGain) {
+
+    if (src) {
       try {
-        this.warDrumsGain.disconnect();
+        src.stop();
+        src.disconnect();
       } catch {
         // Ignore
       }
-      this.warDrumsGain = null;
+    }
+    if (gainNode) {
+      try {
+        gainNode.disconnect();
+      } catch {
+        // Ignore
+      }
     }
   }
 
@@ -433,7 +491,7 @@ class MusicEngine {
 
       this.buildNoise(ctx);
       this.buildReverb(ctx, master);
-      this.decodeWarDrumsBuffer(ctx);
+      this.decodeAllStudioBuffers(ctx);
     }
 
     if (this.ctx.state === 'suspended') {
@@ -760,7 +818,7 @@ class MusicEngine {
     // If a custom MP3 file is loaded for the current theme, use HTMLAudioElement instead
     const customUrl = this.customAudioUrls[this.currentTheme];
     if (customUrl) {
-      this.stopWarDrumsLoop();
+      this.stopStudioLoop();
       this.ensureCustomAudioPlaying(customUrl);
       return;
     } else if (this.customAudioEl && !this.customAudioEl.paused) {
@@ -768,12 +826,12 @@ class MusicEngine {
       this.activeCustomUrl = null;
     }
 
-    // Built-in gapless Web Audio buffer loop for Sanctuary War Drums
-    if (this.currentTheme === 'wardrums') {
-      this.ensureWarDrumsLoopPlaying();
+    // Built-in gapless Web Audio studio loops ('tavern' menu score & 'wardrums' battle score)
+    if (BUILTIN_STUDIO_LOOPS[this.currentTheme]) {
+      this.ensureStudioLoopPlaying(this.currentTheme);
       return;
     } else {
-      this.stopWarDrumsLoop();
+      this.stopStudioLoop();
     }
 
     const ctx = this.initContext();
@@ -781,7 +839,7 @@ class MusicEngine {
 
     const lookaheadSeconds = 0.14;
     const stepDur = this.getStepDurationSeconds();
-    const pattern = PATTERNS[this.currentTheme] ?? TAVERN_PATTERN;
+    const pattern = PATTERNS[this.currentTheme as Exclude<MusicThemeId, 'wardrums'>] ?? TAVERN_PATTERN;
 
     if (this.nextNoteTime < ctx.currentTime) {
       this.nextNoteTime = ctx.currentTime + 0.03;
@@ -857,7 +915,7 @@ class MusicEngine {
       window.clearInterval(this.timerId);
       this.timerId = null;
     }
-    this.stopWarDrumsLoop();
+    this.stopStudioLoop();
     if (this.customAudioEl && !this.customAudioEl.paused) {
       this.customAudioEl.pause();
     }
@@ -887,7 +945,7 @@ class MusicEngine {
 
   public setTheme(theme: MusicThemeId) {
     if (this.currentTheme === theme) return;
-    this.stopWarDrumsLoop();
+    this.stopStudioLoop();
     this.currentTheme = theme;
     this.stepIndex = 0;
     if (this.ctx) {

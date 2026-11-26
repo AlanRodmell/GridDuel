@@ -25,6 +25,8 @@ interface MusicModalProps {
   onClose: () => void;
   musicEnabled: boolean;
   onToggleMusic: (enabled: boolean) => void;
+  battleOnly: boolean;
+  onToggleBattleOnly: (battleOnly: boolean) => void;
   musicVolume: number;
   onChangeVolume: (vol: number) => void;
   activeTheme: MusicThemeId;
@@ -38,6 +40,8 @@ export const MusicModal: React.FC<MusicModalProps> = ({
   onClose,
   musicEnabled,
   onToggleMusic,
+  battleOnly,
+  onToggleBattleOnly,
   musicVolume,
   onChangeVolume,
   activeTheme,
@@ -121,72 +125,95 @@ export const MusicModal: React.FC<MusicModalProps> = ({
 
         <div className="p-5 space-y-5 max-h-[78dvh] overflow-y-auto">
           {/* Master Playback & Volume Bar */}
-          <div className="p-4 rounded-[4px] basalt-recess flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div className="flex items-center gap-3">
-              <button
-                type="button"
-                onClick={() => {
-                  sound.select();
-                  onToggleMusic(!musicEnabled);
-                }}
-                className={`min-h-[44px] px-4 rounded-[3px] font-[var(--font-display)] font-bold text-sm flex items-center gap-2 transition-all cursor-pointer ${
-                  musicEnabled
-                    ? 'brass-btn'
-                    : 'iron-btn'
-                }`}
-              >
-                {musicEnabled ? (
-                  <>
-                    <Pause className="w-4 h-4 fill-current" />
-                    <span>Music Playing</span>
-                  </>
+          <div className="p-4 rounded-[4px] basalt-recess flex flex-col gap-3.5">
+            <div className="flex flex-wrap items-center justify-between gap-2.5">
+              <div className="flex flex-wrap items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    sound.select();
+                    onToggleMusic(!musicEnabled);
+                  }}
+                  className={`min-h-[40px] px-3.5 rounded-[3px] font-[var(--font-display)] font-bold text-xs sm:text-sm flex items-center gap-2 transition-all cursor-pointer ${
+                    musicEnabled ? 'brass-btn' : 'iron-btn'
+                  }`}
+                >
+                  {musicEnabled ? (
+                    <>
+                      <Pause className="w-4 h-4 fill-current" />
+                      <span>Music Enabled</span>
+                    </>
+                  ) : (
+                    <>
+                      <Play className="w-4 h-4 fill-current" />
+                      <span>Music Muted</span>
+                    </>
+                  )}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    sound.latch(!battleOnly);
+                    onToggleBattleOnly(!battleOnly);
+                  }}
+                  className={`min-h-[40px] px-3 rounded-[3px] font-[var(--font-display)] text-xs font-semibold flex items-center gap-1.5 border transition-colors cursor-pointer ${
+                    battleOnly
+                      ? 'brass-plaque text-[#f5d593]'
+                      : 'iron-btn text-[#cbb89a]'
+                  }`}
+                  title="Play soundtrack only during live matches, or across menus too"
+                >
+                  <span>{battleOnly ? 'Scope: Battles Only' : 'Scope: Everywhere'}</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    sound.select();
+                    onToggleAdaptive(!adaptiveMode);
+                  }}
+                  className={`min-h-[40px] px-3 rounded-[3px] font-[var(--font-display)] text-xs font-semibold flex items-center gap-1.5 border transition-colors cursor-pointer ${
+                    adaptiveMode
+                      ? 'brass-plaque text-[#f5d593]'
+                      : 'iron-btn text-[#9b896f]'
+                  }`}
+                  title="Automatically switch soundtrack between Duel and Boss themes"
+                >
+                  <Sparkles className="w-3.5 h-3.5 text-[#e2b053] shrink-0" />
+                  <span>Adaptive: {adaptiveMode ? 'On' : 'Off'}</span>
+                </button>
+              </div>
+
+              {/* Volume Slider */}
+              <div className="flex items-center gap-2.5 min-w-[160px] flex-1 sm:flex-initial">
+                {musicVolume <= 0.01 || !musicEnabled ? (
+                  <VolumeX className="w-4 h-4 text-[#7d6c56] shrink-0" />
                 ) : (
-                  <>
-                    <Play className="w-4 h-4 fill-current" />
-                    <span>Start Game Music</span>
-                  </>
+                  <Volume2 className="w-4 h-4 text-[#e2b053] shrink-0" />
                 )}
-              </button>
-
-              <button
-                type="button"
-                onClick={() => {
-                  sound.select();
-                  onToggleAdaptive(!adaptiveMode);
-                }}
-                className={`min-h-[44px] px-3.5 rounded-[3px] font-[var(--font-display)] text-xs font-semibold flex items-center gap-1.5 border transition-colors cursor-pointer ${
-                  adaptiveMode
-                    ? 'brass-plaque text-[#f5d593]'
-                    : 'iron-btn text-[#9b896f]'
-                }`}
-                title="Automatically switch soundtrack between Tavern Prep, Arena Duel, and Boss Sanctum"
-              >
-                <Sparkles className="w-3.5 h-3.5 text-[#e2b053] shrink-0" />
-                <span>Auto-Adaptive: {adaptiveMode ? 'On' : 'Off'}</span>
-              </button>
+                <input
+                  type="range"
+                  min={0}
+                  max={1}
+                  step={0.02}
+                  value={musicVolume}
+                  onChange={(e) => onChangeVolume(parseFloat(e.target.value))}
+                  aria-label="Music volume"
+                  className="w-full accent-amber-500 cursor-pointer"
+                />
+                <span className="text-xs font-mono tabular-nums text-[#dfd0b6] w-9 text-right">
+                  {Math.round(musicVolume * 100)}%
+                </span>
+              </div>
             </div>
 
-            {/* Volume Slider */}
-            <div className="flex items-center gap-2.5 min-w-[160px]">
-              {musicVolume <= 0.01 || !musicEnabled ? (
-                <VolumeX className="w-4 h-4 text-[#7d6c56] shrink-0" />
-              ) : (
-                <Volume2 className="w-4 h-4 text-[#e2b053] shrink-0" />
-              )}
-              <input
-                type="range"
-                min={0}
-                max={1}
-                step={0.02}
-                value={musicVolume}
-                onChange={(e) => onChangeVolume(parseFloat(e.target.value))}
-                aria-label="Music volume"
-                className="w-full accent-amber-500 cursor-pointer"
-              />
-              <span className="text-xs font-mono tabular-nums text-[#dfd0b6] w-9 text-right">
-                {Math.round(musicVolume * 100)}%
-              </span>
-            </div>
+            {battleOnly && musicEnabled && (
+              <p className="font-[var(--font-serif)] italic text-xs text-[#b8a386]">
+                Auditioning while this window is open — during play, music starts automatically
+                when a battle begins and fades out when the duel ends.
+              </p>
+            )}
           </div>
 
           {/* Built-in & Custom Theme Selector */}

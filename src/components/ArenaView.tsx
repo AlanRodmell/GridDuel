@@ -224,7 +224,7 @@ export const ArenaView: React.FC<ArenaViewProps> = ({
 
   useEffect(() => {
     if (!onMatchThemeChange) return;
-    if (phase === 'setup') {
+    if (phase !== 'playing') {
       onMatchThemeChange('tavern');
     } else if (currentFighter.isBoss || currentFighter.tierNumber >= 9) {
       onMatchThemeChange('boss');
@@ -234,7 +234,7 @@ export const ArenaView: React.FC<ArenaViewProps> = ({
   }, [phase, currentFighter.isBoss, currentFighter.tierNumber, onMatchThemeChange]);
 
   useEffect(() => {
-    onMatchActiveChange?.(phase !== 'setup');
+    onMatchActiveChange?.(phase === 'playing');
     return () => {
       onMatchActiveChange?.(false);
     };

@@ -95,21 +95,40 @@ export default function App() {
 
   const [musicEnabled, setMusicEnabled] = useState(true);
   const [musicVolume, setMusicVolume] = useState(0.36);
-  const [activeMusicTheme, setActiveMusicTheme] = useState<MusicThemeId>('wardrums');
-  const [adaptiveMusic, setAdaptiveMusic] = useState(false);
-
-  useEffect(() => {
-    music.setVolume(musicVolume);
-    music.setTheme(activeMusicTheme);
-    music.setEnabled(musicEnabled);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  const [activeMusicTheme, setActiveMusicTheme] = useState<MusicThemeId>('tavern');
+  const [battleOnlyMusic, setBattleOnlyMusic] = useState(false);
+  const [adaptiveMusic, setAdaptiveMusic] = useState(true);
 
   const desktopOptionsRef = useRef<HTMLDivElement | null>(null);
   const mobileOptionsRef = useRef<HTMLDivElement | null>(null);
 
   const lockViewportForMatch =
     activeTab === 'home' && battleFlowActive && isMatchActive;
+
+  // Automatic Menu <-> Battle score switching when Adaptive Mode is ON:
+  // - Menus, Compendium, Forge & Match Setup -> 'tavern' (Celtic Flute/Fiddle/Lute Menu Loop)
+  // - Active Live Battle ('playing') -> 'wardrums' (Sanctuary War Drums Loop)
+  useEffect(() => {
+    if (!adaptiveMusic || musicModalOpen) return;
+    const targetTheme: MusicThemeId = lockViewportForMatch ? 'wardrums' : 'tavern';
+    setActiveMusicTheme(targetTheme);
+  }, [adaptiveMusic, lockViewportForMatch, musicModalOpen]);
+
+  // Sync music engine volume, active theme, and playback state
+  useEffect(() => {
+    music.setVolume(musicVolume);
+    music.setTheme(activeMusicTheme);
+    const shouldPlayNow =
+      musicEnabled && (!battleOnlyMusic || lockViewportForMatch || musicModalOpen);
+    music.setEnabled(shouldPlayNow);
+  }, [
+    activeMusicTheme,
+    battleOnlyMusic,
+    lockViewportForMatch,
+    musicEnabled,
+    musicModalOpen,
+    musicVolume,
+  ]);
 
   useEffect(() => {
     if (!isMatchActive) {
@@ -188,7 +207,6 @@ export default function App() {
 
   const handleToggleMusic = useCallback((enabled: boolean) => {
     setMusicEnabled(enabled);
-    music.setEnabled(enabled);
   }, []);
 
   const handleChangeMusicVolume = useCallback((vol: number) => {
@@ -204,8 +222,16 @@ export default function App() {
   const handleMatchThemeChange = useCallback(
     (theme: MusicThemeId) => {
       if (!adaptiveMusic) return;
-      setActiveMusicTheme(theme);
-      music.setTheme(theme);
+      // Map ArenaView's 'duel'/'boss' callbacks onto our studio 'wardrums' battle score
+      // unless the user uploaded a custom file for 'duel'/'boss'.
+      const resolvedTheme: MusicThemeId =
+        theme === 'tavern'
+          ? 'tavern'
+          : music.hasCustomTrack(theme)
+          ? theme
+          : 'wardrums';
+      setActiveMusicTheme(resolvedTheme);
+      music.setTheme(resolvedTheme);
     },
     [adaptiveMusic]
   );
@@ -305,7 +331,7 @@ export default function App() {
             musicEnabled ? 'text-emerald-300' : 'text-[#8c7961]'
           }`}
         >
-          {musicEnabled ? 'ON' : 'OFF'}
+          {musicEnabled ? (battleOnlyMusic ? 'BATTLE' : 'ON') : 'OFF'}
         </span>
       </button>
 
@@ -770,6 +796,8 @@ export default function App() {
               }}
               musicEnabled={musicEnabled}
               onToggleMusic={handleToggleMusic}
+              battleOnly={battleOnlyMusic}
+              onToggleBattleOnly={setBattleOnlyMusic}
               musicVolume={musicVolume}
               onChangeVolume={handleChangeMusicVolume}
               activeTheme={activeMusicTheme}
