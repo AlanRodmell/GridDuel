@@ -1,6 +1,8 @@
 import React, { useMemo, useState } from 'react';
 import {
   Check,
+  ChevronDown,
+  ChevronUp,
   Coins,
   Compass,
   Eye,
@@ -149,6 +151,7 @@ export const GalleryView: React.FC<GalleryViewProps> = ({
   const [searchQuery, setSearchQuery] = useState('');
   const [inspectedId, setInspectedId] = useState<string | null>(null);
   const [selectedCopyUid, setSelectedCopyUid] = useState<string | null>(null);
+  const [relicsExpanded, setRelicsExpanded] = useState(false);
   const [feedbackToast, setFeedbackToast] = useState<string | null>(null);
 
   const showToast = (msg: string) => {
@@ -514,15 +517,23 @@ export const GalleryView: React.FC<GalleryViewProps> = ({
               </span>
             </div>
           ) : !equippedPowerDef ? (
-            <div className="empty-card-imprint relative aspect-[5/7] flex flex-col items-center justify-center p-2 text-center">
+            <button
+              type="button"
+              onClick={() => {
+                sound.select();
+                setRelicsExpanded(true);
+              }}
+              title="Click to expand Campaign Power Relics and equip one"
+              className="empty-card-imprint relative aspect-[5/7] flex flex-col items-center justify-center p-2 text-center hover:scale-[1.02] transition-transform cursor-pointer"
+            >
               <span className="organic-tag absolute top-1.5 inset-x-2 bg-sky-950/90 py-[1px] font-[var(--font-display)] text-[8.5px] font-bold uppercase tracking-wider text-sky-200">
                 Relic Slot
               </span>
               <Sparkles className="w-4 h-4 text-sky-300 mb-1 mt-2" />
               <span className="font-[var(--font-display)] text-[9.5px] uppercase tracking-wider text-sky-200">
-                Pick Relic Below
+                Pick Relic
               </span>
-            </div>
+            </button>
           ) : (
             <div className="group relative">
               <span className="organic-tag pointer-events-none absolute top-1 left-1 z-30 px-1.5 py-[1px] bg-sky-950/95 font-mono text-[8.5px] font-bold text-sky-200 shadow">
@@ -548,87 +559,114 @@ export const GalleryView: React.FC<GalleryViewProps> = ({
         </div>
       </section>
 
-      {/* 12 Tier-Unlocked Power Relics Showcase */}
-      <section className="iron-panel p-4 sm:p-5 space-y-3.5">
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <div>
-            <h2 className="font-[var(--font-display)] text-base sm:text-lg font-bold text-sky-200 tracking-wide flex items-center gap-2">
-              <Sparkles className="w-4 h-4 text-sky-300" />
+      {/* Collapsible 12 Tier-Unlocked Power Relics Drawer (Collapsed by default so Card Library stays prominent!) */}
+      <section className="iron-panel overflow-hidden">
+        <button
+          type="button"
+          onClick={() => {
+            sound.select();
+            setRelicsExpanded((prev) => !prev);
+          }}
+          aria-expanded={relicsExpanded}
+          className="w-full px-4 sm:px-5 py-3 flex flex-wrap items-center justify-between gap-2 text-left hover:bg-[#1e1610]/70 transition-colors cursor-pointer"
+        >
+          <div className="flex flex-wrap items-center gap-2.5">
+            <span className="inline-flex items-center gap-2 font-[var(--font-display)] text-sm sm:text-base font-bold text-sky-200 tracking-wide">
+              <Sparkles className="w-4 h-4 text-sky-300 shrink-0" />
               <span>
                 Campaign Power Relics ({unlockedPowerSet.size}/{POWER_CARDS.length} Unlocked)
               </span>
-            </h2>
+            </span>
+            {equippedPowerDef && (
+              <span className="organic-tag px-2.5 py-0.5 bg-sky-950/95 font-mono text-[11px] font-bold text-sky-200">
+                Equipped: {equippedPowerDef.code} · {equippedPowerDef.name}
+              </span>
+            )}
+          </div>
+
+          <span className="inline-flex items-center gap-1.5 font-[var(--font-display)] text-xs font-semibold text-[#cbb89a]">
+            <span>{relicsExpanded ? 'Hide Relics' : 'Show Relics'}</span>
+            {relicsExpanded ? (
+              <ChevronUp className="w-4 h-4 text-sky-300" />
+            ) : (
+              <ChevronDown className="w-4 h-4 text-sky-300" />
+            )}
+          </span>
+        </button>
+
+        {relicsExpanded && (
+          <div className="px-4 sm:px-5 pb-4 pt-2 border-t border-[#3b2e22]/80 space-y-3">
             <p className="font-[var(--font-serif)] text-xs sm:text-sm text-[#b7a285]">
               Conquer all 5 challengers in each Campaign Tier (Tiers 1–10) to unlock un-flippable
               directional Totems for your Dedicated Relic Slot.
             </p>
-          </div>
-        </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3.5">
-          {POWER_CARDS.map((pCard) => {
-            const isUnlocked = unlockedPowerSet.has(pCard.id);
-            const isEquipped = equippedPowerDef?.id === pCard.id;
-            return (
-              <div
-                key={pCard.id}
-                className={`flex flex-col gap-1.5 ${!isUnlocked ? 'opacity-65' : ''}`}
-              >
-                <div className="relative">
-                  <GameCard
-                    cardId={pCard.id}
-                    arrows={pCard.dirs}
-                    owner={isEquipped ? 'player' : 'neutral'}
-                    size="sm"
-                    showName
-                    onClick={() => {
-                      sound.select();
-                      if (!isUnlocked) {
-                        openPreview({
-                          cardId: pCard.id,
-                          arrows: pCard.dirs,
-                          owner: 'neutral',
-                        });
-                        return;
-                      }
-                      const res = onSetDeckPowerCard(isEquipped ? null : pCard.id);
-                      if (!res.ok && res.message) showToast(res.message);
-                    }}
-                  />
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      sound.select();
-                      openPreview({
-                        cardId: pCard.id,
-                        arrows: pCard.dirs,
-                        owner: isEquipped ? 'player' : 'neutral',
-                      });
-                    }}
-                    aria-label={`Inspect ${pCard.name}`}
-                    className="organic-seal absolute top-1.5 left-1.5 z-20 w-5 h-5 bg-[#141c24]/95 text-sky-200 flex items-center justify-center cursor-pointer"
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3.5">
+              {POWER_CARDS.map((pCard) => {
+                const isUnlocked = unlockedPowerSet.has(pCard.id);
+                const isEquipped = equippedPowerDef?.id === pCard.id;
+                return (
+                  <div
+                    key={pCard.id}
+                    className={`flex flex-col gap-1.5 ${!isUnlocked ? 'opacity-65' : ''}`}
                   >
-                    <Eye className="w-3 h-3" />
-                  </button>
-                  {isEquipped ? (
-                    <span className="organic-tag pointer-events-none absolute top-1.5 right-1.5 z-20 px-2 py-0.5 bg-sky-400 text-[#071521] text-[9px] font-[var(--font-display)] font-bold">
-                      Equipped
-                    </span>
-                  ) : !isUnlocked ? (
-                    <span className="organic-tag pointer-events-none absolute top-1.5 right-1.5 z-20 px-2 py-0.5 bg-[#1a130d]/95 text-[#cbb89a] text-[9px] font-mono font-bold flex items-center gap-0.5">
-                      <Lock className="w-2.5 h-2.5 text-amber-400" />
-                      <span>T{pCard.unlockTier}</span>
-                    </span>
-                  ) : null}
-                </div>
-                <div className="text-center text-[10px] font-mono text-sky-200 truncate px-0.5">
-                  {pCard.shortTag}
-                </div>
-              </div>
-            );
-          })}
-        </div>
+                    <div className="relative">
+                      <GameCard
+                        cardId={pCard.id}
+                        arrows={pCard.dirs}
+                        owner={isEquipped ? 'player' : 'neutral'}
+                        size="sm"
+                        showName
+                        onClick={() => {
+                          sound.select();
+                          if (!isUnlocked) {
+                            openPreview({
+                              cardId: pCard.id,
+                              arrows: pCard.dirs,
+                              owner: 'neutral',
+                            });
+                            return;
+                          }
+                          const res = onSetDeckPowerCard(isEquipped ? null : pCard.id);
+                          if (!res.ok && res.message) showToast(res.message);
+                        }}
+                      />
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          sound.select();
+                          openPreview({
+                            cardId: pCard.id,
+                            arrows: pCard.dirs,
+                            owner: isEquipped ? 'player' : 'neutral',
+                          });
+                        }}
+                        aria-label={`Inspect ${pCard.name}`}
+                        className="organic-seal absolute top-1.5 left-1.5 z-20 w-5 h-5 bg-[#141c24]/95 text-sky-200 flex items-center justify-center cursor-pointer"
+                      >
+                        <Eye className="w-3 h-3" />
+                      </button>
+                      {isEquipped ? (
+                        <span className="organic-tag pointer-events-none absolute top-1.5 right-1.5 z-20 px-2 py-0.5 bg-sky-400 text-[#071521] text-[9px] font-[var(--font-display)] font-bold">
+                          Equipped
+                        </span>
+                      ) : !isUnlocked ? (
+                        <span className="organic-tag pointer-events-none absolute top-1.5 right-1.5 z-20 px-2 py-0.5 bg-[#1a130d]/95 text-[#cbb89a] text-[9px] font-mono font-bold flex items-center gap-0.5">
+                          <Lock className="w-2.5 h-2.5 text-amber-400" />
+                          <span>T{pCard.unlockTier}</span>
+                        </span>
+                      ) : null}
+                    </div>
+                    <div className="text-center text-[10px] font-mono text-sky-200 truncate px-0.5">
+                      {pCard.shortTag}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
       </section>
 
       {/* Interactive Filter & Search Controls */}

@@ -7,18 +7,18 @@ import {
 import { LADDER_TIERS } from './ladder';
 
 const RELIC_IMG = {
-  lantern: './src/assets/images/card_lantern_wisp_1795362407904.jpg',
-  briar: './src/assets/images/card_briar_sprite_1795363117548.jpg',
-  tide: './src/assets/images/card_aether_leviathan_1795362407681.jpg',
-  cinder: './src/assets/images/card_crimson_phoenix_1795362407139.jpg',
-  gale: './src/assets/images/card_tempest_djinn_1795363117056.jpg',
-  aegis: './src/assets/images/card_stone_behemoth_1795362407794.jpg',
-  gloom: './src/assets/images/card_wailing_banshee.jpg',
-  glacial: './src/assets/images/card_glacial_empress_1795363118839.jpg',
-  sunspire: './src/assets/images/card_radiant_bishop.jpg',
-  voidrift: './src/assets/images/card_void_behemoth_1795419233239.jpg',
-  worldtree: './src/assets/images/card_worldtree_sovereign.jpg',
-  crown: './src/assets/images/card_eternal_overlord.jpg',
+  lantern: './src/assets/images/relic_lantern_totem.jpg',
+  briar: './src/assets/images/relic_briar_horn.jpg',
+  tide: './src/assets/images/relic_tide_obelisk.jpg',
+  cinder: './src/assets/images/relic_cinder_brazier.jpg',
+  gale: './src/assets/images/relic_gale_lance.jpg',
+  aegis: './src/assets/images/relic_iron_citadel.jpg',
+  gloom: './src/assets/images/relic_gloom_effigy.jpg',
+  glacial: './src/assets/images/relic_glacial_spire.jpg',
+  sunspire: './src/assets/images/relic_sunspire_shrine.jpg',
+  voidrift: './src/assets/images/relic_void_pylon.jpg',
+  worldtree: './src/assets/images/relic_worldtree_heart.jpg',
+  crown: './src/assets/images/relic_sovereign_crown.jpg',
 };
 
 const ORTHO_1: PowerTargetOffset[] = [
@@ -69,7 +69,6 @@ export const POWER_CARDS: PowerCardDef[] = [
     allyDelta: { power: 1, pDef: 1, mDef: 1 },
     rivalDelta: { power: 0, pDef: 0, mDef: 0 },
     image: RELIC_IMG.lantern,
-    artFilter: 'hue-rotate(18deg) saturate(1.28) contrast(1.08)',
     accentGradient: 'from-amber-950 via-yellow-950 to-slate-950',
   },
   {
@@ -93,7 +92,6 @@ export const POWER_CARDS: PowerCardDef[] = [
     allyDelta: { power: 2, pDef: 1, mDef: 0 },
     rivalDelta: { power: 0, pDef: 0, mDef: 0 },
     image: RELIC_IMG.briar,
-    artFilter: 'hue-rotate(-14deg) saturate(1.22) contrast(1.08)',
     accentGradient: 'from-emerald-950 via-green-950 to-slate-950',
   },
   {
@@ -114,7 +112,6 @@ export const POWER_CARDS: PowerCardDef[] = [
     allyDelta: { power: 0, pDef: 1, mDef: 2 },
     rivalDelta: { power: -1, pDef: 0, mDef: 0 },
     image: RELIC_IMG.tide,
-    artFilter: 'hue-rotate(12deg) saturate(1.25) contrast(1.1)',
     accentGradient: 'from-cyan-950 via-sky-950 to-slate-950',
   },
   {
@@ -135,7 +132,6 @@ export const POWER_CARDS: PowerCardDef[] = [
     allyDelta: { power: 2, pDef: 0, mDef: 0 },
     rivalDelta: { power: 0, pDef: -1, mDef: -1 },
     image: RELIC_IMG.cinder,
-    artFilter: 'hue-rotate(-10deg) saturate(1.32) contrast(1.1)',
     accentGradient: 'from-orange-950 via-rose-950 to-slate-950',
   },
   {
@@ -161,7 +157,6 @@ export const POWER_CARDS: PowerCardDef[] = [
     allyDelta: { power: 2, pDef: 0, mDef: 1 },
     rivalDelta: { power: 0, pDef: 0, mDef: 0 },
     image: RELIC_IMG.gale,
-    artFilter: 'hue-rotate(24deg) saturate(1.25) contrast(1.08)',
     accentGradient: 'from-indigo-950 via-sky-950 to-slate-950',
   },
   {
@@ -189,7 +184,6 @@ export const POWER_CARDS: PowerCardDef[] = [
     allyDelta: { power: 0, pDef: 2, mDef: 2 },
     rivalDelta: { power: 0, pDef: 0, mDef: 0 },
     image: RELIC_IMG.aegis,
-    artFilter: 'saturate(0.9) contrast(1.16) brightness(1.04)',
     accentGradient: 'from-stone-800 via-slate-900 to-slate-950',
   },
   {
@@ -210,7 +204,6 @@ export const POWER_CARDS: PowerCardDef[] = [
     allyDelta: { power: 0, pDef: 0, mDef: 0 },
     rivalDelta: { power: 0, pDef: -2, mDef: -2 },
     image: RELIC_IMG.gloom,
-    artFilter: 'hue-rotate(-22deg) saturate(1.28) contrast(1.1)',
     accentGradient: 'from-purple-950 via-violet-950 to-slate-950',
   },
   {
@@ -231,7 +224,6 @@ export const POWER_CARDS: PowerCardDef[] = [
     allyDelta: { power: 0, pDef: 2, mDef: 2 },
     rivalDelta: { power: -2, pDef: -1, mDef: 0 },
     image: RELIC_IMG.glacial,
-    artFilter: 'hue-rotate(8deg) saturate(1.2) contrast(1.12)',
     accentGradient: 'from-sky-950 via-blue-950 to-slate-950',
   },
   {
@@ -252,7 +244,6 @@ export const POWER_CARDS: PowerCardDef[] = [
     allyDelta: { power: 2, pDef: 2, mDef: 2 },
     rivalDelta: { power: 0, pDef: 0, mDef: 0 },
     image: RELIC_IMG.sunspire,
-    artFilter: 'saturate(1.26) contrast(1.08)',
     accentGradient: 'from-amber-900 via-yellow-950 to-slate-950',
   },
   {
@@ -279,7 +270,6 @@ export const POWER_CARDS: PowerCardDef[] = [
     allyDelta: { power: 2, pDef: 1, mDef: 1 },
     rivalDelta: { power: -2, pDef: -2, mDef: -2 },
     image: RELIC_IMG.voidrift,
-    artFilter: 'hue-rotate(18deg) saturate(1.3) contrast(1.12)',
     accentGradient: 'from-fuchsia-950 via-purple-950 to-slate-950',
   },
   {
@@ -313,7 +303,6 @@ export const POWER_CARDS: PowerCardDef[] = [
     allyDelta: { power: 2, pDef: 3, mDef: 3 },
     rivalDelta: { power: 0, pDef: 0, mDef: 0 },
     image: RELIC_IMG.worldtree,
-    artFilter: 'hue-rotate(-8deg) saturate(1.25) contrast(1.08)',
     accentGradient: 'from-emerald-900 via-teal-950 to-slate-950',
   },
   {
@@ -334,7 +323,6 @@ export const POWER_CARDS: PowerCardDef[] = [
     allyDelta: { power: 3, pDef: 2, mDef: 2 },
     rivalDelta: { power: -2, pDef: -2, mDef: -2 },
     image: RELIC_IMG.crown,
-    artFilter: 'hue-rotate(-6deg) saturate(1.3) contrast(1.1)',
     accentGradient: 'from-amber-900 via-red-950 to-slate-950',
   },
 ];
