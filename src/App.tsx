@@ -155,8 +155,10 @@ export default function App() {
 
       if (e.key === 'r' || e.key === 'R') {
         e.preventDefault();
-        sound.select();
-        setRulesOpen((prev) => !prev);
+        setRulesOpen((prev) => {
+          sound.drawer(!prev);
+          return !prev;
+        });
       } else if (e.key === 'm' || e.key === 'M') {
         e.preventDefault();
         toggleSound();
@@ -192,7 +194,7 @@ export default function App() {
   );
 
   const handleNavHome = () => {
-    sound.select();
+    sound.nav();
     setOptionsMenuOpen(false);
     setMobileOptionsOpen(false);
     if (activeTab === 'home') {
@@ -206,7 +208,7 @@ export default function App() {
   };
 
   const switchSecondaryTab = (tab: 'gallery' | 'shop') => {
-    sound.select();
+    sound.nav();
     setOptionsMenuOpen(false);
     setMobileOptionsOpen(false);
     setActiveTab(tab);
@@ -218,6 +220,7 @@ export default function App() {
   };
 
   const launchPlayFlow = (intent: PlayLaunchIntent) => {
+    sound.nav();
     setPlayIntent(intent);
     setPlayLaunchNonce((n) => n + 1);
     setBattleFlowActive(true);
@@ -235,7 +238,7 @@ export default function App() {
       <button
         type="button"
         onClick={() => {
-          sound.select();
+          sound.drawer(true);
           closeMenu();
           setRulesOpen(true);
         }}
@@ -251,7 +254,7 @@ export default function App() {
       <button
         type="button"
         onClick={() => {
-          sound.select();
+          sound.drawer(true);
           closeMenu();
           setMusicModalOpen(true);
         }}
@@ -319,7 +322,7 @@ export default function App() {
         <button
           type="button"
           onClick={() => {
-            sound.select();
+            sound.drawer(true);
             closeMenu();
             setSaveVaultOpen(true);
           }}
@@ -347,7 +350,7 @@ export default function App() {
             <button
               type="button"
               onClick={() => {
-                sound.select();
+                sound.nav();
                 if (!isMatchActive) setBattleFlowActive(false);
                 setActiveTab('home');
               }}
@@ -443,8 +446,10 @@ export default function App() {
             <button
               type="button"
               onClick={() => {
-                sound.select();
-                setOptionsMenuOpen((prev) => !prev);
+                setOptionsMenuOpen((prev) => {
+                  sound.latch(!prev);
+                  return !prev;
+                });
               }}
               aria-expanded={optionsMenuOpen}
               aria-label="Open options menu"
@@ -530,8 +535,10 @@ export default function App() {
                 <button
                   type="button"
                   onClick={() => {
-                    sound.select();
-                    setMobileOptionsOpen((prev) => !prev);
+                    setMobileOptionsOpen((prev) => {
+                      sound.latch(!prev);
+                      return !prev;
+                    });
                   }}
                   aria-expanded={mobileOptionsOpen}
                   aria-label="Open options menu"
@@ -592,7 +599,10 @@ export default function App() {
                   setBattleFlowActive(false);
                 }}
                 onGoToGallery={() => switchSecondaryTab('gallery')}
-                onOpenRules={() => setRulesOpen(true)}
+                onOpenRules={() => {
+                  sound.drawer(true);
+                  setRulesOpen(true);
+                }}
                 onToggleSound={toggleSound}
                 onToggleClickToPlace={toggleClickToPlace}
                 onMatchActiveChange={setIsMatchActive}
@@ -639,14 +649,23 @@ export default function App() {
 
         {rulesOpen && (
           <Suspense fallback={null}>
-            <RulesModal open={rulesOpen} onClose={() => setRulesOpen(false)} />
+            <RulesModal
+              open={rulesOpen}
+              onClose={() => {
+                sound.drawer(false);
+                setRulesOpen(false);
+              }}
+            />
           </Suspense>
         )}
         {musicModalOpen && (
           <Suspense fallback={null}>
             <MusicModal
               open={musicModalOpen}
-              onClose={() => setMusicModalOpen(false)}
+              onClose={() => {
+                sound.drawer(false);
+                setMusicModalOpen(false);
+              }}
               musicEnabled={musicEnabled}
               onToggleMusic={handleToggleMusic}
               musicVolume={musicVolume}
@@ -662,7 +681,10 @@ export default function App() {
           <Suspense fallback={null}>
             <SaveVaultModal
               open={saveVaultOpen}
-              onClose={() => setSaveVaultOpen(false)}
+              onClose={() => {
+                sound.drawer(false);
+                setSaveVaultOpen(false);
+              }}
               profile={profile}
               ownedUniqueCount={ownedUniqueCount}
               totalCards={totalCards}

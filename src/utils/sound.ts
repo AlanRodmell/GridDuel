@@ -4,12 +4,23 @@
 
 import { Rarity } from '../types/game';
 
-type SampleKey = 'stoneSlam' | 'bladeSlash' | 'bladeRing';
+type SampleKey =
+  | 'stoneSlam'
+  | 'bladeSlash'
+  | 'bladeRing'
+  | 'tokenTap'
+  | 'pageTurn'
+  | 'tomeClose'
+  | 'brassLatch';
 
 const SAMPLE_URLS: Record<SampleKey, string> = {
   stoneSlam: new URL('../assets/sfx/stone_slam.wav', import.meta.url).href,
   bladeSlash: new URL('../assets/sfx/blade_slash.wav', import.meta.url).href,
   bladeRing: new URL('../assets/sfx/blade_ring.wav', import.meta.url).href,
+  tokenTap: new URL('../assets/sfx/token_tap.wav', import.meta.url).href,
+  pageTurn: new URL('../assets/sfx/page_turn.wav', import.meta.url).href,
+  tomeClose: new URL('../assets/sfx/tome_close.wav', import.meta.url).href,
+  brassLatch: new URL('../assets/sfx/brass_latch.wav', import.meta.url).href,
 };
 
 class SoundEngine {
@@ -24,6 +35,7 @@ class SoundEngine {
   private sampleBuffers: Partial<Record<SampleKey, AudioBuffer>> = {};
   private decodingSamples: Partial<Record<SampleKey, boolean>> = {};
   private lastHoverAt = 0;
+  private lastSpecialUiAt = 0;
 
   public enabled = true;
 
@@ -533,39 +545,105 @@ class SoundEngine {
   }
 
   /**
-   * Tactile cardstock slide + warm mahogany table tap when selecting a card or tab.
+   * Carved wooden / bone counter tap (`token_tap.wav`) for filters, cards, and general UI clicks.
    */
   select() {
-    const jitter = 0.97 + Math.random() * 0.06;
-    // 1. Crisp cardstock brush slide
-    this.playSculptedNoise({
-      color: 'pink',
-      filterType: 'bandpass',
-      startFreq: 1500 * jitter,
-      endFreq: 3100 * jitter,
-      q: 2.2,
-      attack: 0.005,
-      duration: 0.055,
-      gain: 0.09,
-      wet: 0.12,
+    const nowMs = typeof performance !== 'undefined' ? performance.now() : Date.now();
+    if (nowMs - this.lastSpecialUiAt < 40) return;
+
+    const jitter = 0.96 + Math.random() * 0.09;
+    const played = this.playSample('tokenTap', {
+      gain: 0.56,
+      playbackRate: jitter,
+      wet: 0.06,
     });
-    // 2. Damped wooden table tap body
-    this.playImpactBody({
-      startFreq: 210 * jitter,
-      endFreq: 95 * jitter,
-      duration: 0.048,
-      gain: 0.11,
+
+    if (!played) {
+      this.playSculptedNoise({
+        color: 'pink',
+        filterType: 'bandpass',
+        startFreq: 1500 * jitter,
+        endFreq: 3100 * jitter,
+        q: 2.2,
+        attack: 0.005,
+        duration: 0.055,
+        gain: 0.08,
+        wet: 0.1,
+      });
+      this.playImpactBody({
+        startFreq: 210 * jitter,
+        endFreq: 95 * jitter,
+        duration: 0.048,
+        gain: 0.1,
+        wet: 0.08,
+      });
+    }
+  }
+
+  /**
+   * Warm grimoire parchment page turn (`page_turn.wav`) for primary Left-Rail & section navigation.
+   */
+  nav() {
+    this.lastSpecialUiAt = typeof performance !== 'undefined' ? performance.now() : Date.now();
+    const jitter = 0.96 + Math.random() * 0.08;
+    const played = this.playSample('pageTurn', {
+      gain: 0.72,
+      playbackRate: 1.02 * jitter,
+      wet: 0.14,
+    });
+    if (!played) {
+      this.playSculptedNoise({
+        color: 'pink',
+        filterType: 'bandpass',
+        startFreq: 850,
+        endFreq: 2400,
+        q: 1.8,
+        attack: 0.012,
+        duration: 0.14,
+        gain: 0.12,
+        wet: 0.16,
+      });
+    }
+  }
+
+  /**
+   * Drawer & Modal open/close foley:
+   * - Open (`true`): Warm parchment unfurl (`page_turn.wav` pitched slightly deeper)
+   * - Close (`false`): Heavy leather-bound tome settle (`tome_close.wav`)
+   */
+  drawer(isOpen = true) {
+    this.lastSpecialUiAt = typeof performance !== 'undefined' ? performance.now() : Date.now();
+    const jitter = 0.97 + Math.random() * 0.06;
+    if (isOpen) {
+      const played = this.playSample('pageTurn', {
+        gain: 0.68,
+        playbackRate: 0.92 * jitter,
+        wet: 0.16,
+      });
+      if (!played) this.select();
+    } else {
+      const played = this.playSample('tomeClose', {
+        gain: 0.72,
+        playbackRate: 0.98 * jitter,
+        wet: 0.14,
+      });
+      if (!played) this.select();
+    }
+  }
+
+  /**
+   * Mechanical brass & wrought-iron clasp click (`brass_latch.wav`) for equipping cards/relics,
+   * battlefield scale locks, and the cogwheel options latch.
+   */
+  latch(engaged = true) {
+    this.lastSpecialUiAt = typeof performance !== 'undefined' ? performance.now() : Date.now();
+    const jitter = 0.97 + Math.random() * 0.06;
+    const played = this.playSample('brassLatch', {
+      gain: 0.62,
+      playbackRate: (engaged ? 1.03 : 0.92) * jitter,
       wet: 0.1,
     });
-    // 3. Subtle warm crystal click
-    this.playWarmVoice({
-      freq: 587.33 * jitter,
-      duration: 0.065,
-      attack: 0.003,
-      gain: 0.035,
-      timbre: 'harp',
-      wet: 0.2,
-    });
+    if (!played) this.select();
   }
 
   /**

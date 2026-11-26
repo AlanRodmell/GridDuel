@@ -169,10 +169,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
           <button
             type="button"
-            onClick={() => {
-              sound.select();
-              onStartFlow('arena');
-            }}
+            onClick={() => onStartFlow('arena')}
             className="group brass-panel riveted-frame p-6 text-left flex flex-col justify-between gap-5 transition-transform duration-200 hover:-translate-y-1 cursor-pointer"
           >
             <div className="space-y-3.5">
@@ -204,10 +201,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
 
           <button
             type="button"
-            onClick={() => {
-              sound.select();
-              onStartFlow('quick');
-            }}
+            onClick={() => onStartFlow('quick')}
             className="group iron-panel riveted-frame p-6 text-left flex flex-col justify-between gap-5 transition-transform duration-200 hover:-translate-y-1 cursor-pointer"
           >
             <div className="space-y-3.5">

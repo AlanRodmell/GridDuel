@@ -564,8 +564,10 @@ export const GalleryView: React.FC<GalleryViewProps> = ({
         <button
           type="button"
           onClick={() => {
-            sound.select();
-            setRelicsExpanded((prev) => !prev);
+            setRelicsExpanded((prev) => {
+              sound.drawer(!prev);
+              return !prev;
+            });
           }}
           aria-expanded={relicsExpanded}
           className="w-full px-4 sm:px-5 py-3 flex flex-wrap items-center justify-between gap-2 text-left hover:bg-[#1e1610]/70 transition-colors cursor-pointer"
@@ -850,7 +852,7 @@ export const GalleryView: React.FC<GalleryViewProps> = ({
                     showName
                     size="md"
                     onClick={() => {
-                      sound.select();
+                      sound.drawer(true);
                       setInspectedId(card.id);
                       setSelectedCopyUid(bestCopy?.uid ?? null);
                     }}
@@ -885,7 +887,7 @@ export const GalleryView: React.FC<GalleryViewProps> = ({
                     <button
                       type="button"
                       onClick={() => {
-                        sound.select();
+                        sound.drawer(true);
                         setInspectedId(card.id);
                         setSelectedCopyUid(bestCopy?.uid ?? null);
                       }}
@@ -908,7 +910,10 @@ export const GalleryView: React.FC<GalleryViewProps> = ({
           role="dialog"
           aria-modal="true"
           aria-labelledby="inspector-title"
-          onClick={() => setInspectedId(null)}
+          onClick={() => {
+            sound.drawer(false);
+            setInspectedId(null);
+          }}
         >
           <div
             className="w-full max-w-4xl max-h-[94dvh] flex flex-col rounded-t-[6px] sm:rounded-[5px] brass-panel riveted-frame shadow-[0_32px_90px_rgba(0,0,0,0.92)] overflow-hidden"
@@ -941,7 +946,10 @@ export const GalleryView: React.FC<GalleryViewProps> = ({
 
               <button
                 type="button"
-                onClick={() => setInspectedId(null)}
+                onClick={() => {
+                  sound.drawer(false);
+                  setInspectedId(null);
+                }}
                 aria-label="Close card details"
                 className="iron-btn min-h-[42px] min-w-[42px] flex items-center justify-center rounded-[3px] cursor-pointer"
               >

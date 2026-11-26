@@ -148,7 +148,7 @@ export const ArenaSetupFlow: React.FC<ArenaSetupFlowProps> = ({
   const currentStepIdx = stepOrder.findIndex((s) => s.id === setupStep);
 
   const handleStepBack = () => {
-    sound.select();
+    sound.drawer(false);
     if (setupStep === 'deck') {
       setSetupStep('details');
     } else {
@@ -221,7 +221,7 @@ export const ArenaSetupFlow: React.FC<ArenaSetupFlowProps> = ({
                     disabled={!canJump}
                     onClick={() => {
                       if (!canJump) return;
-                      sound.select();
+                      sound.nav();
                       setSetupStep(step.id);
                     }}
                     className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-[3px] font-[var(--font-display)] text-xs tracking-wide transition-colors ${

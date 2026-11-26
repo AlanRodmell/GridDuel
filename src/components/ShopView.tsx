@@ -401,7 +401,7 @@ export const ShopView: React.FC<ShopViewProps> = ({
           <button
             type="button"
             onClick={() => {
-              sound.select();
+              sound.nav();
               setSectionTab('market');
             }}
             className={`min-h-[40px] px-4 py-1.5 rounded-[2px] font-[var(--font-display)] text-xs sm:text-sm font-semibold flex items-center gap-2 transition-colors cursor-pointer ${
@@ -416,7 +416,7 @@ export const ShopView: React.FC<ShopViewProps> = ({
           <button
             type="button"
             onClick={() => {
-              sound.select();
+              sound.nav();
               setSectionTab('runeforge');
             }}
             className={`min-h-[40px] px-4 py-1.5 rounded-[2px] font-[var(--font-display)] text-xs sm:text-sm font-semibold flex items-center gap-2 transition-colors cursor-pointer ${

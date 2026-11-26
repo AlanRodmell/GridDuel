@@ -19,6 +19,7 @@ import {
 } from '../data/cards';
 import { POWER_CARD_MAP } from '../data/powerCards';
 import { CARD_RARITY_THEMES } from '../styles/cardThemes';
+import { sound } from '../utils/sound';
 import { BiomeIcon, CardTraitPills } from './BiomeBadge';
 import { GameCard } from './GameCard';
 
@@ -30,10 +31,12 @@ export const CardPreviewProvider: React.FC<{ children: React.ReactNode }> = ({
 
   const openPreview = useCallback((data: CardPreviewData) => {
     openedAtRef.current = Date.now();
+    sound.drawer(true);
     setPreview(data);
   }, []);
 
   const closePreview = useCallback(() => {
+    sound.drawer(false);
     setPreview(null);
   }, []);
 

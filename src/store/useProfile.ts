@@ -429,11 +429,14 @@ export function useProfile() {
   }, []);
 
   const toggleClickToPlace = useCallback(() => {
-    setProfile((prev) => ({
-      ...prev,
-      clickToPlace: !prev.clickToPlace,
-    }));
-    sound.select();
+    setProfile((prev) => {
+      const next = !prev.clickToPlace;
+      sound.latch(next);
+      return {
+        ...prev,
+        clickToPlace: next,
+      };
+    });
   }, []);
 
   const setBoardScale = useCallback((scale: BoardScale) => {
@@ -442,7 +445,7 @@ export function useProfile() {
       if (prev.boardScale === scale) return prev;
       return { ...prev, boardScale: scale };
     });
-    sound.select();
+    sound.latch(true);
   }, []);
 
   const selectDeckSlot = useCallback((index: number) => {
@@ -450,6 +453,7 @@ export function useProfile() {
       if (index < 0 || index >= prev.decks.length) return prev;
       return { ...prev, activeDeckIndex: index };
     });
+    sound.nav();
   }, []);
 
   const createDeck = useCallback(
@@ -583,6 +587,7 @@ export function useProfile() {
         );
         return { ...prev, decks: nextDecks };
       });
+      if (result.ok) sound.latch(powerCardId !== null);
       return result;
     },
     []
@@ -620,6 +625,7 @@ export function useProfile() {
           );
           return { ...prev, decks: nextDecks };
         });
+        if (powerRes.ok) sound.latch(true);
         return powerRes;
       }
 
@@ -688,6 +694,7 @@ export function useProfile() {
         );
         return { ...prev, decks: nextDecks };
       });
+      if (result.ok) sound.latch(true);
       return result;
     },
     []
