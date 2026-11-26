@@ -1548,7 +1548,7 @@ export const ArenaView: React.FC<ArenaViewProps> = ({
                             : 'border-[#d8c098]/[0.11] cursor-default'
                         }`}
                       >
-                        {biomeMeta && (
+                        {biomeMeta ? (
                           <>
                             <img
                               src={biomeMeta.tileImage}
@@ -1567,6 +1567,26 @@ export const ArenaView: React.FC<ArenaViewProps> = ({
                             <div
                               style={{ background: biomeMeta.tileBlendGlow }}
                               className="battlefield-biome-glow pointer-events-none absolute inset-0"
+                            />
+                          </>
+                        ) : (
+                          <>
+                            <div
+                              aria-hidden="true"
+                              style={{
+                                backgroundImage: `url(${NEUTRAL_TERRAIN_IMAGE})`,
+                                backgroundSize: '215% 215%',
+                                backgroundPosition: `${20 + ((cIdx * 29 + rIdx * 17) % 60)}% ${
+                                  18 + ((rIdx * 31 + cIdx * 19) % 62)
+                                }%`,
+                              }}
+                              className={`pointer-events-none absolute inset-0 z-0 opacity-95 transition-transform duration-200 ${
+                                isDropTarget ? 'scale-[1.05]' : 'group-hover:scale-[1.03]'
+                              }`}
+                            />
+                            <div
+                              aria-hidden="true"
+                              className="pointer-events-none absolute inset-0 z-[1] bg-[radial-gradient(ellipse_at_30%_22%,rgba(218,198,156,0.14),transparent_62%)]"
                             />
                           </>
                         )}
