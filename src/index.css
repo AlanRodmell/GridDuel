@@ -953,3 +953,269 @@ select.organic-control {
     animation: none !important;
   }
 }
+
+/* ============================================================================
+   MONOLITH BATTLEFIELD — carved arena surface and readable biome inlays
+   ============================================================================ */
+.arena-monolith-frame {
+  isolation: isolate;
+  filter: drop-shadow(0 20px 28px rgba(0, 0, 0, .68));
+}
+
+.arena-monolith-bed {
+  isolation: isolate;
+  background:
+    radial-gradient(ellipse at 50% 48%, rgba(91, 83, 66, .2), transparent 72%),
+    linear-gradient(145deg, #34332d 0%, #171815 42%, #292820 100%);
+  border: 1px solid rgba(199, 174, 126, .42);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 239, 194, .2),
+    inset 0 0 0 3px rgba(0, 0, 0, .76),
+    inset 0 0 34px rgba(0, 0, 0, .94),
+    0 8px 18px rgba(0, 0, 0, .72);
+}
+
+.arena-monolith-bed::before {
+  content: "";
+  pointer-events: none;
+  position: absolute;
+  inset: 4px;
+  z-index: 2;
+  border: 1px solid rgba(201, 177, 130, .17);
+  box-shadow: inset 0 0 18px rgba(0, 0, 0, .65);
+}
+
+.battlefield-grid {
+  padding: 3px;
+  background:
+    linear-gradient(135deg, rgba(224, 207, 166, .18), transparent 22%, transparent 78%, rgba(224, 207, 166, .12)),
+    #0c0d0c;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, .95), 0 0 0 2px rgba(177, 153, 108, .24);
+}
+
+.battlefield-slab {
+  isolation: isolate;
+  border: 1px solid rgba(202, 190, 157, .2) !important;
+  background:
+    radial-gradient(ellipse at 35% 24%, rgba(164, 154, 126, .18), transparent 58%),
+    linear-gradient(145deg, #4a4940 0%, #272923 45%, #171a17 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 245, 215, .2),
+    inset 1px 0 0 rgba(255, 255, 255, .055),
+    inset 0 -5px 9px rgba(0, 0, 0, .55),
+    0 2px 3px rgba(0, 0, 0, .8);
+  transform: translateZ(0);
+}
+
+.battlefield-slab::before {
+  content: "";
+  pointer-events: none;
+  position: absolute;
+  inset: 3px;
+  z-index: 3;
+  border: 1px solid rgba(220, 205, 166, .12);
+  box-shadow: inset 0 0 12px rgba(0, 0, 0, .55);
+  clip-path: inherit;
+}
+
+.battlefield-slab::after {
+  content: "";
+  pointer-events: none;
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  background:
+    linear-gradient(135deg, rgba(255, 246, 213, .11), transparent 25%, transparent 72%, rgba(0, 0, 0, .28)),
+    repeating-linear-gradient(118deg, transparent 0 21px, rgba(226, 216, 190, .018) 22px, transparent 23px 39px);
+  mix-blend-mode: screen;
+}
+
+.battlefield-neutral-slab {
+  background-image:
+    radial-gradient(ellipse at 30% 20%, rgba(175, 165, 138, .2), transparent 50%),
+    radial-gradient(ellipse at 78% 82%, rgba(0, 0, 0, .42), transparent 58%),
+    linear-gradient(145deg, #555348 0%, #33342f 43%, #1c201d 100%);
+}
+
+.battlefield-biome-art {
+  z-index: 0;
+  filter: saturate(1.18) contrast(1.12) brightness(.96) !important;
+  transform: scale(1.025);
+}
+
+.battlefield-slab:hover .battlefield-biome-art {
+  transform: scale(1.09);
+}
+
+.battlefield-biome-glow {
+  z-index: 1;
+  opacity: .9;
+  mix-blend-mode: screen;
+}
+
+.battlefield-biome-water {
+  box-shadow: inset 0 0 18px rgba(35, 177, 225, .2), inset 0 0 0 1px rgba(107, 207, 237, .34), 0 2px 3px rgba(0,0,0,.8);
+}
+.battlefield-biome-marsh {
+  box-shadow: inset 0 0 18px rgba(126, 164, 55, .2), inset 0 0 0 1px rgba(174, 198, 101, .3), 0 2px 3px rgba(0,0,0,.8);
+}
+.battlefield-biome-volcanic {
+  box-shadow: inset 0 0 20px rgba(238, 83, 25, .24), inset 0 0 0 1px rgba(255, 157, 78, .36), 0 2px 3px rgba(0,0,0,.8);
+}
+.battlefield-biome-hallowed {
+  box-shadow: inset 0 0 20px rgba(239, 205, 112, .2), inset 0 0 0 1px rgba(255, 230, 160, .4), 0 2px 3px rgba(0,0,0,.8);
+}
+.battlefield-biome-shadow {
+  box-shadow: inset 0 0 22px rgba(138, 67, 189, .24), inset 0 0 0 1px rgba(181, 126, 221, .36), 0 2px 3px rgba(0,0,0,.8);
+}
+.battlefield-biome-highland {
+  box-shadow: inset 0 0 18px rgba(190, 159, 104, .18), inset 0 0 0 1px rgba(210, 190, 145, .34), 0 2px 3px rgba(0,0,0,.8);
+}
+
+/* Ambient arena lighting: restrained movement, with the card art kept above it. */
+.arena-atmosphere {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.arena-atmosphere-glow {
+  z-index: 3;
+  opacity: .42;
+  background:
+    radial-gradient(ellipse at 18% 8%, rgba(210, 166, 91, .16), transparent 34%),
+    radial-gradient(ellipse at 82% 94%, rgba(71, 104, 119, .16), transparent 38%),
+    radial-gradient(ellipse at 50% 50%, transparent 44%, rgba(0, 0, 0, .34) 100%);
+  animation: arena-light-breathe 11s ease-in-out infinite alternate;
+}
+.arena-atmosphere-dust {
+  z-index: 4;
+  opacity: .16;
+  background-image:
+    radial-gradient(circle, rgba(236, 211, 155, .75) 0 1px, transparent 1.6px),
+    radial-gradient(circle, rgba(178, 193, 191, .55) 0 1px, transparent 1.7px);
+  background-size: 83px 97px, 131px 149px;
+  background-position: 12px 8px, 48px 36px;
+  animation: arena-dust-drift 32s linear infinite;
+}
+.arena-atmosphere-edge {
+  z-index: 5;
+  box-shadow: inset 0 0 28px rgba(0, 0, 0, .46), inset 0 0 3px rgba(231, 202, 143, .14);
+}
+
+/* Placed cards sit in a shallow, biome-coloured stone recess. */
+.battlefield-occupied-stage {
+  isolation: isolate;
+  filter: drop-shadow(0 3px 4px rgba(0, 0, 0, .72));
+}
+.battlefield-occupied-stage::before,
+.battlefield-occupied-stage::after {
+  content: "";
+  position: absolute;
+  pointer-events: none;
+  z-index: 0;
+}
+.battlefield-occupied-stage::before {
+  inset: -3px;
+  border: 1px solid rgba(210, 190, 148, .32);
+  background: linear-gradient(145deg, rgba(222, 205, 164, .14), rgba(7, 8, 7, .82) 52%, rgba(163, 133, 83, .12));
+  box-shadow: inset 0 1px 2px rgba(255, 244, 210, .18), 0 0 0 2px rgba(0, 0, 0, .56);
+}
+.battlefield-occupied-stage::after {
+  inset: -8px;
+  opacity: .48;
+  background: radial-gradient(ellipse, rgba(186, 151, 92, .2), transparent 72%);
+}
+.battlefield-occupied-water::after { background: radial-gradient(ellipse, rgba(50, 173, 220, .34), transparent 72%); }
+.battlefield-occupied-marsh::after { background: radial-gradient(ellipse, rgba(143, 173, 72, .28), transparent 72%); }
+.battlefield-occupied-volcanic::after { background: radial-gradient(ellipse, rgba(244, 91, 31, .34), transparent 72%); }
+.battlefield-occupied-hallowed::after { background: radial-gradient(ellipse, rgba(241, 211, 128, .34), transparent 72%); }
+.battlefield-occupied-shadow::after { background: radial-gradient(ellipse, rgba(151, 86, 205, .34), transparent 72%); }
+.battlefield-occupied-highland::after { background: radial-gradient(ellipse, rgba(190, 158, 104, .26), transparent 72%); }
+
+@keyframes arena-light-breathe {
+  from { opacity: .28; }
+  to { opacity: .52; }
+}
+@keyframes arena-dust-drift {
+  from { background-position: 12px 8px, 48px 36px; }
+  to { background-position: 96px -89px, -83px 185px; }
+}
+@keyframes biome-water-caustics {
+  0%, 100% { opacity: .48; background-position: 0% 0%; }
+  50% { opacity: .78; background-position: 100% 65%; }
+}
+@keyframes biome-volcanic-pulse {
+  0%, 100% { opacity: .58; }
+  50% { opacity: .9; }
+}
+@keyframes biome-mist-drift {
+  0%, 100% { opacity: .34; background-position: 0% 50%; }
+  50% { opacity: .62; background-position: 100% 50%; }
+}
+@keyframes biome-hallowed-glint {
+  0%, 72%, 100% { opacity: .42; }
+  82% { opacity: .82; }
+}
+@keyframes biome-shadow-breathe {
+  0%, 100% { opacity: .46; }
+  50% { opacity: .76; }
+}
+@keyframes biome-highland-wind {
+  from { background-position: 0% 50%; opacity: .3; }
+  to { background-position: 100% 50%; opacity: .58; }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .battlefield-biome-volcanic::after {
+    background-image: radial-gradient(circle at 28% 72%, rgba(255, 133, 52, .2), transparent 35%), linear-gradient(135deg, rgba(255, 224, 178, .12), transparent 38%);
+    animation: biome-volcanic-pulse 4.8s ease-in-out infinite;
+  }
+  .battlefield-biome-water::after {
+    background-image: linear-gradient(135deg, rgba(196, 239, 255, .2), transparent 34%, rgba(24, 137, 196, .18));
+    background-size: 180% 180%;
+    animation: biome-water-caustics 8s ease-in-out infinite;
+  }
+  .battlefield-biome-marsh::after {
+    background-image: linear-gradient(110deg, transparent 15%, rgba(180, 205, 115, .12) 48%, transparent 78%);
+    background-size: 220% 100%;
+    animation: biome-mist-drift 12s ease-in-out infinite alternate;
+  }
+  .battlefield-biome-hallowed::after {
+    background-image: linear-gradient(115deg, transparent 30%, rgba(255, 240, 185, .24) 49%, transparent 66%);
+    background-size: 240% 100%;
+    animation: biome-hallowed-glint 9s ease-in-out infinite;
+  }
+  .battlefield-biome-shadow::after {
+    background-image: radial-gradient(ellipse at 50% 50%, rgba(153, 86, 205, .22), transparent 72%);
+    animation: biome-shadow-breathe 7s ease-in-out infinite;
+  }
+  .battlefield-biome-highland::after {
+    background-image: linear-gradient(105deg, transparent 15%, rgba(224, 204, 162, .14) 52%, transparent 84%);
+    background-size: 220% 100%;
+    animation: biome-highland-wind 14s ease-in-out infinite alternate;
+  }
+  .battlefield-occupied-volcanic::after { animation: biome-volcanic-pulse 4.8s ease-in-out infinite; }
+  .battlefield-occupied-water::after { animation: biome-water-caustics 8s ease-in-out infinite; }
+  .battlefield-occupied-marsh::after { animation: biome-mist-drift 12s ease-in-out infinite alternate; }
+  .battlefield-occupied-hallowed::after { animation: biome-hallowed-glint 9s ease-in-out infinite; }
+  .battlefield-occupied-shadow::after { animation: biome-shadow-breathe 7s ease-in-out infinite; }
+  .battlefield-occupied-highland::after { animation: biome-highland-wind 14s ease-in-out infinite alternate; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .arena-atmosphere-glow,
+  .arena-atmosphere-dust,
+  .battlefield-biome-water::after,
+  .battlefield-biome-marsh::after,
+  .battlefield-biome-volcanic::after,
+  .battlefield-biome-hallowed::after,
+  .battlefield-biome-shadow::after,
+  .battlefield-biome-highland::after,
+  .battlefield-occupied-volcanic::after,
+  .battlefield-occupied-water::after,
+  .battlefield-occupied-marsh::after,
+  .battlefield-occupied-hallowed::after,
+  .battlefield-occupied-shadow::after,
+  .battlefield-occupied-highland::after {
+    animation: none !important;
+  }
+}

@@ -74,7 +74,7 @@ import { ArenaSetupFlow, MatchMode, SetupStep } from './arena/ArenaSetupFlow';
 import { CardSlamFlare } from './arena/CardSlamFlare';
 import { MatchSpoilsModal } from './arena/MatchSpoilsModal';
 import { useBoardDrag } from './arena/useBoardDrag';
-import { BattlefieldSiegeOverlay } from './BattlefieldChrome';
+import { BattlefieldMonolithFrame } from './BattlefieldChrome';
 import { BiomeIcon, CardTraitPills } from './BiomeBadge';
 import { GameCard } from './GameCard';
 import { PlayLaunchIntent } from './HomeView';
@@ -1345,13 +1345,13 @@ export const ArenaView: React.FC<ArenaViewProps> = ({
           )}
 
           <div
-            className={`relative ${boardFitClass} p-1.5 sm:p-2 lg:p-3 ${
+            className={`arena-monolith-frame relative ${boardFitClass} p-1.5 sm:p-2 lg:p-3 ${
               boardShakeRarity ? `animate-board-shake-${boardShakeRarity}` : ''
             }`}
           >
-            <BattlefieldSiegeOverlay />
+            <BattlefieldMonolithFrame />
 
-            <div className="relative bg-[#120e0a] p-1 sm:p-1.5 lg:p-2 shadow-[0_26px_64px_rgba(0,0,0,0.88),inset_0_0_24px_rgba(0,0,0,0.85)]">
+            <div className="arena-monolith-bed relative p-1 sm:p-1.5 lg:p-2">
               <div
                 aria-hidden="true"
                 className="pointer-events-none absolute inset-0 overflow-hidden"
@@ -1365,11 +1365,14 @@ export const ArenaView: React.FC<ArenaViewProps> = ({
                   className="absolute inset-0 opacity-82 brightness-[0.68] contrast-[1.08]"
                 />
                 <div className="absolute inset-0 bg-[radial-gradient(ellipse_90%_90%_at_50%_50%,rgba(12,9,6,0.06)_0%,rgba(9,7,5,0.62)_100%)]" />
+                <div className="arena-atmosphere arena-atmosphere-glow" />
+                <div className="arena-atmosphere arena-atmosphere-dust" />
+                <div className="arena-atmosphere arena-atmosphere-edge" />
               </div>
 
               <div
                 ref={boardGridRef}
-                className={`relative z-10 grid ${boardGridColsClass} gap-1 sm:gap-1.5 lg:gap-2`}
+                className={`battlefield-grid relative z-10 grid ${boardGridColsClass} gap-1 sm:gap-1.5 lg:gap-2`}
               >
                 {board.map((row, rIdx) =>
                   row.map((cell, cIdx) => {
@@ -1414,9 +1417,11 @@ export const ArenaView: React.FC<ArenaViewProps> = ({
                               );
                             }
                           }}
-                          className={`relative aspect-[5/7] transition-transform ${
-                            cellFlare ? 'z-30' : ''
-                          } ${
+                          className={`battlefield-occupied-stage relative aspect-[5/7] transition-transform ${
+                            biomeMeta
+                              ? `battlefield-occupied-${biomeMeta.id}`
+                              : 'battlefield-occupied-neutral'
+                          } ${cellFlare ? 'z-30' : ''} ${
                             isRelicAuraTarget
                               ? 'ring-2 ring-sky-300 shadow-[0_0_20px_rgba(56,189,248,0.55)] z-20 scale-[1.02]'
                               : ''
@@ -1529,7 +1534,9 @@ export const ArenaView: React.FC<ArenaViewProps> = ({
                             ? `${biomeMeta.name} tile at row ${rIdx + 1}, column ${cIdx + 1}`
                             : `Stone ground tile at row ${rIdx + 1}, column ${cIdx + 1}`
                         }
-                        className={`battle-stone-socket group relative aspect-[5/7] border transition-all duration-150 overflow-hidden bg-transparent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 ${
+                        className={`battle-stone-socket battlefield-slab group relative aspect-[5/7] border transition-all duration-150 overflow-hidden bg-transparent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 ${
+                          biomeMeta ? `battlefield-biome-${biomeMeta.id}` : 'battlefield-neutral-slab'
+                        } ${
                           isDropTarget
                             ? 'border-[#f3c569] ring-2 ring-[#e5b353]/80 shadow-[0_0_24px_rgba(235,176,68,0.45)] scale-[1.03] cursor-pointer z-20'
                             : isRelicAuraTarget
@@ -1551,18 +1558,15 @@ export const ArenaView: React.FC<ArenaViewProps> = ({
                               draggable={false}
                               style={{
                                 filter: biomeMeta.tileImageFilter,
-                                maskImage:
-                                  'radial-gradient(ellipse 84% 86% at 50% 50%, rgba(0,0,0,1) 46%, rgba(0,0,0,0.72) 74%, rgba(0,0,0,0) 100%)',
-                                WebkitMaskImage:
-                                  'radial-gradient(ellipse 84% 86% at 50% 50%, rgba(0,0,0,1) 46%, rgba(0,0,0,0.72) 74%, rgba(0,0,0,0) 100%)',
+                                opacity: 0.96,
                               }}
-                              className={`pointer-events-none absolute -inset-[6%] w-[112%] h-[112%] object-cover select-none transition-transform duration-200 ${
+                              className={`battlefield-biome-art pointer-events-none absolute inset-0 w-full h-full object-cover select-none transition-transform duration-500 ${
                                 isDropTarget ? 'scale-[1.06]' : 'group-hover:scale-[1.04]'
                               }`}
                             />
                             <div
                               style={{ background: biomeMeta.tileBlendGlow }}
-                              className="pointer-events-none absolute inset-0"
+                              className="battlefield-biome-glow pointer-events-none absolute inset-0"
                             />
                           </>
                         )}
