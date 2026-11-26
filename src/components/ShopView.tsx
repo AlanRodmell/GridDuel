@@ -20,7 +20,6 @@ import {
   CARDS,
   CRAFTABLE_AUGMENT_MAP,
   CRAFTABLE_AUGMENTS,
-  formatArrowsCompact,
   formatTetraCode,
   getCardSellValue,
   getCardThumbUrl,
@@ -524,9 +523,7 @@ export const ShopView: React.FC<ShopViewProps> = ({
         arrowCount: rolled.arrows.length,
       });
       showToast(
-        `Forged ${card?.name ?? 'Card'}: [${code}] with ${rolled.arrows.length}▲ (${formatArrowsCompact(
-          rolled.arrows
-        )})!`
+        `Forged ${card?.name ?? 'Card'}: [${code}] with ${rolled.arrows.length}▲!`
       );
       window.setTimeout(() => {
         setJustBoughtRoll((cur) => (cur?.uid === rolled.uid ? null : cur));
@@ -1162,7 +1159,7 @@ export const ShopView: React.FC<ShopViewProps> = ({
                           {pedestalPreviewCopy
                             ? `${formatTetraCode(pedestalPreviewCopy.stats)} · ${
                                 pedestalPreviewCopy.arrows.length
-                              }▲ (${formatArrowsCompact(pedestalPreviewCopy.arrows)})`
+                              }▲`
                             : `${formatTetraCode(selectedBlueprint.stats)} · ${
                                 selectedBlueprint.arrows.length
                               }▲`}
@@ -1297,10 +1294,6 @@ export const ShopView: React.FC<ShopViewProps> = ({
                                 </span>
                               )}
                             </div>
-                          </div>
-
-                          <div className="text-[10.5px] font-mono text-[#9b896f] truncate">
-                            Arrows: {formatArrowsCompact(inst.arrows)}
                           </div>
 
                           {instRune && (
@@ -1803,8 +1796,7 @@ export const ShopView: React.FC<ShopViewProps> = ({
                         />
                         <span className="font-mono font-bold text-[#f0c76e]">
                           {formatTetraCode(result.instance.stats)} ·{' '}
-                          {result.instance.arrows.length}▲ (
-                          {formatArrowsCompact(result.instance.arrows)})
+                          {result.instance.arrows.length}▲
                         </span>
                       </div>
                     </div>

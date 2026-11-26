@@ -123,7 +123,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
         <div className="lg:col-span-6 space-y-4 text-center lg:text-left">
           <div className="war-banner-tab inline-flex items-center gap-2 pl-3.5 pr-5 py-1.5 bg-gradient-to-r from-[#3b2915] to-[#24190d] text-[#edd08e] font-[var(--font-display)] text-[11px] font-semibold uppercase tracking-[0.18em] shadow">
             <Crown className="w-3.5 h-3.5 text-[#d8a243]" />
-            <span>6×3 · 7×3 · 6×4 Tactical Biome &amp; Relic War</span>
+            <span>6×3 · 7×3 Tactical Biome &amp; Relic War</span>
           </div>
 
           <div className="space-y-2.5">
@@ -141,44 +141,26 @@ export const HomeView: React.FC<HomeViewProps> = ({
           </div>
         </div>
 
-        {/* Right Fanned Card Art Illustration Showcase (Pure Static Art · Smooth Spring Fan · Zero Tooltips) */}
+        {/* Right Fanned Card Art Illustration Showcase (Pure Static Art · No Hover Motion · Zero Tooltips) */}
         <div className="lg:col-span-6 flex items-center justify-center py-2">
-          <div className="group/fan relative w-full max-w-[500px] h-[270px] sm:h-[330px] xl:h-[360px] flex items-center justify-center">
+          <div className="relative w-full max-w-[500px] h-[270px] sm:h-[330px] xl:h-[360px] flex items-center justify-center pointer-events-none select-none">
             <div
               aria-hidden="true"
-              className="pointer-events-none absolute inset-8 rounded-full bg-gradient-to-tr from-[#c97c24]/18 via-[#8d4218]/12 to-[#d6a348]/16 blur-2xl transition-opacity duration-700 ease-out group-hover/fan:opacity-100 opacity-80"
+              className="pointer-events-none absolute inset-8 rounded-full bg-gradient-to-tr from-[#c97c24]/18 via-[#8d4218]/12 to-[#d6a348]/16 blur-2xl opacity-80"
             />
 
             {/* Left Wing Card Art */}
-            <div
-              style={{
-                transition: 'transform 700ms cubic-bezier(0.22, 1, 0.36, 1)',
-                backfaceVisibility: 'hidden',
-              }}
-              className="relative z-10 w-[145px] sm:w-[178px] xl:w-[196px] -mr-12 sm:-mr-14 transform-gpu will-change-transform -rotate-[11deg] translate-y-3 group-hover/fan:-translate-x-3 group-hover/fan:-rotate-[14deg] group-hover/fan:translate-y-1.5"
-            >
+            <div className="relative z-10 w-[145px] sm:w-[178px] xl:w-[196px] -mr-12 sm:-mr-14 -rotate-[11deg] translate-y-3">
               <HeroCardIllustration cardId="glacial-mage" />
             </div>
 
             {/* Center Sovereign Card Art */}
-            <div
-              style={{
-                transition: 'transform 700ms cubic-bezier(0.22, 1, 0.36, 1)',
-                backfaceVisibility: 'hidden',
-              }}
-              className="relative z-20 w-[170px] sm:w-[208px] xl:w-[228px] transform-gpu will-change-transform -translate-y-2 group-hover/fan:-translate-y-4 group-hover/fan:scale-[1.025]"
-            >
+            <div className="relative z-20 w-[170px] sm:w-[208px] xl:w-[228px] -translate-y-2">
               <HeroCardIllustration cardId="solar-sovereign" />
             </div>
 
             {/* Right Wing Card Art */}
-            <div
-              style={{
-                transition: 'transform 700ms cubic-bezier(0.22, 1, 0.36, 1)',
-                backfaceVisibility: 'hidden',
-              }}
-              className="relative z-10 w-[145px] sm:w-[178px] xl:w-[196px] -ml-12 sm:-ml-14 transform-gpu will-change-transform rotate-[11deg] translate-y-3 group-hover/fan:translate-x-3 group-hover/fan:rotate-[14deg] group-hover/fan:translate-y-1.5"
-            >
+            <div className="relative z-10 w-[145px] sm:w-[178px] xl:w-[196px] -ml-12 sm:-ml-14 rotate-[11deg] translate-y-3">
               <HeroCardIllustration cardId="abyssal-lich" />
             </div>
           </div>
@@ -201,7 +183,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
             </span>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {ALL_BOARD_SCALES.map((sc) => {
               const s = BOARD_SCALES[sc];
               const isSelected = sc === activeScale;

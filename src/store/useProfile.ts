@@ -39,7 +39,7 @@ import {
 import { sound } from '../utils/sound';
 
 const STORAGE_KEY = 'aether_triad_profile_v1';
-export const MAX_UNIT_CAPACITY = 10;
+export const MAX_UNIT_CAPACITY = 9;
 export const DECK_CAPACITY = BOARD_SCALES['6x3'].unitSlots; // Default 6x3 unit capacity (8)
 export const MAX_DECK_SLOTS = 9;
 

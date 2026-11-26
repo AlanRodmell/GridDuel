@@ -3,7 +3,6 @@ import {
   Award,
   BarChart3,
   Coins,
-  Compass,
   Crown,
   Flame,
   Hammer,
@@ -17,10 +16,8 @@ import {
 } from 'lucide-react';
 import { ALL_ELEMENTS, ALL_TRIBES, ELEMENT_META, TRIBE_META } from '../data/biomes';
 import {
-  ALL_ARROW_DIRS,
   CARD_MAP,
   CARDS,
-  formatArrowsCompact,
   formatTetraCode,
   getCardSellValue,
   getCardThumbUrl,
@@ -35,20 +32,16 @@ import {
   isCampaignTierCleared,
 } from '../data/powerCards';
 import { getUnitCapacityForScale } from '../store/useProfile';
-import { ArrowDir, DeckSlot, PlayerProfile, Rarity, RolledCardInstance } from '../types/game';
+import { AttackType, DeckSlot, PlayerProfile, Rarity, RolledCardInstance } from '../types/game';
 import { CardTraitPills } from './BiomeBadge';
 import { GameCard } from './GameCard';
 
-const ARROW_DIR_LABEL: Record<ArrowDir, string> = {
-  n: '↑ N',
-  ne: '↗ NE',
-  e: '→ E',
-  se: '↘ SE',
-  s: '↓ S',
-  sw: '↙ SW',
-  w: '← W',
-  nw: '↖ NW',
-};
+const ATTACK_TYPE_META: { type: AttackType; label: string }[] = [
+  { type: 'P', label: 'P · Physical' },
+  { type: 'M', label: 'M · Magical' },
+  { type: 'X', label: 'X · Flexible' },
+  { type: 'A', label: 'A · Assault' },
+];
 
 interface StatsViewProps {
   profile: PlayerProfile;
@@ -172,17 +165,14 @@ export const StatsView: React.FC<StatsViewProps> = ({ profile, activeDeck }) => 
       .map((ref) => (ref ? instanceByUid[ref] ?? null : null))
       .filter((u): u is RolledCardInstance => Boolean(u));
 
-    const dirCounts: Record<string, number> = {};
-    for (const d of ALL_ARROW_DIRS) dirCounts[d] = 0;
+    const typeCounts: Record<AttackType, number> = { P: 0, M: 0, X: 0, A: 0 };
 
     let statSum = 0;
     let arrowSum = 0;
     for (const u of units) {
       statSum += u.stats.power + u.stats.pDef + u.stats.mDef;
       arrowSum += u.arrows.length;
-      for (const d of u.arrows) {
-        dirCounts[d] = (dirCounts[d] ?? 0) + 1;
-      }
+      typeCounts[u.stats.type] = (typeCounts[u.stats.type] ?? 0) + 1;
     }
 
     return {
@@ -190,7 +180,7 @@ export const StatsView: React.FC<StatsViewProps> = ({ profile, activeDeck }) => 
       capacity: cap,
       avgStatSum: units.length > 0 ? (statSum / units.length).toFixed(1) : '0.0',
       avgArrows: units.length > 0 ? (arrowSum / units.length).toFixed(1) : '0.0',
-      dirCounts,
+      typeCounts,
     };
   }, [activeDeck.cards, activeDeck.slots, profile.boardScale, profile.inventory]);
 
@@ -507,8 +497,7 @@ export const StatsView: React.FC<StatsViewProps> = ({ profile, activeDeck }) => 
                 </div>
                 <div className="font-mono text-xs text-[#f0c76e]">
                   [{formatTetraCode(vaultMetrics.crownJewel.stats)}] ·{' '}
-                  {vaultMetrics.crownJewel.arrows.length}▲ (
-                  {formatArrowsCompact(vaultMetrics.crownJewel.arrows)})
+                  {vaultMetrics.crownJewel.arrows.length}▲
                 </div>
                 {(() => {
                   const aug = resolveCardAugment(
@@ -526,32 +515,32 @@ export const StatsView: React.FC<StatsViewProps> = ({ profile, activeDeck }) => 
             </div>
           )}
 
-          {/* Active Warband 8-Way Compass Coverage */}
+          {/* Active Warband Combat Type Composition */}
           <div className="basalt-recess p-3.5 space-y-2.5">
             <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
               <span className="font-[var(--font-display)] font-bold text-[#e8d5b3] flex items-center gap-1.5">
-                <Compass className="w-3.5 h-3.5 text-[#e2b053]" />
-                <span>{activeDeck.name} — 8-Way Arrow Spread</span>
+                <Swords className="w-3.5 h-3.5 text-[#e2b053]" />
+                <span>{activeDeck.name} — Combat Mix</span>
               </span>
               <span className="font-mono text-[11px] text-[#cbb89a]">
                 Avg {warbandAnalytics.avgStatSum} Stat · {warbandAnalytics.avgArrows}▲
               </span>
             </div>
 
-            <div className="grid grid-cols-4 gap-2">
-              {ALL_ARROW_DIRS.map((dir) => {
-                const count = warbandAnalytics.dirCounts[dir] ?? 0;
+            <div className="grid grid-cols-2 gap-2">
+              {ATTACK_TYPE_META.map(({ type, label }) => {
+                const count = warbandAnalytics.typeCounts[type] ?? 0;
                 const pct =
                   warbandAnalytics.equippedCount > 0
                     ? Math.round((count / warbandAnalytics.equippedCount) * 100)
                     : 0;
                 return (
                   <div
-                    key={dir}
+                    key={type}
                     className="p-2 bg-[#120d09] border border-[#36281a] rounded-[3px] space-y-1"
                   >
                     <div className="flex items-center justify-between font-mono text-[11px]">
-                      <span className="font-bold text-[#f0c76e]">{ARROW_DIR_LABEL[dir]}</span>
+                      <span className="font-bold text-[#f0c76e]">{label}</span>
                       <span className="text-[#cbb89a]">{count}</span>
                     </div>
                     <div className="h-1 w-full rounded-full bg-[#241b12] overflow-hidden">

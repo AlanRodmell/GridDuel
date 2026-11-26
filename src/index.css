@@ -62,9 +62,12 @@
    SPLINTERED SIEGEWORKS & OVERGROWN BRAMBLE — NON-RECTANGULAR UI PRIMITIVES
    ============================================================================ */
 
+:where(.war-rail, .iron-panel, .brass-panel, .basalt-recess, .riveted-frame, .brass-btn, .iron-btn) {
+  position: relative;
+}
+
 /* Rough-Hewn Siege Timber Post Navigation Rail (with gnarled bark & vine ragged edge) */
 .war-rail {
-  position: relative;
   background-color: #150f0a;
   background-image:
     repeating-linear-gradient(
@@ -111,7 +114,6 @@
 
 /* Splintered Siege-Timber & Chipped Slate Panel (9-slice organic contour — ZERO straight lines!) */
 .iron-panel {
-  position: relative;
   isolation: isolate;
   background: transparent !important;
   border: none !important;
@@ -135,7 +137,6 @@
 
 /* Overgrown Warlord Oak & Thorny Bramble Panel (9-slice organic wood + creeping vines) */
 .brass-panel {
-  position: relative;
   isolation: isolate;
   background: transparent !important;
   border: none !important;
@@ -159,7 +160,6 @@
 
 /* Rough-Dug Sunken Earth & Chipped Stone Trench Well */
 .basalt-recess {
-  position: relative;
   isolation: isolate;
   background: transparent !important;
   border: none !important;
@@ -182,7 +182,6 @@
 
 /* Extra Creeping Bramble & Lashings Accent on Major Spotlight Frames */
 .riveted-frame {
-  position: relative;
 }
 .riveted-frame::after {
   content: "";
@@ -201,7 +200,6 @@
 
 /* Primary CTA: Hewn Oak & Burnished Bronze Shield-Plank (Notched Non-Rectangular Silhouette) */
 .brass-btn {
-  position: relative;
   border: none !important;
   border-radius: 0 !important;
   background:
@@ -259,7 +257,6 @@
 
 /* Secondary Button: Rough-Split Battlefield Timber Slat (Jagged Wood-Splinter Edges) */
 .iron-btn {
-  position: relative;
   border: none !important;
   border-radius: 0 !important;
   background:
@@ -892,8 +889,7 @@ select.organic-control {
 
 /* Dynamic Battlefield Scale Stages (5:7 Tarot card sockets)
    - 6x3: (6 * 5) : (3 * 7) = 30 : 21
-   - 7x3: (7 * 5) : (3 * 7) = 35 : 21
-   - 6x4: (6 * 5) : (4 * 7) = 30 : 28 */
+   - 7x3: (7 * 5) : (3 * 7) = 35 : 21 */
 .mobile-board-stage,
 .desktop-board-stage {
   container-type: size;
@@ -905,10 +901,6 @@ select.organic-control {
 
 .board-fit-7x3 {
   width: min(100cqw, calc(100cqh * 35 / 21));
-}
-
-.board-fit-6x4 {
-  width: min(100cqw, calc(100cqh * 30 / 28));
 }
 
 /* Rough Timber & Bark Scrollbars */

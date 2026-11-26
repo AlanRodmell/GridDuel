@@ -121,7 +121,7 @@ export const LADDER_TIERS: LadderTier[] = [
         orderInTier: 1,
         name: 'Woodsman Fenn',
         title: 'Timber Marksman',
-        specialty: 'North-Facing Archers (#08–#14)',
+        specialty: 'Vanguard Archers (#08–#14)',
         avatarCardId: 'timber-bowman',
         signatureCardIds: ['timber-bowman', 'gale-hawk'],
         minCardNumber: 8,

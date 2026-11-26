@@ -34,7 +34,7 @@ export type BiomeType =
   | 'shadow'
   | 'highland';
 
-export type BoardScale = '6x3' | '7x3' | '6x4';
+export type BoardScale = '6x3' | '7x3';
 
 export interface PowerTargetOffset {
   dr: number;

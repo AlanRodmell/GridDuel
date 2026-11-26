@@ -46,13 +46,12 @@ export const RulesModal: React.FC<RulesModalProps> = ({ open, onClose }) => {
           {/* 1. Selectable Battlefield Scales & Right-Hand Fan */}
           <section className="space-y-1.5">
             <h3 className="font-[var(--font-display)] text-xs font-bold uppercase tracking-wider text-[#e6b85c]">
-              1. Three Battlefield Scales &amp; Right-Hand Fan
+              1. Two Battlefield Scales &amp; Right-Hand Fan
             </h3>
             <p>
               Choose your preferred battlefield scale before any Arena or Quick match:{' '}
-              <strong className="text-[#f3dfb6]">6×3 Skirmish</strong> (18 tiles · 8 Units + 1 Relic),{' '}
-              <strong className="text-[#f3dfb6]">7×3 Vanguard</strong> (21 tiles · 9 Units + 1 Relic), or{' '}
-              <strong className="text-[#f3dfb6]">6×4 Grand Siege</strong> (24 tiles · 10 Units + 1 Relic).
+              <strong className="text-[#f3dfb6]">6×3 Skirmish</strong> (18 tiles · 8 Units + 1 Relic) or{' '}
+              <strong className="text-[#f3dfb6]">7×3 Vanguard</strong> (21 tiles · 9 Units + 1 Relic).
               Drag cards from your right-hand fan onto any open socket, or click any card in your
               hand to inspect its full stats, Biome matchups, and Relic aura specifics. Control the
               most Unit cards (Blue vs Crimson) when all hands are played to win!

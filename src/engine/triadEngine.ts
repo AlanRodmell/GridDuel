@@ -71,19 +71,9 @@ export const BOARD_SCALES: Record<BoardScale, BoardScaleSpec> = {
     unitSlots: 9,
     biomeCount: 6,
   },
-  '6x4': {
-    id: '6x4',
-    name: '6×4 Grand Siege',
-    shortLabel: '6×4',
-    subtitle: '24 Tiles · 10 Units + 1 Relic Slot',
-    rows: 4,
-    cols: 6,
-    unitSlots: 10,
-    biomeCount: 7,
-  },
 };
 
-export const ALL_BOARD_SCALES: BoardScale[] = ['6x3', '7x3', '6x4'];
+export const ALL_BOARD_SCALES: BoardScale[] = ['6x3', '7x3'];
 export const DEFAULT_BOARD_SCALE: BoardScale = '6x3';
 
 export function getBoardScaleSpec(scale?: BoardScale): BoardScaleSpec {

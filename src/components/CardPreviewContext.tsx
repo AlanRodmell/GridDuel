@@ -5,7 +5,7 @@ import React, {
   useRef,
   useState,
 } from 'react';
-import { Compass, Sparkles, Wand2, X } from 'lucide-react';
+import { Sparkles, Wand2, X } from 'lucide-react';
 import {
   CardPreviewContext,
   CardPreviewData,
@@ -13,7 +13,6 @@ import {
 import { BIOME_META, ELEMENT_META, evaluateTerrainEffect } from '../data/biomes';
 import {
   CARD_MAP,
-  formatArrowsCompact,
   formatTetraCode,
   resolveCardAugment,
 } from '../data/cards';
@@ -392,9 +391,8 @@ export const CardPreviewProvider: React.FC<{ children: React.ReactNode }> = ({
                 style={{ color: theme.titleColor }}
                 className="inline-flex items-center gap-1 font-mono font-semibold shrink-0"
               >
-                <Compass className="w-3 h-3" />
                 <span>
-                  {arrows.length} ({formatArrowsCompact(arrows)})
+                  {arrows.length}▲ {arrows.length === 1 ? 'Arrow' : 'Arrows'}
                 </span>
               </span>
             </div>

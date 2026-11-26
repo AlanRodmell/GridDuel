@@ -5,6 +5,7 @@ import {
   Eye,
   Flag,
   MousePointerClick,
+  Music,
   Sparkles,
   Swords,
   Volume2,
@@ -121,6 +122,8 @@ interface ArenaViewProps {
   onGoHome: () => void;
   onGoToGallery: () => void;
   onOpenRules: () => void;
+  musicEnabled?: boolean;
+  onToggleMusic?: () => void;
   onToggleSound?: () => void;
   onToggleClickToPlace?: () => void;
   onMatchActiveChange?: (active: boolean) => void;
@@ -150,6 +153,8 @@ export const ArenaView: React.FC<ArenaViewProps> = ({
   onGoHome,
   onGoToGallery,
   onOpenRules,
+  musicEnabled,
+  onToggleMusic,
   onToggleSound,
   onToggleClickToPlace,
   onMatchActiveChange,
@@ -1065,19 +1070,11 @@ export const ArenaView: React.FC<ArenaViewProps> = ({
 
   // ==================== WIDESCREEN BATTLEFIELD + RIGHT-SIDE VERTICAL ARC FAN ====================
   const matchSpec = getBoardScaleSpec(matchScale);
-  const maxExpectedRivalCards =
-    matchSpec.unitSlots +
-    (currentFighter.isBoss || currentFighter.tierNumber >= 2 ? 1 : 0);
   const playerAvatarCard =
     CARD_MAP[previewDeckHand[0]?.cardId ?? 'ember-imp'] ?? CARD_MAP['ember-imp'];
   const rivalAvatarCard = CARD_MAP[currentFighter.avatarCardId] ?? CARD_MAP['ember-imp'];
 
-  const boardFitClass =
-    matchScale === '7x3'
-      ? 'board-fit-7x3'
-      : matchScale === '6x4'
-      ? 'board-fit-6x4'
-      : 'board-fit-6x3';
+  const boardFitClass = matchScale === '7x3' ? 'board-fit-7x3' : 'board-fit-6x3';
 
   const boardGridColsClass = matchSpec.cols === 7 ? 'grid-cols-7' : 'grid-cols-6';
 
@@ -1115,11 +1112,11 @@ export const ArenaView: React.FC<ArenaViewProps> = ({
             </span>
           </div>
           <div className="hidden sm:block">
-            <div className="font-[var(--font-display)] text-xs font-bold tracking-wider text-[#bcd9f7]">
+            <div className="font-[var(--font-display)] text-xs font-bold tracking-wider text-[#bcd9f7] leading-tight">
               You
             </div>
-            <div className="text-[10.5px] text-[#9b896f] truncate max-w-[140px]">
-              {activeDeck.name} · {matchSpec.shortLabel}
+            <div className="text-[10px] text-[#9b896f] truncate max-w-[120px] leading-tight">
+              {activeDeck.name}
             </div>
           </div>
         </div>
@@ -1165,36 +1162,14 @@ export const ArenaView: React.FC<ArenaViewProps> = ({
           </p>
         </div>
 
-        {/* Rival Hand Pips + Score + Accessibility Toggle + Retreat */}
+        {/* Simplified Rival Identity + Quick Controls */}
         <div className="flex items-center gap-2 shrink-0">
-          <div
-            className="flex flex-col items-end gap-0.5"
-            title={`${currentFighter.name} has ${rivalHand.length} cards left in hand`}
-            aria-label={`Rival has ${rivalHand.length} cards remaining`}
-          >
-            <span className="text-[9px] sm:text-[10px] font-mono font-semibold text-rose-300/90 leading-none">
-              {rivalHand.length} in hand
-            </span>
-            <div className="flex items-center gap-[2px]">
-              {Array.from({ length: maxExpectedRivalCards }).map((_, idx) => (
-                <span
-                  key={idx}
-                  className={`w-[4.5px] sm:w-[5.5px] h-[9px] sm:h-[11px] border transition-opacity ${
-                    idx < rivalHand.length
-                      ? 'bg-gradient-to-b from-rose-500 to-rose-900 border-rose-300/70 opacity-100'
-                      : 'bg-[#1c1510] border-[#3d3024] opacity-30'
-                  }`}
-                />
-              ))}
-            </div>
-          </div>
-
-          <div className="hidden xl:block text-right">
-            <div className="font-[var(--font-display)] text-xs font-bold tracking-wider text-[#f1b4b4]">
+          <div className="hidden sm:block text-right">
+            <div className="font-[var(--font-display)] text-xs font-bold tracking-wider text-[#f1b4b4] leading-tight">
               {currentFighter.name}
             </div>
-            <div className="text-[10.5px] text-[#9b896f]">
-              T{currentFighter.tierNumber} · {currentFighter.title}
+            <div className="text-[10px] text-[#9b896f] leading-tight">
+              Tier {currentFighter.tierNumber}
             </div>
           </div>
 
@@ -1216,6 +1191,31 @@ export const ArenaView: React.FC<ArenaViewProps> = ({
               {scores.rival}
             </span>
           </div>
+
+          {onToggleMusic && (
+            <button
+              type="button"
+              onClick={() => {
+                sound.select();
+                onToggleMusic();
+              }}
+              aria-pressed={Boolean(musicEnabled)}
+              aria-label={musicEnabled ? 'Mute background music' : 'Enable background music'}
+              title={musicEnabled ? 'Music ON — Click to Mute' : 'Music OFF — Click to Enable'}
+              className={`relative w-7 h-7 lg:w-8 lg:h-8 flex items-center justify-center cursor-pointer transition-colors ${
+                musicEnabled
+                  ? 'brass-plaque text-[#f2d394]'
+                  : 'iron-btn text-[#8c7961] hover:text-[#dfd0b6]'
+              }`}
+            >
+              <Music className="w-3.5 h-3.5" />
+              <span
+                className={`absolute top-1 right-1 w-1.5 h-1.5 rounded-full ${
+                  musicEnabled ? 'bg-emerald-400' : 'bg-[#5c4a38]'
+                }`}
+              />
+            </button>
+          )}
 
           {onToggleClickToPlace && (
             <button

@@ -321,6 +321,7 @@ class MusicEngine {
   private activeStudioSource: AudioBufferSourceNode | null = null;
   private activeStudioGain: GainNode | null = null;
   private unlockBound = false;
+  private userUnlocked = false;
 
   // Optional user-loaded custom MP3/OGG URLs per theme
   private customAudioUrls: Partial<Record<MusicThemeId, string>> = {};
@@ -381,22 +382,61 @@ class MusicEngine {
   private bindGestureUnlock() {
     if (this.unlockBound || typeof window === 'undefined') return;
     this.unlockBound = true;
-    const resumeAudio = () => {
+
+    const unlockFromButtonAction = () => {
+      this.userUnlocked = true;
       if (!this.isPlaying) return;
       const ctx = this.initContext();
       if (ctx && ctx.state === 'suspended') {
         ctx
           .resume()
           .then(() => {
-            if (this.isPlaying) this.schedulerTick();
+            if (this.isPlaying) this.startSchedulerLoop();
           })
           .catch(() => {});
       } else if (this.isPlaying) {
-        this.schedulerTick();
+        this.startSchedulerLoop();
       }
     };
-    window.addEventListener('pointerdown', resumeAudio, { passive: true });
-    window.addEventListener('keydown', resumeAudio, { passive: true });
+
+    const handleClick = (e: MouseEvent) => {
+      const target = e.target as Element | null;
+      if (
+        target?.closest?.(
+          'button, [role="button"], [role="tab"], a, input, select, summary'
+        )
+      ) {
+        unlockFromButtonAction();
+      }
+    };
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        const target = e.target as Element | null;
+        if (
+          target?.closest?.(
+            'button, [role="button"], [role="tab"], a, input, select, summary'
+          )
+        ) {
+          unlockFromButtonAction();
+        }
+      }
+    };
+
+    window.addEventListener('click', handleClick, true);
+    window.addEventListener('keydown', handleKeyDown, true);
+  }
+
+  private startSchedulerLoop() {
+    if (!this.isPlaying || !this.userUnlocked) return;
+    const ctx = this.initContext();
+    if (ctx && this.timerId === null) {
+      this.nextNoteTime = ctx.currentTime + 0.04;
+    }
+    if (this.timerId === null) {
+      this.timerId = window.setInterval(this.schedulerTick, 45);
+    }
+    this.schedulerTick();
   }
 
   private ensureStudioLoopPlaying(themeKey: MusicThemeId) {
@@ -813,7 +853,7 @@ class MusicEngine {
   }
 
   private schedulerTick = () => {
-    if (!this.isPlaying) return;
+    if (!this.isPlaying || !this.userUnlocked) return;
 
     // If a custom MP3 file is loaded for the current theme, use HTMLAudioElement instead
     const customUrl = this.customAudioUrls[this.currentTheme];
@@ -896,17 +936,23 @@ class MusicEngine {
 
   public start() {
     this.bindGestureUnlock();
-    if (this.isPlaying) return;
+    if (this.isPlaying) {
+      if (this.userUnlocked) {
+        this.startSchedulerLoop();
+      }
+      return;
+    }
     this.isPlaying = true;
-    const ctx = this.initContext();
-    if (ctx) {
-      this.nextNoteTime = ctx.currentTime + 0.04;
+    if (!this.userUnlocked) {
+      // Wait silently until the user clicks a button in the app
+      return;
     }
-    if (this.timerId !== null) {
-      window.clearInterval(this.timerId);
-    }
-    this.timerId = window.setInterval(this.schedulerTick, 45);
-    this.schedulerTick();
+    this.startSchedulerLoop();
+  }
+
+  public unlockAndSetEnabled(enabled: boolean) {
+    this.userUnlocked = true;
+    this.setEnabled(enabled);
   }
 
   public stop() {

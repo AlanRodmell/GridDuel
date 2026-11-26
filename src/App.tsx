@@ -212,6 +212,7 @@ export default function App() {
 
   const handleToggleMusic = useCallback((enabled: boolean) => {
     setMusicEnabled(enabled);
+    music.unlockAndSetEnabled(enabled);
   }, []);
 
   const handleChangeMusicVolume = useCallback((vol: number) => {
@@ -321,6 +322,31 @@ export default function App() {
       <button
         type="button"
         onClick={() => {
+          sound.select();
+          handleToggleMusic(!musicEnabled);
+        }}
+        className="w-full min-h-[36px] px-2.5 py-1.5 flex items-center justify-between gap-2 text-xs font-[var(--font-display)] tracking-wide text-[#dfd0b6] hover:text-[#f7dea2] hover:bg-[#2a1e13] transition-colors cursor-pointer"
+      >
+        <span className="inline-flex items-center gap-2.5">
+          <Music
+            className={`w-4 h-4 shrink-0 ${
+              musicEnabled ? 'text-[#d8a64c]' : 'text-[#8c7961]'
+            }`}
+          />
+          <span>Music</span>
+        </span>
+        <span
+          className={`font-mono text-[10px] font-bold ${
+            musicEnabled ? 'text-emerald-300' : 'text-rose-300'
+          }`}
+        >
+          {musicEnabled ? (battleOnlyMusic ? 'BATTLE' : 'ON') : 'OFF'}
+        </span>
+      </button>
+
+      <button
+        type="button"
+        onClick={() => {
           sound.drawer(true);
           closeMenu();
           setMusicModalOpen(true);
@@ -329,15 +355,9 @@ export default function App() {
       >
         <span className="inline-flex items-center gap-2.5">
           <Music className="w-4 h-4 text-[#d8a64c] shrink-0" />
-          <span>Soundtrack</span>
+          <span>Soundtrack Studio…</span>
         </span>
-        <span
-          className={`font-mono text-[10px] font-bold ${
-            musicEnabled ? 'text-emerald-300' : 'text-[#8c7961]'
-          }`}
-        >
-          {musicEnabled ? (battleOnlyMusic ? 'BATTLE' : 'ON') : 'OFF'}
-        </span>
+        <span className="font-mono text-[10px] text-[#8c7961]">VOL</span>
       </button>
 
       <button
@@ -410,7 +430,7 @@ export default function App() {
         {/* DESKTOP SLIM ICON RAIL: HOME | COMPENDIUM | VAULT & FORGE + COGWHEEL MENU */}
         <aside
           aria-label="Application navigation"
-          className="hidden md:flex flex-col items-center justify-between w-[74px] shrink-0 h-full war-rail border-r px-2 py-3.5 select-none z-30"
+          className="hidden md:flex flex-col items-center justify-between w-[74px] shrink-0 h-full war-rail border-r px-2 py-3.5 select-none z-40"
         >
           {/* Top Crest + Gold Treasury + 3 Primary Icon Buttons */}
           <div className="w-full flex flex-col items-center space-y-3">
@@ -564,6 +584,47 @@ export default function App() {
             <button
               type="button"
               onClick={() => {
+                sound.select();
+                handleToggleMusic(!musicEnabled);
+              }}
+              onContextMenu={(e) => {
+                e.preventDefault();
+                sound.drawer(true);
+                setOptionsMenuOpen(false);
+                setExitMatchConfirmOpen(false);
+                setMusicModalOpen(true);
+              }}
+              aria-pressed={musicEnabled}
+              aria-label={musicEnabled ? 'Mute background music' : 'Enable background music'}
+              title={
+                musicEnabled
+                  ? 'Music ON — Click to Mute (Right-click for Soundtrack Studio)'
+                  : 'Music OFF — Click to Enable (Right-click for Soundtrack Studio)'
+              }
+              className={`relative w-full py-2 flex flex-col items-center justify-center gap-0.5 transition-all cursor-pointer ${
+                musicEnabled
+                  ? 'brass-plaque text-[#f5dfb2] hover:brightness-110'
+                  : 'iron-btn text-[#8c7961] hover:text-[#dfd0b6]'
+              }`}
+            >
+              <Music
+                className={`w-4 h-4 ${
+                  musicEnabled ? 'text-[#e8ba5d]' : 'text-[#7c6a55]'
+                }`}
+              />
+              <span className="font-[var(--font-display)] text-[8px] uppercase tracking-wider leading-none">
+                {musicEnabled ? 'Music' : 'Muted'}
+              </span>
+              <span
+                className={`absolute top-1 right-1 w-1.5 h-1.5 rounded-full ${
+                  musicEnabled ? 'bg-emerald-400' : 'bg-[#5c4a38]'
+                }`}
+              />
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
                 setExitMatchConfirmOpen(false);
                 setOptionsMenuOpen((prev) => {
                   sound.latch(!prev);
@@ -584,45 +645,44 @@ export default function App() {
                   optionsMenuOpen ? 'rotate-45' : ''
                 }`}
               />
-              {musicEnabled && (
-                <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-emerald-400" />
-              )}
             </button>
 
             {exitMatchConfirmOpen && isMatchActive && (
-              <div className="absolute bottom-0 left-[calc(100%+10px)] z-50 w-56 brass-panel p-3 space-y-2.5 shadow-[0_18px_48px_rgba(0,0,0,0.94)] animate-preview-pop">
-                <div className="space-y-1">
-                  <div className="font-[var(--font-display)] text-xs font-bold uppercase tracking-wider text-rose-300">
-                    Exit Current Match?
+              <div className="absolute bottom-0 left-[calc(100%+14px)] z-50 animate-preview-pop">
+                <div className="w-56 brass-panel p-3 space-y-2.5 shadow-[0_18px_48px_rgba(0,0,0,0.94)]">
+                  <div className="space-y-1">
+                    <div className="font-[var(--font-display)] text-xs font-bold uppercase tracking-wider text-rose-300">
+                      Exit Current Match?
+                    </div>
+                    <p className="font-[var(--font-serif)] text-xs text-[#cbb89a] leading-snug">
+                      Abandon this duel and return to the Home war table?
+                    </p>
                   </div>
-                  <p className="font-[var(--font-serif)] text-xs text-[#cbb89a] leading-snug">
-                    Abandon this duel and return to the Home war table?
-                  </p>
-                </div>
-                <div className="flex items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={confirmExitActiveMatch}
-                    className="flex-1 min-h-[34px] px-2.5 py-1 crimson-btn font-[var(--font-display)] text-[11px] font-bold uppercase tracking-wider cursor-pointer"
-                  >
-                    Exit Match
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      sound.select();
-                      setExitMatchConfirmOpen(false);
-                    }}
-                    className="min-h-[34px] px-2.5 py-1 iron-btn font-[var(--font-display)] text-[11px] text-[#dfd0b6] cursor-pointer"
-                  >
-                    Stay
-                  </button>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={confirmExitActiveMatch}
+                      className="flex-1 min-h-[34px] px-2.5 py-1 crimson-btn font-[var(--font-display)] text-[11px] font-bold uppercase tracking-wider cursor-pointer"
+                    >
+                      Exit Match
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        sound.select();
+                        setExitMatchConfirmOpen(false);
+                      }}
+                      className="min-h-[34px] px-2.5 py-1 iron-btn font-[var(--font-display)] text-[11px] text-[#dfd0b6] cursor-pointer"
+                    >
+                      Stay
+                    </button>
+                  </div>
                 </div>
               </div>
             )}
 
             {optionsMenuOpen && (
-              <div className="absolute bottom-0 left-[calc(100%+10px)] z-50 animate-preview-pop">
+              <div className="absolute bottom-0 left-[calc(100%+14px)] z-50 animate-preview-pop">
                 {renderOptionsMenuItems(() => setOptionsMenuOpen(false))}
               </div>
             )}
@@ -694,6 +754,27 @@ export default function App() {
                 {profile.gold.toLocaleString()}
               </span>
 
+              <button
+                type="button"
+                onClick={() => {
+                  sound.select();
+                  handleToggleMusic(!musicEnabled);
+                }}
+                aria-pressed={musicEnabled}
+                aria-label={musicEnabled ? 'Mute background music' : 'Enable background music'}
+                title={musicEnabled ? 'Music ON — Tap to Mute' : 'Music OFF — Tap to Enable'}
+                className={`relative w-8 h-8 flex items-center justify-center cursor-pointer ${
+                  musicEnabled ? 'brass-plaque text-[#f2d394]' : 'iron-btn text-[#8c7961]'
+                }`}
+              >
+                <Music className="w-4 h-4" />
+                <span
+                  className={`absolute top-1 right-1 w-1.5 h-1.5 rounded-full ${
+                    musicEnabled ? 'bg-emerald-400' : 'bg-[#5c4a38]'
+                  }`}
+                />
+              </button>
+
               <div ref={mobileOptionsRef} className="relative">
                 <button
                   type="button"
@@ -764,6 +845,8 @@ export default function App() {
                   sound.drawer(true);
                   setRulesOpen(true);
                 }}
+                musicEnabled={musicEnabled}
+                onToggleMusic={() => handleToggleMusic(!musicEnabled)}
                 onToggleSound={toggleSound}
                 onToggleClickToPlace={toggleClickToPlace}
                 onMatchActiveChange={setIsMatchActive}

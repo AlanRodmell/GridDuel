@@ -4,7 +4,6 @@ import {
   ChevronDown,
   ChevronUp,
   Coins,
-  Compass,
   Eye,
   Lock,
   Plus,
@@ -22,7 +21,6 @@ import {
   CARDS,
   RARITY_ARROW_RANGE,
   RARITY_STAT_RANGE,
-  formatArrowsCompact,
   formatTetraCode,
   getCardSellValue,
   resolveCardAugment,
@@ -1084,14 +1082,11 @@ export const GalleryView: React.FC<GalleryViewProps> = ({
                   </div>
 
                   <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-[#a69277] px-1">
-                    <span className="flex items-center gap-1.5">
-                      <Compass className="w-3.5 h-3.5 text-[#e2b053]" />
-                      <span>
-                        Arrows ({activeInspectedCopy.arrows.length}▲):{' '}
-                        <strong className="font-mono text-[#f0c76e]">
-                          {formatArrowsCompact(activeInspectedCopy.arrows)}
-                        </strong>
-                      </span>
+                    <span>
+                      Arrows:{' '}
+                      <strong className="font-mono text-[#f0c76e]">
+                        {activeInspectedCopy.arrows.length}▲
+                      </strong>
                     </span>
                     <span className="font-mono tabular-nums">
                       {TYPE_DESCR[activeInspectedCopy.stats.type]}
@@ -1193,7 +1188,7 @@ export const GalleryView: React.FC<GalleryViewProps> = ({
                                     {formatTetraCode(copy.stats)}
                                   </span>
                                   <span className="font-mono text-xs font-semibold text-[#e5d6bc]">
-                                    {copy.arrows.length}▲ ({formatArrowsCompact(copy.arrows)})
+                                    {copy.arrows.length}▲
                                   </span>
                                   {idx === 0 && inspectedCopies.length > 1 && (
                                     <span className="px-1.5 py-0.5 rounded-[2px] bg-emerald-950/85 border border-emerald-400/50 font-mono text-[10px] font-semibold text-emerald-300">

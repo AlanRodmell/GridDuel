@@ -29,7 +29,6 @@ import {
 import {
   CARD_MAP,
   MAX_COPIES_PER_CARD,
-  formatArrowsCompact,
   formatTetraCode,
   getCardSellValue,
   getCardThumbUrl,
@@ -1566,7 +1565,7 @@ export const DeckBuilderWorkspace: React.FC<DeckBuilderWorkspaceProps> = ({
                       />
 
                       <div className="text-center text-[11px] font-mono text-[#a69277]">
-                        {formatArrowsCompact(copy.arrows)}
+                        {formatTetraCode(copy.stats)} · {copy.arrows.length}▲
                       </div>
 
                       {copyAug && (
