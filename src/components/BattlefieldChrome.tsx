@@ -7,168 +7,57 @@ import React from 'react';
  */
 
 /**
- * Monumental carved-stone & gilded-bronze perimeter frame for the Arena Battlefield.
- * Uses an `evenodd` hollow stone ring (`z-30`, `pointer-events-none`, zero SVG blur filters)
- * so rich chiseled stonework, ashlar seams, corner clasps, keystones, and creeping moss
- * frame the board visibly on top of the seam without obstructing a single card socket.
+ * Unstretched 1:1 architectural corner mounts & antique-brass hairline trim
+ * for the Monolith Arena stone plinth.
+ * Uses crisp fixed-aspect 1:1 corner hardware (never stretched `preserveAspectRatio="none"`)
+ * so the border matches the exact razor-sharp metallic & carved-basalt craft of the board slabs.
  */
-export const BattlefieldMonolithFrame: React.FC = () => (
+const MonolithCornerMount: React.FC<{
+  positionClass: string;
+  rotateClass: string;
+}> = ({ positionClass, rotateClass }) => (
   <svg
     aria-hidden="true"
-    viewBox="0 0 1000 700"
-    preserveAspectRatio="none"
-    className="pointer-events-none absolute -inset-[7px] sm:-inset-[10px] lg:-inset-[13px] w-[calc(100%+14px)] sm:w-[calc(100%+20px)] lg:w-[calc(100%+26px)] h-[calc(100%+14px)] sm:h-[calc(100%+20px)] lg:h-[calc(100%+26px)] z-30 overflow-visible select-none"
+    viewBox="0 0 36 36"
+    className={`pointer-events-none absolute ${positionClass} ${rotateClass} w-5 h-5 sm:w-6 sm:h-6 lg:w-7 lg:h-7 z-30 select-none`}
   >
     <defs>
-      <linearGradient id="monolith-stone-body" x1="0" y1="0" x2="0" y2="1">
-        <stop offset="0%" stopColor="#575145" />
-        <stop offset="22%" stopColor="#38342c" />
-        <stop offset="62%" stopColor="#21201b" />
-        <stop offset="100%" stopColor="#141310" />
+      <linearGradient id="corner-brass-rim" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0%" stopColor="#ebd197" />
+        <stop offset="45%" stopColor="#9e7638" />
+        <stop offset="100%" stopColor="#523b18" />
       </linearGradient>
-      <linearGradient id="monolith-inner-lip" x1="0" y1="0" x2="0" y2="1">
-        <stop offset="0%" stopColor="#12110e" />
-        <stop offset="50%" stopColor="#2b2720" />
-        <stop offset="100%" stopColor="#6a5c45" />
-      </linearGradient>
-      <linearGradient id="monolith-gold" x1="0" y1="0" x2="1" y2="1">
-        <stop offset="0%" stopColor="#f0d394" />
-        <stop offset="35%" stopColor="#b9893d" />
-        <stop offset="70%" stopColor="#7a5620" />
-        <stop offset="100%" stopColor="#dfbe7a" />
-      </linearGradient>
-      <linearGradient id="monolith-bronze" x1="0" y1="0" x2="0" y2="1">
-        <stop offset="0%" stopColor="#7d623b" />
-        <stop offset="55%" stopColor="#43321c" />
-        <stop offset="100%" stopColor="#22190d" />
-      </linearGradient>
-      <linearGradient id="monolith-moss" x1="0" y1="0" x2="1" y2="1">
-        <stop offset="0%" stopColor="#688243" />
-        <stop offset="100%" stopColor="#2d3b1d" />
+      <linearGradient id="corner-dark-iron" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0%" stopColor="#353129" />
+        <stop offset="100%" stopColor="#14120e" />
       </linearGradient>
     </defs>
-
-    {/* 1. HOLLOW CHISELED MONOLITH RING (evenodd -> 100% transparent center over cards!) */}
+    {/* Mitered corner bracket plate */}
     <path
-      fillRule="evenodd"
-      d="M 14,6 L 128,4 L 142,8 L 310,5 L 462,6 L 500,2 L 538,6 L 690,5 L 858,8 L 872,4 L 986,6 L 996,16 L 994,148 L 997,164 L 994,350 L 997,536 L 994,552 L 996,684 L 986,694 L 872,696 L 858,692 L 690,695 L 538,694 L 500,698 L 462,694 L 310,695 L 142,692 L 128,696 L 14,694 L 4,684 L 6,552 L 3,536 L 6,350 L 3,164 L 6,148 L 4,16 Z M 30,28 L 970,28 L 970,672 L 30,672 Z"
-      fill="url(#monolith-stone-body)"
-      stroke="#090806"
-      strokeWidth="2.5"
-      strokeLinejoin="round"
+      d="M 1,1 L 31,1 L 26,6.5 L 6.5,6.5 L 6.5,26 L 1,31 Z"
+      fill="url(#corner-dark-iron)"
+      stroke="url(#corner-brass-rim)"
+      strokeWidth="1.25"
     />
-
-    {/* 2. CHISELED SUNLIT OUTER BEVEL & RECESSED INNER SANCTUARY LIP */}
+    {/* Fine inner brass fillet + corner rivet */}
     <path
-      d="M 16,9 L 460,8 M 540,8 L 984,9 M 8,20 L 8,325 M 8,375 L 8,680"
+      d="M 3.5,14 L 3.5,3.5 L 14,3.5"
       fill="none"
-      stroke="#9e9075"
-      strokeOpacity="0.45"
-      strokeWidth="1.6"
+      stroke="#e6ca8a"
+      strokeOpacity="0.65"
+      strokeWidth="0.9"
     />
-    <rect
-      x="29"
-      y="27"
-      width="942"
-      height="646"
-      fill="none"
-      stroke="url(#monolith-inner-lip)"
-      strokeWidth="2.4"
-    />
-    <rect
-      x="25"
-      y="23"
-      width="950"
-      height="654"
-      fill="none"
-      stroke="url(#monolith-gold)"
-      strokeOpacity="0.62"
-      strokeWidth="1.4"
-    />
-
-    {/* 3. CARVED ASHLAR STONE BLOCK JOINTS & WEATHERED CRACKS */}
-    <path
-      d="M 185,6 L 188,26 M 345,5 L 342,26 M 655,5 L 658,26 M 815,6 L 812,26 M 185,694 L 188,674 M 345,695 L 342,674 M 655,695 L 658,674 M 815,694 L 812,674 M 6,175 L 28,178 M 6,525 L 28,522 M 994,175 L 972,178 M 994,525 L 972,522"
-      stroke="#0d0c09"
-      strokeWidth="2"
-      strokeOpacity="0.85"
-      fill="none"
-    />
-    <path
-      d="M 189,7 L 191,25 M 659,7 L 661,25 M 346,693 L 344,675 M 816,693 L 814,675 M 7,180 L 27,182 M 993,520 L 973,518"
-      stroke="#7c705a"
-      strokeWidth="1"
-      strokeOpacity="0.38"
-      fill="none"
-    />
-
-    {/* 4. ORNATE CAST-BRONZE & GILDED CORNER SANCTUARY CLASPS */}
-    <g fill="url(#monolith-bronze)" stroke="url(#monolith-gold)" strokeWidth="1.8" strokeLinejoin="round">
-      {/* Top-Left Clasp */}
-      <path d="M 3,4 L 78,4 L 70,22 L 26,22 L 26,70 L 4,78 Z" />
-      {/* Top-Right Clasp */}
-      <path d="M 997,4 L 922,4 L 930,22 L 974,22 L 974,70 L 996,78 Z" />
-      {/* Bottom-Left Clasp */}
-      <path d="M 3,696 L 78,696 L 70,678 L 26,678 L 26,630 L 4,622 Z" />
-      {/* Bottom-Right Clasp */}
-      <path d="M 997,696 L 922,696 L 930,678 L 974,678 L 974,630 L 996,622 Z" />
-    </g>
-
-    {/* Corner Obsidian & Gold Diamond Bosses */}
-    <g fill="#15120e" stroke="url(#monolith-gold)" strokeWidth="1.8">
-      <polygon points="20,6 36,20 20,34 4,20" />
-      <polygon points="980,6 996,20 980,34 964,20" />
-      <polygon points="20,666 36,680 20,694 4,680" />
-      <polygon points="980,666 996,680 980,694 964,680" />
-    </g>
-
-    {/* 5. TOP, BOTTOM & SIDE KEYSTONE MEDALLIONS */}
-    <g fill="url(#monolith-bronze)" stroke="url(#monolith-gold)" strokeWidth="1.7" strokeLinejoin="round">
-      {/* Top Center Keystone */}
-      <polygon points="462,3 500,0 538,3 528,25 500,30 472,25" />
-      {/* Bottom Center Keystone */}
-      <polygon points="462,697 500,700 538,697 528,675 500,670 472,675" />
-      {/* Left Mid-Rail Clasp */}
-      <polygon points="2,316 26,326 30,350 26,374 2,384" />
-      {/* Right Mid-Rail Clasp */}
-      <polygon points="998,316 974,326 970,350 974,374 998,384" />
-    </g>
-
-    {/* Keystone Inner Gems & Corner Rivets */}
-    <g fill="#efd18e">
-      <polygon points="500,7 509,15 500,23 491,15" />
-      <polygon points="500,677 509,685 500,693 491,685" />
-      <polygon points="15,342 22,350 15,358 8,350" />
-      <polygon points="985,342 992,350 985,358 978,350" />
-      <circle cx="20" cy="20" r="3.2" />
-      <circle cx="56" cy="13" r="2.2" />
-      <circle cx="14" cy="54" r="2.2" />
-      <circle cx="980" cy="20" r="3.2" />
-      <circle cx="944" cy="13" r="2.2" />
-      <circle cx="986" cy="54" r="2.2" />
-      <circle cx="20" cy="680" r="3.2" />
-      <circle cx="56" cy="687" r="2.2" />
-      <circle cx="14" cy="646" r="2.2" />
-      <circle cx="980" cy="680" r="3.2" />
-      <circle cx="944" cy="687" r="2.2" />
-      <circle cx="986" cy="646" r="2.2" />
-    </g>
-
-    {/* 6. SUBTLE CREEPING SANCTUARY MOSS & BRAMBLE TENDRILS */}
-    <path
-      d="M 80,10 C 108,3 136,18 168,11 M 832,689 C 864,682 892,697 920,690"
-      fill="none"
-      stroke="#4d6332"
-      strokeWidth="2.8"
-      strokeLinecap="round"
-    />
-    <g fill="url(#monolith-moss)" stroke="#192210" strokeWidth="0.9">
-      <path d="M 104,9 C 110,2 120,3 122,9 C 115,13 108,12 104,9 Z" />
-      <path d="M 142,14 C 148,20 157,19 159,13 C 152,10 146,11 142,14 Z" />
-      <path d="M 874,688 C 880,681 890,682 892,688 C 885,692 878,691 874,688 Z" />
-      <path d="M 844,686 C 850,693 859,692 861,686 C 854,683 848,684 844,686 Z" />
-    </g>
+    <circle cx="4.2" cy="4.2" r="1.5" fill="#d9b772" />
   </svg>
+);
+
+export const BattlefieldMonolithFrame: React.FC = () => (
+  <div aria-hidden="true" className="pointer-events-none absolute inset-0 z-30 select-none">
+    <MonolithCornerMount positionClass="-top-[1px] -left-[1px]" rotateClass="" />
+    <MonolithCornerMount positionClass="-top-[1px] -right-[1px]" rotateClass="rotate-90" />
+    <MonolithCornerMount positionClass="-bottom-[1px] -right-[1px]" rotateClass="rotate-180" />
+    <MonolithCornerMount positionClass="-bottom-[1px] -left-[1px]" rotateClass="-rotate-90" />
+  </div>
 );
 
 export const BattlefieldSiegeOverlay: React.FC = () => {

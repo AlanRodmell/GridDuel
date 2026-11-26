@@ -50,26 +50,79 @@ const TYPE_COLOR: Record<AttackType, string> = {
   A: 'text-rose-300',
 };
 
-const CARD_ARROW_POLYGONS: Record<ArrowDir, string> = {
-  n: '50,1.2 53.8,6.4 46.2,6.4',
-  ne: '97.8,2.0 92.2,3.0 97.0,7.8',
-  e: '98.8,70 93.6,66.2 93.6,73.8',
-  se: '97.8,138.0 92.2,137.0 97.0,132.2',
-  s: '50,138.8 53.8,133.6 46.2,133.6',
-  sw: '2.2,138.0 7.8,137.0 3.0,132.2',
-  w: '1.2,70 6.4,66.2 6.4,73.8',
-  nw: '2.2,2.0 7.8,3.0 3.0,7.8',
+const RUNE_LAYOUT: Record<ArrowDir, { x: number; y: number; angle: number }> = {
+  n: { x: 50, y: 7, angle: 0 },
+  ne: { x: 93, y: 7, angle: 45 },
+  e: { x: 93, y: 70, angle: 90 },
+  se: { x: 93, y: 133, angle: 135 },
+  s: { x: 50, y: 133, angle: 180 },
+  sw: { x: 7, y: 133, angle: 225 },
+  w: { x: 7, y: 70, angle: 270 },
+  nw: { x: 7, y: 7, angle: 315 },
 };
 
-const TAROT_ARROW_POLYGONS: Record<ArrowDir, string> = {
-  n: '150,4 158,15 142,15',
-  ne: '293,7 280,9.5 290.5,20',
-  e: '296,210 285,202 285,218',
-  se: '293,413 280,410.5 290.5,400',
-  s: '150,416 158,405 142,405',
-  sw: '7,413 20,410.5 9.5,400',
-  w: '4,210 15,202 15,218',
-  nw: '7,7 20,9.5 9.5,20',
+/** Engraved spear-runes preserve the game's existing eight-way direction layout. */
+const DirectionRuneOverlay: React.FC<{
+  active: ArrowDir[];
+  visible?: ArrowDir[];
+  highlighted?: ArrowDir[];
+  activeColor?: string;
+}> = ({
+  active,
+  visible = ALL_ARROW_DIRS,
+  highlighted = [],
+  activeColor = '#e8b85e',
+}) => {
+  const activeSet = new Set(active);
+  const highlightSet = new Set(highlighted);
+  return (
+    <svg
+      aria-hidden="true"
+      viewBox="0 0 100 140"
+      className="pointer-events-none absolute inset-0 z-20 h-full w-full"
+    >
+      {visible.map((dir) => {
+        const { x, y, angle } = RUNE_LAYOUT[dir];
+        const isActive = activeSet.has(dir);
+        const isHighlighted = highlightSet.has(dir);
+        const color = isHighlighted
+          ? '#55ffc0'
+          : isActive
+          ? activeColor
+          : '#d7d0c0';
+        return (
+          <g
+            key={dir}
+            transform={`translate(${x} ${y}) rotate(${angle})`}
+            opacity={isActive || isHighlighted ? 1 : 0.18}
+          >
+            {(isActive || isHighlighted) && (
+              <path
+                d="M0,-5.8 L3.7,-1.8 L1.35,-1.8 L1.35,3.6 L-1.35,3.6 L-1.35,-1.8 L-3.7,-1.8 Z"
+                fill="none"
+                stroke={color}
+                strokeOpacity="0.34"
+                strokeWidth="2.4"
+                strokeLinejoin="round"
+              />
+            )}
+            <path
+              d="M0,-5.8 L3.7,-1.8 L1.35,-1.8 L1.35,3.6 L-1.35,3.6 L-1.35,-1.8 L-3.7,-1.8 Z"
+              fill={isActive || isHighlighted ? color : 'rgba(215,208,192,.45)'}
+              stroke={isActive || isHighlighted ? '#24180d' : '#171717'}
+              strokeWidth=".8"
+              strokeLinejoin="round"
+            />
+            <path
+              d="M0,-1.1 L1.15,.1 L0,1.3 L-1.15,.1 Z"
+              fill="#24180d"
+              opacity=".75"
+            />
+          </g>
+        );
+      })}
+    </svg>
+  );
 };
 
 const LONG_PRESS_MS = 380;
@@ -211,8 +264,6 @@ const GameCardInner: React.FC<GameCardProps> = ({
 
   if (powerCard) {
     const pTheme = CARD_RARITY_THEMES[powerCard.rarity];
-    const relicArrowSet = new Set(powerCard.dirs);
-    const pHighlightSet = highlightArrows.length > 0 ? new Set(highlightArrows) : null;
     const pImgSrc =
       imgStage === 'thumb' ? getCardThumbUrl(powerCard.image) : powerCard.image;
     const handleRelicImgError = () => {
@@ -306,32 +357,11 @@ const GameCardInner: React.FC<GameCardProps> = ({
             </div>
 
             {showArrows && (
-              <svg
-                aria-hidden="true"
-                viewBox="0 0 300 420"
-                className="pointer-events-none absolute inset-0 w-full h-full z-20"
-              >
-                {ALL_ARROW_DIRS.map((dir) => {
-                  const isActive = relicArrowSet.has(dir);
-                  const isHighlighted = pHighlightSet?.has(dir) ?? false;
-                  return (
-                    <polygon
-                      key={dir}
-                      points={TAROT_ARROW_POLYGONS[dir]}
-                      fill={
-                        isHighlighted
-                          ? '#34f5a8'
-                          : isActive
-                          ? '#38bdf8'
-                          : 'rgba(255, 255, 255, 0.12)'
-                      }
-                      stroke={isActive || isHighlighted ? '#041322' : undefined}
-                      strokeWidth={isActive || isHighlighted ? 2.4 : undefined}
-                      strokeLinejoin="round"
-                    />
-                  );
-                })}
-              </svg>
+              <DirectionRuneOverlay
+                active={powerCard.dirs}
+                highlighted={highlightArrows}
+                activeColor="#65d8ff"
+              />
             )}
 
             <div className="relative z-10 h-full w-full px-[7.6%] py-[6%]">
@@ -517,32 +547,11 @@ const GameCardInner: React.FC<GameCardProps> = ({
           </div>
 
           {showArrows && (
-            <svg
-              aria-hidden="true"
-              viewBox="0 0 100 140"
-              className="pointer-events-none absolute inset-0 w-full h-full z-20"
-            >
-              {ALL_ARROW_DIRS.map((dir) => {
-                const isActive = relicArrowSet.has(dir);
-                const isHighlighted = pHighlightSet?.has(dir) ?? false;
-                return (
-                  <polygon
-                    key={dir}
-                    points={CARD_ARROW_POLYGONS[dir]}
-                    fill={
-                      isHighlighted
-                        ? '#34f5a8'
-                        : isActive
-                        ? '#38bdf8'
-                        : 'rgba(255, 255, 255, 0.12)'
-                    }
-                    stroke={isActive || isHighlighted ? '#041322' : undefined}
-                    strokeWidth={isActive || isHighlighted ? 1.15 : undefined}
-                    strokeLinejoin="round"
-                  />
-                );
-              })}
-            </svg>
+            <DirectionRuneOverlay
+              active={powerCard.dirs}
+              highlighted={highlightArrows}
+              activeColor="#65d8ff"
+            />
           )}
         </div>
       </RelicTag>
@@ -555,8 +564,6 @@ const GameCardInner: React.FC<GameCardProps> = ({
   const activeAugment = resolveCardAugment(card.id, augmentId);
   const effectiveStats = stats ?? card.stats;
   const effectiveArrows = arrows ?? card.arrows;
-  const activeArrowSet = new Set(effectiveArrows);
-  const highlightSet = highlightArrows.length > 0 ? new Set(highlightArrows) : null;
   const refStats = baseStats ?? effectiveStats;
 
   const pwrDelta = effectiveStats.power - refStats.power;
@@ -774,32 +781,10 @@ const GameCardInner: React.FC<GameCardProps> = ({
 
           {/* Single-SVG 8-Way Compass Perimeter Arrows */}
           {showArrows && (
-            <svg
-              aria-hidden="true"
-              viewBox="0 0 300 420"
-              className="pointer-events-none absolute inset-0 w-full h-full z-20"
-            >
-              {ALL_ARROW_DIRS.map((dir) => {
-                const isActive = activeArrowSet.has(dir);
-                const isHighlighted = highlightSet?.has(dir) ?? false;
-                return (
-                  <polygon
-                    key={dir}
-                    points={TAROT_ARROW_POLYGONS[dir]}
-                    fill={
-                      isHighlighted
-                        ? '#34f5a8'
-                        : isActive
-                        ? '#ff7b1c'
-                        : 'rgba(255, 255, 255, 0.14)'
-                    }
-                    stroke={isActive || isHighlighted ? '#05070e' : undefined}
-                    strokeWidth={isActive || isHighlighted ? 2.4 : undefined}
-                    strokeLinejoin="round"
-                  />
-                );
-              })}
-            </svg>
+            <DirectionRuneOverlay
+              active={effectiveArrows}
+              highlighted={highlightArrows}
+            />
           )}
 
           {/* Inner Hairline Frame — Proportional Inset Keeps Arrows Clear of Nameplate */}
@@ -1231,32 +1216,11 @@ const GameCardInner: React.FC<GameCardProps> = ({
 
         {/* Single-SVG 8-Way Compass Perimeter Arrows (5:7 Rectangular Coordinates) */}
         {showArrows && (
-          <svg
-            aria-hidden="true"
-            viewBox="0 0 100 140"
-            className="pointer-events-none absolute inset-0 w-full h-full z-20"
-          >
-            {directionsToRender.map((dir) => {
-              const isActive = activeArrowSet.has(dir);
-              const isHighlighted = highlightSet?.has(dir) ?? false;
-              return (
-                <polygon
-                  key={dir}
-                  points={CARD_ARROW_POLYGONS[dir]}
-                  fill={
-                    isHighlighted
-                      ? '#34f5a8'
-                      : isActive
-                      ? '#ff7b1c'
-                      : 'rgba(255, 255, 255, 0.14)'
-                  }
-                  stroke={isActive || isHighlighted ? '#05070e' : undefined}
-                  strokeWidth={isActive || isHighlighted ? 1.15 : undefined}
-                  strokeLinejoin="round"
-                />
-              );
-            })}
-          </svg>
+          <DirectionRuneOverlay
+            active={effectiveArrows}
+            visible={directionsToRender}
+            highlighted={highlightArrows}
+          />
         )}
       </div>
       {orbTooltipPortal}

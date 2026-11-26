@@ -1345,13 +1345,17 @@ export const ArenaView: React.FC<ArenaViewProps> = ({
           )}
 
           <div
-            className={`arena-monolith-frame relative ${boardFitClass} p-2 sm:p-2.5 lg:p-3.5 ${
+            style={{
+              backgroundImage: `linear-gradient(145deg, rgba(64, 58, 46, 0.58) 0%, rgba(22, 20, 17, 0.82) 50%, rgba(12, 11, 9, 0.92) 100%), url(${NEUTRAL_TERRAIN_IMAGE})`,
+              backgroundSize: '100% 100%, 240px 320px',
+            }}
+            className={`arena-monolith-frame relative ${boardFitClass} p-2 sm:p-2.5 lg:p-3 ${
               boardShakeRarity ? `animate-board-shake-${boardShakeRarity}` : ''
             }`}
           >
             <BattlefieldMonolithFrame />
 
-            <div className="arena-monolith-bed relative z-10 p-1.5 sm:p-2 lg:p-2.5">
+            <div className="arena-monolith-bed relative z-10 p-1 sm:p-1.5 lg:p-2">
               <div
                 aria-hidden="true"
                 className="pointer-events-none absolute inset-0 overflow-hidden"
