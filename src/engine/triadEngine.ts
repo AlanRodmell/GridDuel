@@ -477,6 +477,19 @@ export function buildPlayerHand(
     augmentId: inst.augmentId,
   }));
 
+  // Safety loaner backfill if the player sold down below `unitCount` owned cards
+  let loanerIdx = 0;
+  while (hand.length < unitCount) {
+    const fallbackDef = CARDS[loanerIdx % Math.min(12, CARDS.length)];
+    loanerIdx += 1;
+    hand.push({
+      uid: `loaner-${fallbackDef.id}-${loanerIdx}`,
+      cardId: fallbackDef.id,
+      stats: { ...fallbackDef.stats },
+      arrows: [...fallbackDef.arrows],
+    });
+  }
+
   if (powerCardId && POWER_CARD_MAP[powerCardId]) {
     const unlockedSet = fighterWins ? getUnlockedPowerCardIdSet(fighterWins) : null;
     if (!unlockedSet || unlockedSet.has(powerCardId)) {

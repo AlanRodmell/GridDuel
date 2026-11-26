@@ -371,8 +371,7 @@ export const MatchSpoilsModal: React.FC<MatchSpoilsModalProps> = ({
                   const isUpgradeHighlight =
                     !summary.spoilClaimedUid &&
                     !isBonusMythic &&
-                    (comparison?.verdict === 'upgrade' || Boolean(spoilRune)) &&
-                    ownedCopies < MAX_COPIES_PER_CARD;
+                    (comparison?.verdict === 'upgrade' || Boolean(spoilRune));
 
                   return (
                     <div
@@ -452,16 +451,12 @@ export const MatchSpoilsModal: React.FC<MatchSpoilsModalProps> = ({
                           }`}
                         >
                           {isClaimed
-                            ? summary.spoilWasOverflow
-                              ? `Auto-Sold (+${summary.spoilBonusGold}g)`
-                              : `Claimed (${ownedCopies}/${MAX_COPIES_PER_CARD})`
+                            ? `Claimed (×${ownedCopies})`
                             : isBonusMythic
                             ? '★ Mythic Bonus Drop'
                             : ownedCopies === 0
                             ? '★ New Card'
-                            : ownedCopies >= MAX_COPIES_PER_CARD
-                            ? `Owned: ${ownedCopies}/${MAX_COPIES_PER_CARD} · Auto-sells`
-                            : `Owned: ${ownedCopies}/${MAX_COPIES_PER_CARD}`}
+                            : `Owned: ×${ownedCopies}`}
                         </div>
                       </div>
                     </div>
@@ -471,12 +466,8 @@ export const MatchSpoilsModal: React.FC<MatchSpoilsModalProps> = ({
 
               {summary.spoilClaimedCardId && (
                 <div className="rounded-[3px] bg-emerald-950/55 border border-emerald-500/45 px-4 py-2.5 text-xs sm:text-sm text-emerald-200 font-medium">
-                  {CARD_MAP[summary.spoilClaimedCardId]?.name}{' '}
-                  {summary.spoilWasOverflow
-                    ? `was already at ${MAX_COPIES_PER_CARD}/${MAX_COPIES_PER_CARD} copies and auto-sold for +${summary.spoilBonusGold}g!`
-                    : `added to your collection (${
-                        profile.owned[summary.spoilClaimedCardId] ?? 1
-                      }/${MAX_COPIES_PER_CARD} copies owned)!`}
+                  {CARD_MAP[summary.spoilClaimedCardId]?.name} added to your collection (
+                  {profile.owned[summary.spoilClaimedCardId] ?? 1} owned)!
                 </div>
               )}
             </div>

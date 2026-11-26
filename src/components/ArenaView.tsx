@@ -1292,14 +1292,15 @@ export const ArenaView: React.FC<ArenaViewProps> = ({
             <button
               type="button"
               onClick={() => {
-                sound.select();
+                sound.latch(true);
                 setConfirmingRetreat(true);
               }}
-              aria-label="Retreat from match"
-              title="Retreat from match"
-              className="w-7 h-7 lg:w-8 lg:h-8 flex items-center justify-center iron-btn text-[#b8a58a] hover:text-rose-300 cursor-pointer"
+              aria-label="Exit or retreat from match"
+              title="Exit / Retreat from match"
+              className="md:hidden min-h-[28px] px-2.5 flex items-center gap-1 crimson-btn text-[10px] font-[var(--font-display)] font-bold uppercase tracking-wider cursor-pointer"
             >
-              <Flag className="w-3.5 h-3.5" />
+              <Flag className="w-3 h-3" />
+              <span>Exit</span>
             </button>
           )}
         </div>

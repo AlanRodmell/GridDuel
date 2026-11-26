@@ -6,6 +6,7 @@ import {
   HardDrive,
   Home,
   LayoutGrid,
+  LogOut,
   MousePointerClick,
   Music,
   Settings,
@@ -87,14 +88,22 @@ export default function App() {
 
   const [optionsMenuOpen, setOptionsMenuOpen] = useState(false);
   const [mobileOptionsOpen, setMobileOptionsOpen] = useState(false);
+  const [exitMatchConfirmOpen, setExitMatchConfirmOpen] = useState(false);
   const [rulesOpen, setRulesOpen] = useState(false);
   const [musicModalOpen, setMusicModalOpen] = useState(false);
   const [saveVaultOpen, setSaveVaultOpen] = useState(false);
 
-  const [musicEnabled, setMusicEnabled] = useState(false);
-  const [musicVolume, setMusicVolume] = useState(0.55);
-  const [activeMusicTheme, setActiveMusicTheme] = useState<MusicThemeId>('tavern');
-  const [adaptiveMusic, setAdaptiveMusic] = useState(true);
+  const [musicEnabled, setMusicEnabled] = useState(true);
+  const [musicVolume, setMusicVolume] = useState(0.36);
+  const [activeMusicTheme, setActiveMusicTheme] = useState<MusicThemeId>('wardrums');
+  const [adaptiveMusic, setAdaptiveMusic] = useState(false);
+
+  useEffect(() => {
+    music.setVolume(musicVolume);
+    music.setTheme(activeMusicTheme);
+    music.setEnabled(musicEnabled);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const desktopOptionsRef = useRef<HTMLDivElement | null>(null);
   const mobileOptionsRef = useRef<HTMLDivElement | null>(null);
@@ -102,18 +111,25 @@ export default function App() {
   const lockViewportForMatch =
     activeTab === 'home' && battleFlowActive && isMatchActive;
 
-  // Close cogwheel options popover on outside click or Escape
   useEffect(() => {
-    if (!optionsMenuOpen && !mobileOptionsOpen) return;
+    if (!isMatchActive) {
+      setExitMatchConfirmOpen(false);
+    }
+  }, [isMatchActive]);
+
+  // Close cogwheel options or exit confirmation popover on outside click or Escape
+  useEffect(() => {
+    if (!optionsMenuOpen && !mobileOptionsOpen && !exitMatchConfirmOpen) return;
     const handlePointerDown = (e: MouseEvent) => {
       const target = e.target as Node | null;
       if (
-        optionsMenuOpen &&
+        (optionsMenuOpen || exitMatchConfirmOpen) &&
         desktopOptionsRef.current &&
         target &&
         !desktopOptionsRef.current.contains(target)
       ) {
         setOptionsMenuOpen(false);
+        setExitMatchConfirmOpen(false);
       }
       if (
         mobileOptionsOpen &&
@@ -128,6 +144,7 @@ export default function App() {
       if (e.key === 'Escape') {
         setOptionsMenuOpen(false);
         setMobileOptionsOpen(false);
+        setExitMatchConfirmOpen(false);
       }
     };
     window.addEventListener('mousedown', handlePointerDown);
@@ -136,7 +153,7 @@ export default function App() {
       window.removeEventListener('mousedown', handlePointerDown);
       window.removeEventListener('keydown', handleEsc);
     };
-  }, [mobileOptionsOpen, optionsMenuOpen]);
+  }, [exitMatchConfirmOpen, mobileOptionsOpen, optionsMenuOpen]);
 
   // Global desktop keyboard shortcuts: R = Field Codex, M = Mute/Unmute SFX
   useEffect(() => {
@@ -193,17 +210,36 @@ export default function App() {
     [adaptiveMusic]
   );
 
+  const confirmExitActiveMatch = () => {
+    sound.drawer(false);
+    setExitMatchConfirmOpen(false);
+    setOptionsMenuOpen(false);
+    setMobileOptionsOpen(false);
+    setIsMatchActive(false);
+    setBattleFlowActive(false);
+    setActiveTab('home');
+    if (adaptiveMusic) {
+      setActiveMusicTheme('tavern');
+      music.setTheme('tavern');
+    }
+  };
+
   const handleNavHome = () => {
-    sound.nav();
     setOptionsMenuOpen(false);
     setMobileOptionsOpen(false);
     if (activeTab === 'home') {
-      // If browsing challenger/deck setup (not mid-match), return to the Home starting page!
-      if (battleFlowActive && !isMatchActive) {
+      if (isMatchActive) {
+        sound.latch(true);
+        setExitMatchConfirmOpen(true);
+        return;
+      }
+      sound.nav();
+      if (battleFlowActive) {
         setBattleFlowActive(false);
       }
       return;
     }
+    sound.nav();
     setActiveTab('home');
   };
 
@@ -440,12 +476,46 @@ export default function App() {
             </nav>
           </div>
 
-          {/* Bottom-Left Cogwheel Options Menu */}
-          <div ref={desktopOptionsRef} className="relative w-full flex flex-col items-center pt-2">
-            <div className="ornate-divider w-full mb-2.5" />
+          {/* Bottom-Left Exit Match + Cogwheel Options Stack */}
+          <div ref={desktopOptionsRef} className="relative w-full flex flex-col items-center gap-2 pt-2">
+            <div className="ornate-divider w-full mb-0.5" />
+
+            {(isMatchActive || (activeTab === 'home' && battleFlowActive)) && (
+              <button
+                type="button"
+                onClick={() => {
+                  setOptionsMenuOpen(false);
+                  if (isMatchActive) {
+                    setExitMatchConfirmOpen((prev) => {
+                      sound.latch(!prev);
+                      return !prev;
+                    });
+                  } else {
+                    sound.drawer(false);
+                    setBattleFlowActive(false);
+                  }
+                }}
+                aria-label={isMatchActive ? 'Exit current match' : 'Exit battle setup'}
+                title={isMatchActive ? 'Exit Match' : 'Back to Home'}
+                className={`w-full py-2 flex flex-col items-center justify-center gap-1 transition-all cursor-pointer ${
+                  exitMatchConfirmOpen
+                    ? 'crimson-btn font-bold'
+                    : isMatchActive
+                    ? 'crimson-btn text-rose-100 hover:brightness-110'
+                    : 'iron-btn text-[#d8b892] hover:text-rose-200'
+                }`}
+              >
+                <LogOut className="w-4 h-4" />
+                <span className="font-[var(--font-display)] text-[8.5px] uppercase tracking-wider leading-none">
+                  Exit
+                </span>
+              </button>
+            )}
+
             <button
               type="button"
               onClick={() => {
+                setExitMatchConfirmOpen(false);
                 setOptionsMenuOpen((prev) => {
                   sound.latch(!prev);
                   return !prev;
@@ -469,6 +539,38 @@ export default function App() {
                 <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-emerald-400" />
               )}
             </button>
+
+            {exitMatchConfirmOpen && isMatchActive && (
+              <div className="absolute bottom-0 left-[calc(100%+10px)] z-50 w-56 brass-panel p-3 space-y-2.5 shadow-[0_18px_48px_rgba(0,0,0,0.94)] animate-preview-pop">
+                <div className="space-y-1">
+                  <div className="font-[var(--font-display)] text-xs font-bold uppercase tracking-wider text-rose-300">
+                    Exit Current Match?
+                  </div>
+                  <p className="font-[var(--font-serif)] text-xs text-[#cbb89a] leading-snug">
+                    Abandon this duel and return to the Home war table?
+                  </p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={confirmExitActiveMatch}
+                    className="flex-1 min-h-[34px] px-2.5 py-1 crimson-btn font-[var(--font-display)] text-[11px] font-bold uppercase tracking-wider cursor-pointer"
+                  >
+                    Exit Match
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      sound.select();
+                      setExitMatchConfirmOpen(false);
+                    }}
+                    className="min-h-[34px] px-2.5 py-1 iron-btn font-[var(--font-display)] text-[11px] text-[#dfd0b6] cursor-pointer"
+                  >
+                    Stay
+                  </button>
+                </div>
+              </div>
+            )}
 
             {optionsMenuOpen && (
               <div className="absolute bottom-0 left-[calc(100%+10px)] z-50 animate-preview-pop">

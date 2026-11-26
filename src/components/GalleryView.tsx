@@ -316,7 +316,7 @@ export const GalleryView: React.FC<GalleryViewProps> = ({
             </span>
             <span aria-hidden="true">·</span>
             <span className="font-mono tabular-nums text-[#d6c5a9]">
-              {totalOwnedCopies} Total Rolled Copies (Max {MAX_COPIES_PER_CARD} per card)
+              {totalOwnedCopies} Total Rolled Copies
             </span>
           </div>
         </div>
@@ -857,17 +857,15 @@ export const GalleryView: React.FC<GalleryViewProps> = ({
                       setSelectedCopyUid(bestCopy?.uid ?? null);
                     }}
                   />
-                  {/* Copy Count Badge (1/5 to 5/5) */}
+                  {/* Copy Count Badge */}
                   <span
                     className={`organic-tag pointer-events-none absolute top-2 left-2 z-20 px-2 py-0.5 font-mono text-[10px] font-bold tabular-nums shadow ${
-                      count >= MAX_COPIES_PER_CARD
-                        ? 'bg-[#e2b053] text-[#170f06]'
-                        : count > 1
+                      count > 1
                         ? 'brass-plaque text-[#f0c76e]'
                         : 'bg-[#19120c]/95 text-[#cbb89a]'
                     }`}
                   >
-                    {count}/{MAX_COPIES_PER_CARD}
+                    ×{count}
                   </span>
                   {inDeck && (
                     <span
@@ -939,7 +937,7 @@ export const GalleryView: React.FC<GalleryViewProps> = ({
                   </span>
                   <span aria-hidden="true">·</span>
                   <span>
-                    Copies: {inspectedCopies.length}/{MAX_COPIES_PER_CARD}
+                    Copies Owned: {inspectedCopies.length}
                   </span>
                 </div>
               </div>
@@ -1066,7 +1064,7 @@ export const GalleryView: React.FC<GalleryViewProps> = ({
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
                       <h3 className="font-[var(--font-display)] text-xs font-bold uppercase tracking-wider text-[#dfd0b6]">
-                        Owned Rolled Copies ({inspectedCopies.length} / {MAX_COPIES_PER_CARD})
+                        Owned Rolled Copies ({inspectedCopies.length})
                       </h3>
                       {inspectedCopies.length > 1 && (
                         <button
@@ -1103,7 +1101,7 @@ export const GalleryView: React.FC<GalleryViewProps> = ({
                           copy.arrows,
                           copy.augmentId
                         );
-                        const canSell = totalOwnedCopies > MAX_UNIT_CAPACITY;
+                        const canSell = true;
                         const bestRef = inspectedCopies[0];
                         const statDiff =
                           copy.stats.power +

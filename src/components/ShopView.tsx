@@ -4,13 +4,16 @@ import {
   Coins,
   Crown,
   Dices,
+  Flame,
   Hammer,
   PackageOpen,
+  Search,
   Sparkles,
   Trash2,
   Wand2,
   X,
 } from 'lucide-react';
+import { ELEMENT_META, TRIBE_META } from '../data/biomes';
 import {
   BOOSTER_PACKS,
   CARD_MAP,
@@ -22,7 +25,6 @@ import {
   getCardSellValue,
   getCardThumbUrl,
   getStatsPowerScore,
-  MAX_COPIES_PER_CARD,
   RARITY_ARROW_RANGE,
   RARITY_STAT_RANGE,
   sortCardCopies,
@@ -37,11 +39,12 @@ import {
   RolledCardInstance,
 } from '../types/game';
 import { sound } from '../utils/sound';
+import { CardTraitPills } from './BiomeBadge';
 import { GameCard } from './GameCard';
 
 type PackTierId = 'tavern-pack' | 'royal-vault' | 'mythic-chest';
 type ShopRarityFilter = 'all' | 'common' | 'rare' | 'epic';
-type ShopSectionTab = 'market' | 'runeforge';
+type ShopSectionTab = 'foundry' | 'runeforge';
 type ForgeCopyFilter = 'deck' | 'all' | 'crafted';
 
 interface ShopViewProps {
@@ -99,22 +102,22 @@ const PACK_STYLE: Record<
   { border: string; glow: string; badgeText: string; accentColor: string }
 > = {
   'tavern-pack': {
-    border: 'border-[#5a4a35] hover:border-[#b58742]',
-    glow: 'from-[#261d16] via-[#1a140f] to-[#120d0a]',
-    badgeText: '30 Common · 30 Rare Pool · Fresh Stat & Arrow Rolls',
-    accentColor: 'text-[#d9b880]',
+    border: 'border-[#63482d] hover:border-[#c69143]',
+    glow: 'from-[#281b11] via-[#1a120c] to-[#110c08]',
+    badgeText: 'Common & Rare Rolls · Sell or Keep Anytime',
+    accentColor: 'text-[#dfb97a]',
   },
   'royal-vault': {
-    border: 'border-[#6d4e78] hover:border-violet-400/80',
-    glow: 'from-[#281a2e] via-[#1b141d] to-[#120d0b]',
-    badgeText: 'Guaranteed Rare or Epic · Fresh Stat & Arrow Rolls',
+    border: 'border-[#6f4b80] hover:border-violet-400/80',
+    glow: 'from-[#291830] via-[#1a111f] to-[#110b14]',
+    badgeText: '1+ Rare or Epic Guaranteed',
     accentColor: 'text-violet-300',
   },
   'mythic-chest': {
-    border: 'border-[#9e7334] hover:border-[#e6b85c]',
-    glow: 'from-[#332212] via-[#20160e] to-[#120d0a]',
-    badgeText: 'Guaranteed Epic · Rare & Epic Pool',
-    accentColor: 'text-[#f0c76e]',
+    border: 'border-[#a4742f] hover:border-[#eec063]',
+    glow: 'from-[#36220f] via-[#21150b] to-[#120c08]',
+    badgeText: '1+ Epic Guaranteed · High Sanctuary Pool',
+    accentColor: 'text-[#f3cb74]',
   },
 };
 
@@ -127,18 +130,24 @@ export const ShopView: React.FC<ShopViewProps> = ({
   onSellCardInstance,
   onSellExtraCopies,
 }) => {
-  const [sectionTab, setSectionTab] = useState<ShopSectionTab>('market');
+  const [sectionTab, setSectionTab] = useState<ShopSectionTab>('foundry');
+  const [searchQuery, setSearchQuery] = useState('');
   const [ownershipFilter, setOwnershipFilter] = useState<
-    'all' | 'unowned' | 'duplicates'
+    'all' | 'unowned' | 'owned' | 'duplicates'
   >('all');
   const [rarityFilter, setRarityFilter] = useState<ShopRarityFilter>('all');
   const [typeFilter, setTypeFilter] = useState<'all' | AttackType>('all');
-  const [forgeCopyFilter, setForgeCopyFilter] = useState<ForgeCopyFilter>('deck');
+  const [selectedBlueprintId, setSelectedBlueprintId] = useState<string>(CARDS[0]?.id ?? '');
+  const [focusedCopyUid, setFocusedCopyUid] = useState<string | null>(null);
+
+  const [forgeCopyFilter, setForgeCopyFilter] = useState<ForgeCopyFilter>('all');
   const [forgeRuneTier, setForgeRuneTier] = useState<'all' | AugmentTier>('all');
   const [selectedForgeUid, setSelectedForgeUid] = useState<string | null>(null);
   const [selectedRuneId, setSelectedRuneId] = useState<string>(CRAFTABLE_AUGMENTS[0].id);
+
   const [justBoughtRoll, setJustBoughtRoll] = useState<{
     cardId: string;
+    uid: string;
     code: string;
     arrowCount: number;
   } | null>(null);
@@ -148,18 +157,41 @@ export const ShopView: React.FC<ShopViewProps> = ({
     packName: string;
     items: PackRevealItem[];
     revealed: boolean[];
+    soldGoldByUid: Record<string, number>;
   } | null>(null);
 
   const showToast = (msg: string) => {
     setStatusToast(msg);
     window.setTimeout(() => {
       setStatusToast((cur) => (cur === msg ? null : cur));
-    }, 3200);
+    }, 3400);
   };
 
-  // All owned card copies eligible for Runeforge crafting (excludes the 5 Mythics with innate legendary traits)
-  const activeDeckUidSet = useMemo(() => new Set(activeDeck.cards), [activeDeck.cards]);
+  const normalizedQuery = searchQuery.trim().toLowerCase();
 
+  const matchesSearch = (cardId: string): boolean => {
+    if (!normalizedQuery) return true;
+    const def = CARD_MAP[cardId];
+    if (!def) return false;
+    const elLabel = ELEMENT_META[def.element]?.label.toLowerCase() ?? def.element;
+    const trLabel = TRIBE_META[def.tribe]?.label.toLowerCase() ?? def.tribe;
+    const numStr = `#${String(def.number).padStart(2, '0')}`;
+    return (
+      def.name.toLowerCase().includes(normalizedQuery) ||
+      elLabel.includes(normalizedQuery) ||
+      trLabel.includes(normalizedQuery) ||
+      def.rarity.includes(normalizedQuery) ||
+      numStr.includes(normalizedQuery)
+    );
+  };
+
+  const activeDeckUidSet = useMemo(() => new Set(activeDeck.cards), [activeDeck.cards]);
+  const equippedUidsSet = useMemo(
+    () => new Set(profile.decks.flatMap((d) => d.cards)),
+    [profile.decks]
+  );
+
+  // Owned copies eligible for Runeforge crafting (excludes Mythics with permanent innate augments)
   const forgeableCopies = useMemo(() => {
     const all = Object.values(profile.inventory)
       .flat()
@@ -188,14 +220,14 @@ export const ShopView: React.FC<ShopViewProps> = ({
   );
 
   const visibleForgeCopies = useMemo(() => {
-    if (forgeCopyFilter === 'deck') {
-      return forgeableCopies.filter((c) => activeDeckUidSet.has(c.uid));
-    }
-    if (forgeCopyFilter === 'crafted') {
-      return forgeableCopies.filter((c) => Boolean(c.augmentId));
-    }
-    return forgeableCopies;
-  }, [activeDeckUidSet, forgeCopyFilter, forgeableCopies]);
+    return forgeableCopies.filter((c) => {
+      if (forgeCopyFilter === 'deck' && !activeDeckUidSet.has(c.uid)) return false;
+      if (forgeCopyFilter === 'crafted' && !c.augmentId) return false;
+      if (normalizedQuery && !matchesSearch(c.cardId)) return false;
+      return true;
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeDeckUidSet, forgeCopyFilter, forgeableCopies, normalizedQuery]);
 
   const activeForgeCopy = useMemo(() => {
     if (selectedForgeUid) {
@@ -216,31 +248,12 @@ export const ShopView: React.FC<ShopViewProps> = ({
     return CRAFTABLE_AUGMENTS.filter((r) => r.tier === forgeRuneTier);
   }, [forgeRuneTier]);
 
-  const handleForgeImbue = () => {
-    if (!activeForgeCopy || !activeRune) return;
-    const res = onCraftAugment(activeForgeCopy.uid, activeRune.id);
-    if (res.ok) {
-      showToast(
-        `${res.replaced ? 'Re-forged' : 'Imbued'} ${res.cardName} with ${res.runeName} (-${res.cost?.toLocaleString()}g)!`
-      );
-    } else if (res.message) {
-      showToast(res.message);
-    }
-  };
-
-  // Only Common, Rare, and Epic cards are sold in the Vault.
-  // Mythic cards are strictly earned from High-Tier RNG drops or Tier 9-10 Bosses.
+  // Purchasable Blueprints (Common, Rare, Epic; Mythics are Boss/Arena drops)
   const purchasableCatalog = useMemo(
     () => CARDS.filter((c) => c.rarity !== 'mythic'),
     []
   );
 
-  const equippedUidsSet = useMemo(
-    () => new Set(profile.decks.flatMap((d) => d.cards)),
-    [profile.decks]
-  );
-
-  // Calculate total extra duplicate copies (keeping best copy + all equipped copies + all Runeforged copies)
   const extraCopiesSummary = useMemo(() => {
     let extraCount = 0;
     let totalGold = 0;
@@ -263,14 +276,58 @@ export const ShopView: React.FC<ShopViewProps> = ({
 
   const marketCards = useMemo(() => {
     return purchasableCatalog.filter((c) => {
-      const count = profile.inventory[c.id]?.length ?? profile.owned[c.id] ?? 0;
+      const count = profile.inventory[c.id]?.length ?? 0;
       if (ownershipFilter === 'unowned' && count > 0) return false;
+      if (ownershipFilter === 'owned' && count === 0) return false;
       if (ownershipFilter === 'duplicates' && count < 2) return false;
       if (rarityFilter !== 'all' && c.rarity !== rarityFilter) return false;
       if (typeFilter !== 'all' && c.stats.type !== typeFilter) return false;
+      if (normalizedQuery && !matchesSearch(c.id)) return false;
       return true;
     });
-  }, [ownershipFilter, profile.inventory, profile.owned, purchasableCatalog, rarityFilter, typeFilter]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    normalizedQuery,
+    ownershipFilter,
+    profile.inventory,
+    purchasableCatalog,
+    rarityFilter,
+    typeFilter,
+  ]);
+
+  const selectedBlueprint = useMemo(() => {
+    const inFiltered = marketCards.find((c) => c.id === selectedBlueprintId);
+    if (inFiltered) return inFiltered;
+    const exact = purchasableCatalog.find((c) => c.id === selectedBlueprintId);
+    if (exact && !normalizedQuery) return exact;
+    return marketCards[0] ?? purchasableCatalog[0];
+  }, [marketCards, normalizedQuery, purchasableCatalog, selectedBlueprintId]);
+
+  const selectedBlueprintCopies = useMemo(() => {
+    if (!selectedBlueprint) return [];
+    return sortCardCopies(profile.inventory[selectedBlueprint.id] ?? []);
+  }, [profile.inventory, selectedBlueprint]);
+
+  const pedestalPreviewCopy = useMemo(() => {
+    if (!selectedBlueprintCopies.length) return null;
+    if (focusedCopyUid) {
+      const exact = selectedBlueprintCopies.find((c) => c.uid === focusedCopyUid);
+      if (exact) return exact;
+    }
+    return selectedBlueprintCopies[0];
+  }, [focusedCopyUid, selectedBlueprintCopies]);
+
+  const handleForgeImbue = () => {
+    if (!activeForgeCopy || !activeRune) return;
+    const res = onCraftAugment(activeForgeCopy.uid, activeRune.id);
+    if (res.ok) {
+      showToast(
+        `${res.replaced ? 'Re-forged' : 'Imbued'} ${res.cardName} with ${res.runeName} (-${res.cost?.toLocaleString()}g)!`
+      );
+    } else if (res.message) {
+      showToast(res.message);
+    }
+  };
 
   const handleOpenPack = (packId: PackTierId, packName: string) => {
     const items = onOpenPack(packId);
@@ -280,6 +337,7 @@ export const ShopView: React.FC<ShopViewProps> = ({
       packName,
       items,
       revealed: items.map(() => false),
+      soldGoldByUid: {},
     });
   };
 
@@ -312,842 +370,1101 @@ export const ShopView: React.FC<ShopViewProps> = ({
     });
   };
 
-  const handleDirectBuy = (cardId: string) => {
-    const rolled = onBuyCard(cardId);
-    if (rolled) {
-      const code = formatTetraCode(rolled.stats);
-      const card = CARD_MAP[cardId];
-      setJustBoughtRoll({ cardId, code, arrowCount: rolled.arrows.length });
-      showToast(
-        `Rolled ${card?.name ?? 'Card'}: [${code}] with ${rolled.arrows.length}▲ (${formatArrowsCompact(
-          rolled.arrows
-        )})!`
-      );
-      window.setTimeout(() => {
-        setJustBoughtRoll((cur) => (cur?.cardId === cardId ? null : cur));
-      }, 1900);
-    }
-  };
-
-  const pickWeakestSellCandidate = (copies: RolledCardInstance[]): RolledCardInstance | undefined => {
-    if (copies.length === 0) return undefined;
-    const asc = [...sortCardCopies(copies)].reverse();
-    // Prefer an un-augmented, unequipped copy first; then un-augmented; then absolute lowest
-    return (
-      asc.find((c) => !c.augmentId && !equippedUidsSet.has(c.uid)) ??
-      asc.find((c) => !c.augmentId) ??
-      asc[0]
-    );
-  };
-
-  const handleSellWeakestCopy = (cardId: string) => {
-    const copies = profile.inventory[cardId] ?? [];
-    const targetCopy = pickWeakestSellCandidate(copies);
-    if (!targetCopy) return;
-    const res = onSellCardInstance(targetCopy.uid);
+  const handleSellPackItem = (item: PackRevealItem) => {
+    if (!packModal || packModal.soldGoldByUid[item.instance.uid] !== undefined) return;
+    const res = onSellCardInstance(item.instance.uid);
     if (res.ok) {
-      showToast(
-        `Sold ${res.cardName} (${formatTetraCode(targetCopy.stats)} · ${targetCopy.arrows.length}▲) for +${res.goldEarned}g`
+      setPackModal((prev) =>
+        prev
+          ? {
+              ...prev,
+              soldGoldByUid: {
+                ...prev.soldGoldByUid,
+                [item.instance.uid]: res.goldEarned,
+              },
+            }
+          : null
       );
     } else if (res.message) {
       showToast(res.message);
     }
   };
 
-  const handleBulkSellExtras = () => {
-    const res = onSellExtraCopies();
+  const handleSellAllPackItems = () => {
+    if (!packModal) return;
+    const nextSold = { ...packModal.soldGoldByUid };
+    for (const item of packModal.items) {
+      if (nextSold[item.instance.uid] !== undefined) continue;
+      const res = onSellCardInstance(item.instance.uid);
+      if (res.ok) {
+        nextSold[item.instance.uid] = res.goldEarned;
+      }
+    }
+    setPackModal((prev) => (prev ? { ...prev, soldGoldByUid: nextSold } : null));
+  };
+
+  const handleDirectBuy = (cardId: string) => {
+    const rolled = onBuyCard(cardId);
+    if (rolled) {
+      const code = formatTetraCode(rolled.stats);
+      const card = CARD_MAP[cardId];
+      setSelectedBlueprintId(cardId);
+      setFocusedCopyUid(rolled.uid);
+      setJustBoughtRoll({
+        cardId,
+        uid: rolled.uid,
+        code,
+        arrowCount: rolled.arrows.length,
+      });
+      showToast(
+        `Forged ${card?.name ?? 'Card'}: [${code}] with ${rolled.arrows.length}▲ (${formatArrowsCompact(
+          rolled.arrows
+        )})!`
+      );
+      window.setTimeout(() => {
+        setJustBoughtRoll((cur) => (cur?.uid === rolled.uid ? null : cur));
+      }, 2200);
+    }
+  };
+
+  const handleSellSingleCopy = (inst: RolledCardInstance) => {
+    const res = onSellCardInstance(inst.uid);
+    if (res.ok) {
+      showToast(
+        `Smelted ${res.cardName} (${formatTetraCode(inst.stats)} · ${inst.arrows.length}▲) for +${res.goldEarned}g!`
+      );
+    } else if (res.message) {
+      showToast(res.message);
+    }
+  };
+
+  const handleBulkSellExtras = (specificCardId?: string) => {
+    const res = onSellExtraCopies(specificCardId);
     if (res.soldCount > 0) {
       showToast(
-        `Sold ${res.soldCount} duplicate card${res.soldCount > 1 ? 's' : ''} for +${res.goldEarned.toLocaleString()}g!`
+        `Smelted ${res.soldCount} duplicate cop${res.soldCount > 1 ? 'ies' : 'y'} for +${res.goldEarned.toLocaleString()}g!`
       );
+    } else {
+      showToast('No unequipped, un-forged duplicate copies to bulk-smelt.');
     }
   };
 
   return (
-    <div className="w-full px-4 sm:px-6 lg:px-8 py-5 lg:py-7 space-y-7">
-      {/* Shop Header */}
-      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3">
-        <div>
-          <h1 className="font-[var(--font-display)] text-2xl sm:text-3xl font-bold text-[#f3dfb6] tracking-[0.06em]">
-            Merchant Vault &amp; Runeforge
-          </h1>
-          <p className="font-[var(--font-serif)] text-base text-[#b39e81] mt-1">
-            Roll up to {MAX_COPIES_PER_CARD} copies per card to hunt for peak rarity stats, or sell extra copies for Gold.
-          </p>
-        </div>
-        <div className="flex flex-wrap items-center gap-2.5">
-          {extraCopiesSummary.extraCount > 0 && (
-            <button
-              type="button"
-              onClick={handleBulkSellExtras}
-              className="brass-plaque hover:border-[#e2b053] min-h-[40px] px-3.5 py-2 rounded-[3px] text-[#f5d593] font-[var(--font-display)] text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer"
-            >
-              <Coins className="w-3.5 h-3.5 text-[#e2b053]" />
-              <span>
-                Sell {extraCopiesSummary.extraCount} Extra Cop{extraCopiesSummary.extraCount > 1 ? 'ies' : 'y'} (+{extraCopiesSummary.totalGold.toLocaleString()}g)
-              </span>
-            </button>
-          )}
-          <div className="brass-plaque rounded-[3px] flex items-center gap-2 px-3.5 py-2 text-base font-mono font-bold tabular-nums text-[#f0c76e]">
-            <Coins className="w-5 h-5 text-[#dca342]" />
-            <span>{profile.gold.toLocaleString()} Gold</span>
-          </div>
-        </div>
-      </div>
+    <div className="relative w-full min-h-full overflow-x-hidden">
+      {/* Distinct Sanctuary Crucible & Runeforge Hearth Atmosphere */}
+      <div
+        aria-hidden="true"
+        className="pointer-events-none fixed inset-0 z-0 opacity-90"
+        style={{
+          background:
+            'radial-gradient(ellipse 60% 42% at 22% 8%, rgba(217, 94, 24, 0.14), transparent 70%), radial-gradient(ellipse 55% 45% at 84% 16%, rgba(139, 61, 214, 0.15), transparent 72%), linear-gradient(180deg, rgba(18,11,9,0.55) 0%, rgba(11,8,7,0.88) 100%)',
+        }}
+      />
 
-      {/* Shop Section Switcher: Cards & Packs vs Runeforge Crafting */}
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="inline-flex items-center gap-1.5 p-1 rounded-[3px] basalt-recess">
-          <button
-            type="button"
-            onClick={() => {
-              sound.nav();
-              setSectionTab('market');
-            }}
-            className={`min-h-[40px] px-4 py-1.5 rounded-[2px] font-[var(--font-display)] text-xs sm:text-sm font-semibold flex items-center gap-2 transition-colors cursor-pointer ${
-              sectionTab === 'market'
-                ? 'brass-btn font-bold'
-                : 'text-[#b39e81] hover:text-[#f3dfb6]'
-            }`}
-          >
-            <PackageOpen className="w-4 h-4" />
-            <span>Reliquaries &amp; Singles</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              sound.nav();
-              setSectionTab('runeforge');
-            }}
-            className={`min-h-[40px] px-4 py-1.5 rounded-[2px] font-[var(--font-display)] text-xs sm:text-sm font-semibold flex items-center gap-2 transition-colors cursor-pointer ${
-              sectionTab === 'runeforge'
-                ? 'bg-gradient-to-b from-[#6e3a8c] via-[#53286b] to-[#39194d] border border-violet-300/70 text-[#f5e7ff] shadow-[inset_0_1px_0_rgba(255,255,255,0.2)]'
-                : 'text-violet-300 hover:text-violet-100'
-            }`}
-          >
-            <Hammer className="w-4 h-4" />
-            <span>Runeforge Anvil</span>
-            <span
-              className={`px-1.5 py-0.5 rounded-[2px] font-mono text-[10px] font-bold ${
-                sectionTab === 'runeforge'
-                  ? 'bg-black/30 text-white'
-                  : 'bg-[#211529] text-violet-200 border border-violet-500/40'
-              }`}
-            >
-              {craftedCopyCount} Forged
-            </span>
-          </button>
-        </div>
-
-        <p className="font-[var(--font-serif)] italic text-sm text-[#a69277]">
-          {sectionTab === 'runeforge'
-            ? 'Imbue permanent battlefield augments onto your favorite card copies.'
-            : 'Augments are rare — only 5 Mythic Legends carry innate traits. Craft custom runes at the Runeforge!'}
-        </p>
-      </div>
-
-      {/* Action Toast Feedback */}
-      {statusToast && (
-        <div className="rounded-[3px] bg-emerald-950/90 border border-emerald-500/55 px-4 py-2.5 text-xs font-medium text-emerald-200 flex items-center justify-between shadow-lg">
-          <span>{statusToast}</span>
-          <button
-            type="button"
-            onClick={() => setStatusToast(null)}
-            className="text-emerald-300 hover:text-white ml-4 cursor-pointer"
-          >
-            Dismiss
-          </button>
-        </div>
-      )}
-
-      {/* ================================================================= */}
-      {/* RUNEFORGE — AUGMENT CRAFTING ANVIL                                */}
-      {/* ================================================================= */}
-      {sectionTab === 'runeforge' && (
-        <section className="space-y-5">
-          <div className="brass-panel riveted-frame rounded-[4px] p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+      <div className="relative z-10 w-full max-w-[1660px] mx-auto px-4 sm:px-6 lg:px-8 py-5 lg:py-6 space-y-5">
+        {/* ================================================================= */}
+        {/* FORGE SANCTUARY WORKBENCH HEADER + SEARCH BAR + TREASURY          */}
+        {/* ================================================================= */}
+        <header className="brass-panel riveted-frame p-4 sm:p-5 space-y-4 shadow-[0_18px_42px_rgba(0,0,0,0.75)]">
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3.5">
             <div className="space-y-1">
-              <div className="flex items-center gap-2 text-[#f3d492] font-[var(--font-display)] text-base font-bold tracking-wide">
-                <Wand2 className="w-4 h-4 text-violet-300" />
-                <span>Arcane Runeforge Anvil</span>
+              <div className="inline-flex items-center gap-2 text-[11px] font-[var(--font-display)] font-bold uppercase tracking-[0.18em] text-orange-300/90">
+                <Flame className="w-3.5 h-3.5 text-orange-400" />
+                <span>Artisan Crucible &amp; Arcane Anvil</span>
               </div>
-              <p className="font-[var(--font-serif)] text-sm text-[#cbb89a] leading-relaxed">
-                Select any owned card copy and imbue it with a battlefield Augment Rune using Gold.
-                Each copy holds <strong className="text-[#f3dfb6]">1 crafted rune</strong> and can be re-forged anytime.
-                <span className="text-[#f0c76e]">
-                  {' '}
-                  (The 5 Mythic Legendaries keep their innate traits permanently.)
-                </span>
+              <h1 className="font-[var(--font-display)] text-2xl sm:text-3xl font-bold text-[#f6e1b5] tracking-[0.06em]">
+                Sanctuary Forge
+              </h1>
+              <p className="font-[var(--font-serif)] text-sm sm:text-base text-[#c8b496]">
+                Commission fresh stat &amp; arrow rolls, crack sealed reliquaries, smelt unwanted
+                rolls for Gold anytime, or socket Augment Runes on the Anvil.
               </p>
             </div>
-            <div className="flex flex-wrap items-center gap-2 text-[11px] shrink-0">
-              <span className="organic-tag px-2.5 py-1 bg-emerald-950/90 text-emerald-200 font-mono">
-                Minor · 350–450g
-              </span>
-              <span className="organic-tag px-2.5 py-1 bg-sky-950/90 text-sky-200 font-mono">
-                Major · 1.1k–1.4k
-              </span>
-              <span className="px-2.5 py-1 brass-plaque text-[#f0c76e] font-mono">
-                Sovereign · 2.8k–3.4k
-              </span>
-            </div>
-          </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
-            {/* Step 1: Select Owned Card Copy */}
-            <div className="lg:col-span-4 iron-panel rounded-[4px] p-4 space-y-3">
-              <div className="flex items-center justify-between gap-2">
-                <h2 className="font-[var(--font-display)] text-xs font-bold uppercase tracking-wider text-[#e6b85c]">
-                  1. Choose Card Copy
-                </h2>
-                <span className="text-[11px] font-mono text-[#9b896f]">
-                  {visibleForgeCopies.length} shown
-                </span>
-              </div>
-
-              <div className="flex items-center gap-1 p-1 rounded-[3px] basalt-recess">
-                {(
-                  [
-                    { id: 'deck', label: `Active Hand` },
-                    { id: 'all', label: `All (${forgeableCopies.length})` },
-                    { id: 'crafted', label: `Forged (${craftedCopyCount})` },
-                  ] as const
-                ).map((f) => (
-                  <button
-                    key={f.id}
-                    type="button"
-                    onClick={() => {
-                      sound.select();
-                      setForgeCopyFilter(f.id);
-                    }}
-                    className={`flex-1 min-h-[32px] px-2 py-1 rounded-[2px] font-[var(--font-display)] text-[11px] transition-colors cursor-pointer ${
-                      forgeCopyFilter === f.id
-                        ? 'brass-btn font-bold'
-                        : 'text-[#a69277] hover:text-[#f0e4cc]'
-                    }`}
-                  >
-                    {f.label}
-                  </button>
-                ))}
-              </div>
-
-              {visibleForgeCopies.length === 0 ? (
-                <div className="basalt-recess rounded-[3px] p-6 text-center font-[var(--font-serif)] text-sm text-[#9b896f]">
-                  {forgeCopyFilter === 'crafted'
-                    ? 'No cards have crafted augments yet. Pick a card from Active Hand or All to forge your first rune!'
-                    : 'No forgeable copies in this filter.'}
-                </div>
-              ) : (
-                <div className="max-h-[460px] overflow-y-auto space-y-1.5 pr-1">
-                  {visibleForgeCopies.map((inst) => {
-                    const def = CARD_MAP[inst.cardId];
-                    if (!def) return null;
-                    const isSelected = activeForgeCopy?.uid === inst.uid;
-                    const inDeck = activeDeckUidSet.has(inst.uid);
-                    const instRune = inst.augmentId
-                      ? CRAFTABLE_AUGMENT_MAP[inst.augmentId]
-                      : null;
-
-                    return (
-                      <button
-                        key={inst.uid}
-                        type="button"
-                        onClick={() => {
-                          sound.select();
-                          setSelectedForgeUid(inst.uid);
-                        }}
-                        className={`w-full rounded-[3px] p-2 border flex items-center gap-2.5 text-left transition-colors cursor-pointer ${
-                          isSelected
-                            ? 'brass-plaque border-[#d8a243]'
-                            : 'basalt-recess hover:border-[#6e522b]'
-                        }`}
-                      >
-                        <div className="w-12 shrink-0">
-                          <GameCard
-                            cardId={inst.cardId}
-                            stats={inst.stats}
-                            arrows={inst.arrows}
-                            augmentId={inst.augmentId}
-                            owner={inDeck ? 'player' : 'neutral'}
-                            size="xs"
-                            disableLongPress
-                          />
-                        </div>
-                        <div className="min-w-0 flex-1 space-y-0.5">
-                          <div className="flex items-start justify-between gap-1.5">
-                            <span className="font-[var(--font-display)] text-xs font-bold text-[#f3e5cb] leading-snug">
-                              {def.name}
-                            </span>
-                            <span className="font-mono text-[11px] font-bold text-[#f0c76e] shrink-0">
-                              {formatTetraCode(inst.stats)}
-                            </span>
-                          </div>
-                          <div className="flex flex-wrap items-center gap-1.5 text-[10px]">
-                            <span className={`capitalize font-medium ${RARITY_COLOR[def.rarity]}`}>
-                              {def.rarity}
-                            </span>
-                            <span className="text-[#5e4d3a]">·</span>
-                            <span className="font-mono text-[#cbb89a]">
-                              {inst.arrows.length}▲
-                            </span>
-                            {inDeck && (
-                              <span className="px-1.5 py-0.2 rounded-[2px] bg-[#162944] border border-[#4d84c4] text-[#bcd9f7] font-semibold">
-                                In Hand
-                              </span>
-                            )}
-                          </div>
-                          {instRune ? (
-                            <div className="inline-flex items-center gap-1 text-[10px] font-mono text-violet-200 bg-violet-950/80 border border-violet-500/40 rounded-[2px] px-1.5 py-0.5 max-w-full">
-                              <Wand2 className="w-2.5 h-2.5 text-violet-300 shrink-0" />
-                              <span className="truncate">{instRune.name}</span>
-                            </div>
-                          ) : (
-                            <div className="text-[10px] text-[#7d6c56]">No augment socketed</div>
-                          )}
-                        </div>
-                      </button>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-
-            {/* Step 2: Select Craftable Augment Rune */}
-            <div className="lg:col-span-4 iron-panel rounded-[4px] p-4 space-y-3">
-              <div className="flex items-center justify-between gap-2">
-                <h2 className="font-[var(--font-display)] text-xs font-bold uppercase tracking-wider text-violet-300">
-                  2. Select Augment Rune
-                </h2>
-                <span className="text-[11px] font-mono text-[#9b896f]">
-                  {visibleRunes.length} runes
-                </span>
-              </div>
-
-              <div className="flex items-center gap-1 p-1 rounded-[3px] basalt-recess">
-                {(['all', 'minor', 'major', 'sovereign'] as const).map((tier) => (
-                  <button
-                    key={tier}
-                    type="button"
-                    onClick={() => {
-                      sound.select();
-                      setForgeRuneTier(tier);
-                    }}
-                    className={`flex-1 min-h-[32px] px-2 py-1 rounded-[2px] font-[var(--font-display)] text-[11px] capitalize transition-colors cursor-pointer ${
-                      forgeRuneTier === tier
-                        ? 'bg-[#5c2d78] border border-violet-300/60 text-white font-bold'
-                        : 'text-[#a69277] hover:text-[#f0e4cc]'
-                    }`}
-                  >
-                    {tier}
-                  </button>
-                ))}
-              </div>
-
-              <div className="max-h-[460px] overflow-y-auto space-y-2 pr-1">
-                {visibleRunes.map((rune) => {
-                  const isSelected = activeRune.id === rune.id;
-                  const isAlreadyOnCopy = activeForgeCopy?.augmentId === rune.id;
-                  const canAfford = profile.gold >= rune.craftCost;
-                  const tierMeta = RUNE_TIER_BADGE[rune.tier];
-
-                  return (
-                    <button
-                      key={rune.id}
-                      type="button"
-                      onClick={() => {
-                        sound.select();
-                        setSelectedRuneId(rune.id);
-                      }}
-                      className={`w-full rounded-[3px] p-3 border text-left space-y-1.5 transition-colors cursor-pointer ${
-                        isSelected
-                          ? 'bg-[#261830] border-violet-400/80 shadow'
-                          : 'basalt-recess hover:border-[#6e522b]'
-                      }`}
-                    >
-                      <div className="flex items-center justify-between gap-2">
-                        <div className="flex items-center gap-1.5 min-w-0">
-                          <Wand2 className="w-3.5 h-3.5 text-violet-300 shrink-0" />
-                          <span className="font-[var(--font-display)] text-xs font-bold text-[#f3e5cb] truncate">
-                            {rune.name}
-                          </span>
-                        </div>
-                        <span
-                          className={`font-mono text-xs font-bold shrink-0 flex items-center gap-1 ${
-                            isAlreadyOnCopy
-                              ? 'text-emerald-400'
-                              : canAfford
-                              ? 'text-[#f0c76e]'
-                              : 'text-[#6e5f4c]'
-                          }`}
-                        >
-                          {isAlreadyOnCopy ? (
-                            <>
-                              <Check className="w-3 h-3" />
-                              <span>Socketed</span>
-                            </>
-                          ) : (
-                            <>
-                              <Coins className="w-3 h-3" />
-                              <span>{rune.craftCost.toLocaleString()}g</span>
-                            </>
-                          )}
-                        </span>
-                      </div>
-
-                      <div className="flex flex-wrap items-center gap-1.5">
-                        <span
-                          className={`organic-tag px-2 py-0.5 text-[9.5px] font-bold uppercase tracking-wider ${tierMeta.badgeClass}`}
-                        >
-                          {tierMeta.label}
-                        </span>
-                        <span className="organic-tag px-2 py-0.5 bg-violet-950/95 font-mono text-[10px] font-semibold text-violet-200">
-                          {rune.shortTag}
-                        </span>
-                      </div>
-
-                      <p className="font-[var(--font-serif)] text-[13.5px] text-[#cbb89a] leading-snug">
-                        {rune.description}
-                      </p>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* Step 3: Live Tarot Forging Preview & Craft Button */}
-            <div className="lg:col-span-4 brass-panel riveted-frame rounded-[4px] p-4 sm:p-5 space-y-4">
-              <div className="flex items-center justify-between gap-2">
-                <h2 className="font-[var(--font-display)] text-xs font-bold uppercase tracking-wider text-[#f3d492] flex items-center gap-1.5">
-                  <Sparkles className="w-3.5 h-3.5 text-[#e2b053]" />
-                  <span>3. Forging Anvil</span>
-                </h2>
-                {currentCraftedRune && (
-                  <span className="text-[10px] font-mono text-violet-200 px-2 py-0.5 rounded-[2px] bg-violet-950/80 border border-violet-400/40">
-                    Re-forge Slot
-                  </span>
-                )}
-              </div>
-
-              {activeForgeCopy && activeForgeCard ? (
-                <>
-                  <div className="max-w-[316px] mx-auto">
-                    <GameCard
-                      cardId={activeForgeCopy.cardId}
-                      stats={activeForgeCopy.stats}
-                      arrows={activeForgeCopy.arrows}
-                      augmentId={activeRune.id}
-                      owner="neutral"
-                      variant="tarot"
-                      size="lg"
-                      disableLongPress
-                    />
-                  </div>
-
-                  <div className="basalt-recess rounded-[3px] p-3 space-y-1.5 text-xs">
-                    <div className="flex items-center justify-between gap-2">
-                      <span className="text-[#9b896f]">Target Copy</span>
-                      <span className="font-semibold text-[#f3e5cb]">
-                        {activeForgeCard.name}{' '}
-                        <span className="font-mono text-[#f0c76e]">
-                          ({formatTetraCode(activeForgeCopy.stats)} · {activeForgeCopy.arrows.length}▲)
-                        </span>
-                      </span>
-                    </div>
-                    <div className="flex items-center justify-between gap-2">
-                      <span className="text-[#9b896f]">Current Augment</span>
-                      <span className="text-violet-200 font-medium">
-                        {currentCraftedRune ? currentCraftedRune.name : 'None'}
-                      </span>
-                    </div>
-                    <div className="flex items-center justify-between gap-2">
-                      <span className="text-[#9b896f]">New Augment</span>
-                      <span className="text-emerald-400 font-semibold">{activeRune.name}</span>
-                    </div>
-                  </div>
-
-                  {(() => {
-                    const isSameRune = activeForgeCopy.augmentId === activeRune.id;
-                    const canAfford = profile.gold >= activeRune.craftCost;
-                    const isDisabled = isSameRune || !canAfford;
-
-                    return (
-                      <button
-                        type="button"
-                        disabled={isDisabled}
-                        onClick={handleForgeImbue}
-                        className={`w-full min-h-[46px] px-4 py-2.5 rounded-[3px] font-bold text-sm flex items-center justify-center gap-2 transition-all ${
-                          isSameRune
-                            ? 'bg-emerald-950/75 border border-emerald-500/45 text-emerald-300 font-[var(--font-display)] cursor-not-allowed'
-                            : canAfford
-                            ? 'brass-btn cursor-pointer'
-                            : 'basalt-recess text-[#6e5f4c] font-[var(--font-display)] cursor-not-allowed'
-                        }`}
-                      >
-                        {isSameRune ? (
-                          <>
-                            <Check className="w-4 h-4" />
-                            <span>Already Socketed</span>
-                          </>
-                        ) : (
-                          <>
-                            <Hammer className="w-4 h-4" />
-                            <span>
-                              {currentCraftedRune ? 'Re-forge' : 'Imbue'} {activeRune.name} ·{' '}
-                              {activeRune.craftCost.toLocaleString()}g
-                            </span>
-                          </>
-                        )}
-                      </button>
-                    );
-                  })()}
-                </>
-              ) : (
-                <div className="basalt-recess rounded-[3px] p-8 text-center font-[var(--font-serif)] text-sm text-[#9b896f]">
-                  Select an owned card copy on the left to preview and craft an augment.
-                </div>
-              )}
-            </div>
-          </div>
-        </section>
-      )}
-
-      {sectionTab === 'market' && (
-      <>
-      {/* Rarity Tier Pricing, Stat Roll Ranges & Mythic Combat Exclusivity Notice */}
-      <div className="iron-panel rounded-[4px] p-4 flex flex-col md:flex-row md:items-center justify-between gap-3 text-xs">
-        <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-[#cbb89a]">
-          <span>
-            <strong className="text-[#f3e5cb]">Common (Rolls {RARITY_STAT_RANGE.common.label}):</strong>{' '}
-            <span className="font-mono text-[#f0c76e]">140g–340g</span>
-          </span>
-          <span aria-hidden="true" className="text-[#5e4d3a]">·</span>
-          <span>
-            <strong className="text-sky-300">Rare (Rolls {RARITY_STAT_RANGE.rare.label}):</strong>{' '}
-            <span className="font-mono text-[#f0c76e]">950g–1,980g</span>
-          </span>
-          <span aria-hidden="true" className="text-[#5e4d3a]">·</span>
-          <span>
-            <strong className="text-violet-300">Epic (Rolls {RARITY_STAT_RANGE.epic.label}):</strong>{' '}
-            <span className="font-mono text-[#f0c76e]">3,800g–6,500g</span>
-          </span>
-        </div>
-
-        <div className="flex items-center gap-2 text-[#f0c76e] font-medium">
-          <Crown className="w-4 h-4 text-[#dca342] shrink-0" />
-          <span>
-            <strong>Mythics (Rolls A–F)</strong> are combat-only trophies!
-          </span>
-        </div>
-      </div>
-
-      {/* 3 Tactile Illustrated Booster Reliquaries */}
-      <section className="space-y-3">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
-          <h2 className="font-[var(--font-display)] text-sm font-bold tracking-wide text-[#f3dfb6]">
-            Sealed Booster Reliquaries (3 Rolled Cards Each · Common to Epic)
-          </h2>
-          <span className="font-[var(--font-serif)] italic text-sm text-[#a69277]">
-            Collect up to {MAX_COPIES_PER_CARD} copies per card · 6th copy auto-sells for Gold
-          </span>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {BOOSTER_PACKS.map((pack) => {
-            const canAfford = profile.gold >= pack.price;
-            const style = PACK_STYLE[pack.id];
-            const accentCard = CARD_MAP[pack.accentCardId];
-
-            return (
-              <div
-                key={pack.id}
-                className={`group relative overflow-hidden rounded-[4px] riveted-frame border bg-gradient-to-br ${style.glow} ${style.border} p-5 flex flex-col justify-between gap-5 shadow-[0_14px_32px_rgba(0,0,0,0.6)] transition-all duration-200 hover:-translate-y-1`}
-              >
-                {accentCard && (
-                  <div className="pointer-events-none absolute -right-6 -top-6 w-36 h-36 rounded-full overflow-hidden opacity-25 group-hover:opacity-35 group-hover:scale-105 transition-transform">
-                    <img
-                      src={getCardThumbUrl(accentCard.image)}
-                      alt=""
-                      width={320}
-                      height={320}
-                      loading="lazy"
-                      decoding="async"
-                      className={`w-full h-full object-cover ${accentCard.artFilter ?? ''}`}
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-l from-transparent to-[#140f0b]" />
-                  </div>
-                )}
-
-                <div className="relative z-10 flex items-start gap-3.5">
-                  <div className="w-16 shrink-0">
-                    <GameCard
-                      cardId={pack.accentCardId}
-                      owner="neutral"
-                      size="xs"
-                      showArrows={false}
-                    />
-                  </div>
-                  <div className="space-y-1 min-w-0">
-                    <div className="flex items-center gap-1.5">
-                      <PackageOpen className={`w-4 h-4 shrink-0 ${style.accentColor}`} />
-                      <h3 className="font-[var(--font-display)] text-lg font-bold text-[#f6e3be] truncate">
-                        {pack.name}
-                      </h3>
-                    </div>
-                    <p className={`text-xs font-medium ${style.accentColor}`}>
-                      {pack.guaranteeText}
-                    </p>
-                    <p className="font-[var(--font-serif)] text-sm text-[#a69277]">{style.badgeText}</p>
-                  </div>
-                </div>
-
+            <div className="flex flex-wrap items-center gap-2.5 shrink-0">
+              {extraCopiesSummary.extraCount > 0 && (
                 <button
                   type="button"
-                  disabled={!canAfford}
-                  onClick={() => handleOpenPack(pack.id, pack.name)}
-                  className={`relative z-10 w-full min-h-[44px] px-4 py-2.5 rounded-[3px] font-bold text-sm flex items-center justify-center gap-2 ${
-                    canAfford
-                      ? 'brass-btn cursor-pointer'
-                      : 'basalt-recess text-[#6e5f4c] font-[var(--font-display)] cursor-not-allowed'
-                  }`}
+                  onClick={() => handleBulkSellExtras()}
+                  className="iron-btn hover:border-[#e2b053] min-h-[40px] px-3.5 py-2 text-[#f5d593] font-[var(--font-display)] text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer"
                 >
-                  <Coins className="w-4 h-4" />
-                  <span className="font-mono tabular-nums">
-                    Open Pack · {pack.price.toLocaleString()}g
+                  <Coins className="w-3.5 h-3.5 text-[#e2b053]" />
+                  <span>
+                    Smelt {extraCopiesSummary.extraCount} Extra
+                    {extraCopiesSummary.extraCount > 1 ? 's' : ''} (+
+                    {extraCopiesSummary.totalGold.toLocaleString()}g)
                   </span>
                 </button>
+              )}
+              <div className="brass-plaque flex items-center gap-2 px-4 py-2 text-base font-mono font-bold tabular-nums text-[#f0c76e]">
+                <Coins className="w-5 h-5 text-[#dca342]" />
+                <span>{profile.gold.toLocaleString()} Gold</span>
               </div>
-            );
-          })}
-        </div>
-      </section>
-
-      {/* Single Card Market */}
-      <section className="space-y-4">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
-          <div>
-            <h2 className="font-[var(--font-display)] text-sm font-bold tracking-wide text-[#f3dfb6]">
-              Direct Card Vault ({marketCards.length} of {purchasableCatalog.length} shown)
-            </h2>
-            <p className="font-[var(--font-serif)] text-sm text-[#a69277] mt-0.5">
-              Each purchase rolls random stats within the card&apos;s rarity tier (max {MAX_COPIES_PER_CARD} copies per card)
-            </p>
+            </div>
           </div>
 
-          <div className="flex flex-wrap items-center gap-2">
-            {/* Ownership & Augment Filter */}
-            <div className="inline-flex items-center gap-1 p-1 rounded-[3px] basalt-recess">
+          {/* Unified Workbench Station Tabs + Instant Card Name Search */}
+          <div className="pt-3 border-t border-[#4b3a26]/75 flex flex-col md:flex-row md:items-center justify-between gap-3">
+            <div className="inline-flex items-center gap-1.5 p-1 basalt-recess self-start">
               <button
                 type="button"
-                onClick={() => setOwnershipFilter('all')}
-                className={`min-h-[34px] px-3 py-1 rounded-[2px] font-[var(--font-display)] text-xs transition-colors whitespace-nowrap cursor-pointer ${
-                  ownershipFilter === 'all'
-                    ? 'brass-plaque text-[#f5d593] font-bold'
-                    : 'text-[#a69277] hover:text-[#f0e4cc]'
-                }`}
-              >
-                All ({purchasableCatalog.length})
-              </button>
-              <button
-                type="button"
-                onClick={() => setOwnershipFilter('unowned')}
-                className={`min-h-[34px] px-3 py-1 rounded-[2px] font-[var(--font-display)] text-xs transition-colors whitespace-nowrap cursor-pointer ${
-                  ownershipFilter === 'unowned'
+                onClick={() => {
+                  sound.nav();
+                  setSectionTab('foundry');
+                }}
+                className={`min-h-[38px] px-4 py-1.5 font-[var(--font-display)] text-xs sm:text-sm font-semibold flex items-center gap-2 transition-colors cursor-pointer ${
+                  sectionTab === 'foundry'
                     ? 'brass-btn font-bold'
-                    : 'text-[#a69277] hover:text-[#f0e4cc]'
+                    : 'text-[#cbb89a] hover:text-[#f6e1b5]'
                 }`}
               >
-                Unowned
-              </button>
-              <button
-                type="button"
-                onClick={() => setOwnershipFilter('duplicates')}
-                className={`min-h-[34px] px-3 py-1 rounded-[2px] font-[var(--font-display)] text-xs transition-colors whitespace-nowrap cursor-pointer ${
-                  ownershipFilter === 'duplicates'
-                    ? 'brass-btn font-bold'
-                    : 'text-[#a69277] hover:text-[#f0e4cc]'
-                }`}
-              >
-                2+ Copies
+                <Flame className="w-4 h-4" />
+                <span>Card Foundry &amp; Reliquaries</span>
               </button>
               <button
                 type="button"
                 onClick={() => {
-                  sound.select();
+                  sound.nav();
                   setSectionTab('runeforge');
                 }}
-                className="min-h-[34px] px-3 py-1 rounded-[2px] font-[var(--font-display)] text-xs font-semibold text-violet-300 hover:text-white hover:bg-[#3e1f52] transition-colors whitespace-nowrap cursor-pointer"
+                className={`min-h-[38px] px-4 py-1.5 font-[var(--font-display)] text-xs sm:text-sm font-semibold flex items-center gap-2 transition-colors cursor-pointer ${
+                  sectionTab === 'runeforge'
+                    ? 'bg-gradient-to-b from-[#6e3a8c] via-[#53286b] to-[#39194d] border border-violet-300/70 text-[#f5e7ff] font-bold shadow-[inset_0_1px_0_rgba(255,255,255,0.2)]'
+                    : 'text-violet-300 hover:text-violet-100'
+                }`}
               >
-                ✦ Craft Augments →
+                <Hammer className="w-4 h-4" />
+                <span>Runeforge Anvil</span>
+                <span
+                  className={`organic-tag px-2 py-0.5 font-mono text-[10px] font-bold ${
+                    sectionTab === 'runeforge'
+                      ? 'bg-black/35 text-white'
+                      : 'bg-[#211529] text-violet-200'
+                  }`}
+                >
+                  {craftedCopyCount} Forged
+                </span>
               </button>
             </div>
 
-            {/* Rarity Filter */}
-            <div className="inline-flex items-center gap-1 p-1 rounded-[3px] basalt-recess overflow-x-auto max-w-full">
-              {(['all', 'common', 'rare', 'epic'] as ShopRarityFilter[]).map((r) => (
+            {/* Live Card Name / Tribe / Element Search Input */}
+            <div className="relative w-full md:w-80 lg:w-96">
+              <Search className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#b59e7d]" />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search card by name, tribe, or element…"
+                aria-label="Search card by name, tribe, or element"
+                className="organic-control w-full min-h-[38px] pl-9 pr-8 py-1.5 bg-[#120d09] border border-[#523d28] focus:border-[#e2b053] focus:outline-none text-sm text-[#f3e5cb] placeholder:text-[#84725a]"
+              />
+              {searchQuery && (
                 <button
-                  key={r}
                   type="button"
-                  onClick={() => setRarityFilter(r)}
-                  className={`min-h-[34px] px-2.5 py-1 rounded-[2px] font-[var(--font-display)] text-xs capitalize transition-colors whitespace-nowrap cursor-pointer ${
-                    rarityFilter === r
-                      ? 'brass-plaque text-[#f5d593] font-bold'
-                      : 'text-[#a69277] hover:text-[#f0e4cc]'
-                  }`}
+                  onClick={() => {
+                    sound.select();
+                    setSearchQuery('');
+                  }}
+                  aria-label="Clear search"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 w-6 h-6 flex items-center justify-center text-[#b59e7d] hover:text-[#f6e1b5] cursor-pointer"
                 >
-                  {r}
+                  <X className="w-3.5 h-3.5" />
                 </button>
-              ))}
-            </div>
-
-            {/* Attack Type Filter */}
-            <div className="inline-flex items-center gap-1 p-1 rounded-[3px] basalt-recess">
-              {(['all', 'P', 'M', 'X', 'A'] as const).map((t) => (
-                <button
-                  key={t}
-                  type="button"
-                  onClick={() => setTypeFilter(t)}
-                  className={`min-h-[34px] px-2.5 py-1 rounded-[2px] font-[var(--font-display)] text-xs transition-colors whitespace-nowrap cursor-pointer ${
-                    typeFilter === t
-                      ? 'brass-plaque text-[#f5d593] font-bold'
-                      : 'text-[#a69277] hover:text-[#f0e4cc]'
-                  }`}
-                >
-                  {t === 'all' ? 'All Types' : t}
-                </button>
-              ))}
+              )}
             </div>
           </div>
-        </div>
+        </header>
 
-        {marketCards.length === 0 ? (
-          <div className="iron-panel rounded-[4px] p-8 text-center">
-            <p className="font-[var(--font-display)] text-sm font-semibold text-[#f0c76e]">
-              No purchasable cards match this filter.
-            </p>
-            <p className="font-[var(--font-serif)] text-sm text-[#a69277] mt-1">
-              Reset your rarity or ownership filter to browse all {purchasableCatalog.length} shop cards.
-            </p>
-          </div>
-        ) : (
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-4 sm:gap-5">
-            {marketCards.map((card) => {
-              const sortedCopies = sortCardCopies(profile.inventory[card.id] ?? []);
-              const ownedCount = sortedCopies.length;
-              const bestCopy = sortedCopies[0];
-              const weakestCopy = pickWeakestSellCandidate(sortedCopies);
-              const isMaxCopies = ownedCount >= MAX_COPIES_PER_CARD;
-              const canAfford = profile.gold >= card.price && !isMaxCopies;
-              const wasJustBought = justBoughtRoll?.cardId === card.id;
-              const rangeLabel = RARITY_STAT_RANGE[card.rarity].label;
-              const arrowRangeLabel = RARITY_ARROW_RANGE[card.rarity].label;
-
-              return (
-                <div
-                  key={card.id}
-                  className="card-grid-item iron-panel rounded-[4px] hover:border-[#7a5d34] p-2.5 flex flex-col gap-2 transition-colors"
-                >
-                  <div className="relative">
-                    <GameCard
-                      cardId={card.id}
-                      stats={bestCopy?.stats}
-                      arrows={bestCopy?.arrows}
-                      augmentId={bestCopy?.augmentId}
-                      owner="neutral"
-                      size="md"
-                      showName
-                    />
-                    <span
-                      className={`organic-tag absolute top-1.5 right-1.5 z-30 px-2 py-0.5 text-[10px] font-mono font-bold shadow ${
-                        isMaxCopies
-                          ? 'bg-[#e2b053] text-[#170f06]'
-                          : ownedCount > 0
-                          ? 'brass-plaque text-[#f0c76e]'
-                          : 'bg-[#19120c]/95 text-[#a89478]'
-                      }`}
-                    >
-                      {ownedCount}/{MAX_COPIES_PER_CARD}
-                    </span>
-                  </div>
-
-                  <div className="flex items-center justify-between text-[11px] px-0.5">
-                    <span className={`capitalize font-medium ${RARITY_COLOR[card.rarity]}`}>
-                      #{String(card.number).padStart(2, '0')} · {card.rarity}
-                    </span>
-                    <span className="font-mono text-[10.5px] text-[#9b896f]">
-                      Rolls {rangeLabel} · {arrowRangeLabel}
-                    </span>
-                  </div>
-
-                  {bestCopy?.augmentId && CRAFTABLE_AUGMENT_MAP[bestCopy.augmentId] && (
-                    <div
-                      title={CRAFTABLE_AUGMENT_MAP[bestCopy.augmentId].description}
-                      className="rounded-[2px] bg-violet-950/65 border border-violet-500/40 px-2 py-1 text-[10px] text-violet-200 flex items-center gap-1 truncate"
-                    >
-                      <Wand2 className="w-3 h-3 text-violet-300 shrink-0" />
-                      <span className="truncate">
-                        {CRAFTABLE_AUGMENT_MAP[bestCopy.augmentId].shortTag}
-                      </span>
-                    </div>
-                  )}
-
-                  <button
-                    type="button"
-                    disabled={!canAfford}
-                    onClick={() => handleDirectBuy(card.id)}
-                    className={`w-full min-h-[40px] rounded-[3px] text-xs font-semibold flex items-center justify-center gap-1.5 transition-all mt-auto ${
-                      wasJustBought
-                        ? 'bg-emerald-600 text-[#0d0a08] font-bold'
-                        : isMaxCopies
-                        ? 'basalt-recess text-[#6e5f4c] cursor-not-allowed'
-                        : canAfford
-                        ? 'iron-btn text-[#f0c76e] hover:border-[#e2b053] cursor-pointer'
-                        : 'basalt-recess text-[#685a49] cursor-not-allowed'
-                    }`}
-                  >
-                    {wasJustBought ? (
-                      <span>
-                        Rolled {justBoughtRoll?.code} · {justBoughtRoll?.arrowCount}▲!
-                      </span>
-                    ) : isMaxCopies ? (
-                      <span>Max {MAX_COPIES_PER_CARD}/{MAX_COPIES_PER_CARD} Copies</span>
-                    ) : (
-                      <>
-                        {ownedCount > 0 ? (
-                          <Dices className="w-3.5 h-3.5" />
-                        ) : (
-                          <Coins className="w-3.5 h-3.5" />
-                        )}
-                        <span className="font-mono tabular-nums">
-                          {ownedCount > 0 ? 'Roll Copy · ' : ''}
-                          {card.price.toLocaleString()}g
-                        </span>
-                      </>
-                    )}
-                  </button>
-
-                  {weakestCopy && (
-                    <button
-                      type="button"
-                      onClick={() => handleSellWeakestCopy(card.id)}
-                      title={`Sell copy (${formatTetraCode(weakestCopy.stats)} · ${weakestCopy.arrows.length}▲)`}
-                      className="w-full min-h-[32px] rounded-[3px] basalt-recess hover:border-rose-500/50 text-[11px] font-medium text-[#9b896f] hover:text-rose-200 flex items-center justify-center gap-1 transition-colors cursor-pointer"
-                    >
-                      <Trash2 className="w-3 h-3" />
-                      <span>
-                        Sell {ownedCount > 1 ? 'Lowest' : 'Copy'} ({formatTetraCode(weakestCopy.stats)}·{weakestCopy.arrows.length}▲) +{getCardSellValue(card, weakestCopy.stats, weakestCopy.arrows, weakestCopy.augmentId)}g
-                      </span>
-                    </button>
-                  )}
-                </div>
-              );
-            })}
+        {/* Status Toast */}
+        {statusToast && (
+          <div className="organic-control bg-emerald-950/92 border border-emerald-500/55 px-4 py-2.5 text-xs font-medium text-emerald-200 flex items-center justify-between shadow-lg">
+            <span>{statusToast}</span>
+            <button
+              type="button"
+              onClick={() => setStatusToast(null)}
+              className="text-emerald-300 hover:text-white ml-4 cursor-pointer"
+            >
+              Dismiss
+            </button>
           </div>
         )}
-      </section>
-      </>
-      )}
 
-      {/* Booster Pack Interactive Reveal Modal — Carved Reliquary */}
+        {/* ================================================================= */}
+        {/* MODE 1: CARD FOUNDRY WORKBENCH + SEALED RELIQUARIES               */}
+        {/* ================================================================= */}
+        {sectionTab === 'foundry' && (
+          <div className="space-y-5">
+            {/* Compact Sealed Reliquary Forge Shelf */}
+            <section className="iron-panel p-4 space-y-3">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <div className="flex items-center gap-2">
+                  <PackageOpen className="w-4 h-4 text-[#e2b053]" />
+                  <h2 className="font-[var(--font-display)] text-xs sm:text-sm font-bold uppercase tracking-[0.12em] text-[#f3dfb6]">
+                    Sealed Reliquary Chests (3 Fresh Rolls · Keep or Sell on Reveal)
+                  </h2>
+                </div>
+                <div className="flex items-center gap-1.5 text-[11px] text-[#e8c680]">
+                  <Crown className="w-3.5 h-3.5 text-[#dca342]" />
+                  <span>Mythics (A–F) drop exclusively from Tier 6–10 Arena Bosses</span>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5">
+                {BOOSTER_PACKS.map((pack) => {
+                  const canAfford = profile.gold >= pack.price;
+                  const style = PACK_STYLE[pack.id];
+                  const accentCard = CARD_MAP[pack.accentCardId];
+
+                  return (
+                    <div
+                      key={pack.id}
+                      className={`group relative overflow-hidden riveted-frame border bg-gradient-to-br ${style.glow} ${style.border} p-3.5 flex items-center justify-between gap-3 shadow-[0_10px_24px_rgba(0,0,0,0.55)] transition-all`}
+                    >
+                      {accentCard && (
+                        <div className="pointer-events-none absolute -right-4 -top-4 w-28 h-28 rounded-full overflow-hidden opacity-20 group-hover:opacity-30 transition-opacity">
+                          <img
+                            src={getCardThumbUrl(accentCard.image)}
+                            alt=""
+                            width={160}
+                            height={160}
+                            loading="lazy"
+                            decoding="async"
+                            className={`w-full h-full object-cover ${accentCard.artFilter ?? ''}`}
+                          />
+                        </div>
+                      )}
+
+                      <div className="relative z-10 flex items-center gap-3 min-w-0">
+                        <div className="w-11 shrink-0 hidden sm:block">
+                          <GameCard
+                            cardId={pack.accentCardId}
+                            owner="neutral"
+                            size="xs"
+                            showArrows={false}
+                            disableLongPress
+                          />
+                        </div>
+                        <div className="min-w-0 space-y-0.5">
+                          <h3 className="font-[var(--font-display)] text-sm sm:text-base font-bold text-[#f6e3be] truncate">
+                            {pack.name}
+                          </h3>
+                          <p className={`text-[11px] font-semibold ${style.accentColor} truncate`}>
+                            {pack.guaranteeText}
+                          </p>
+                          <p className="font-[var(--font-serif)] text-xs text-[#b5a084] truncate">
+                            {style.badgeText}
+                          </p>
+                        </div>
+                      </div>
+
+                      <button
+                        type="button"
+                        disabled={!canAfford}
+                        onClick={() => handleOpenPack(pack.id, pack.name)}
+                        className={`relative z-10 shrink-0 min-h-[38px] px-3.5 py-2 font-bold text-xs flex items-center gap-1.5 ${
+                          canAfford
+                            ? 'brass-btn cursor-pointer'
+                            : 'basalt-recess text-[#6e5f4c] font-[var(--font-display)] cursor-not-allowed'
+                        }`}
+                      >
+                        <Coins className="w-3.5 h-3.5" />
+                        <span className="font-mono tabular-nums">
+                          {pack.price.toLocaleString()}g
+                        </span>
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+            </section>
+
+            {/* 3-STATION ARTISAN FOUNDRY WORKBENCH (Blueprint Ledger | Crucible Pedestal | Copy Smelter) */}
+            <section className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
+              {/* STATION 1: Blueprint Registry Ledger */}
+              <div className="lg:col-span-5 iron-panel p-4 space-y-3">
+                <div className="flex items-center justify-between gap-2">
+                  <h2 className="font-[var(--font-display)] text-xs font-bold uppercase tracking-wider text-[#e6b85c]">
+                    1. Blueprint Registry
+                  </h2>
+                  <span className="text-[11px] font-mono text-[#9b896f]">
+                    {marketCards.length} / {purchasableCatalog.length} blueprints
+                  </span>
+                </div>
+
+                {/* Compact Filter Controls */}
+                <div className="space-y-1.5">
+                  <div className="flex items-center gap-1 p-1 basalt-recess">
+                    {(
+                      [
+                        { id: 'all', label: 'All' },
+                        { id: 'unowned', label: 'Unowned' },
+                        { id: 'owned', label: 'Owned' },
+                        { id: 'duplicates', label: '2+ Copies' },
+                      ] as const
+                    ).map((f) => (
+                      <button
+                        key={f.id}
+                        type="button"
+                        onClick={() => {
+                          sound.select();
+                          setOwnershipFilter(f.id);
+                        }}
+                        className={`flex-1 min-h-[30px] px-2 py-0.5 font-[var(--font-display)] text-[11px] transition-colors cursor-pointer ${
+                          ownershipFilter === f.id
+                            ? 'brass-btn font-bold'
+                            : 'text-[#a69277] hover:text-[#f0e4cc]'
+                        }`}
+                      >
+                        {f.label}
+                      </button>
+                    ))}
+                  </div>
+
+                  <div className="flex flex-wrap items-center justify-between gap-1.5">
+                    <div className="flex items-center gap-1 p-1 basalt-recess flex-1">
+                      {(['all', 'common', 'rare', 'epic'] as ShopRarityFilter[]).map((r) => (
+                        <button
+                          key={r}
+                          type="button"
+                          onClick={() => {
+                            sound.select();
+                            setRarityFilter(r);
+                          }}
+                          className={`flex-1 min-h-[28px] px-2 py-0.5 font-[var(--font-display)] text-[10.5px] capitalize transition-colors cursor-pointer ${
+                            rarityFilter === r
+                              ? 'brass-plaque text-[#f5d593] font-bold'
+                              : 'text-[#a69277] hover:text-[#f0e4cc]'
+                          }`}
+                        >
+                          {r}
+                        </button>
+                      ))}
+                    </div>
+
+                    <div className="flex items-center gap-1 p-1 basalt-recess">
+                      {(['all', 'P', 'M', 'X', 'A'] as const).map((t) => (
+                        <button
+                          key={t}
+                          type="button"
+                          onClick={() => {
+                            sound.select();
+                            setTypeFilter(t);
+                          }}
+                          className={`min-h-[28px] px-2 py-0.5 font-[var(--font-display)] text-[10.5px] transition-colors cursor-pointer ${
+                            typeFilter === t
+                              ? 'brass-plaque text-[#f5d593] font-bold'
+                              : 'text-[#a69277] hover:text-[#f0e4cc]'
+                          }`}
+                        >
+                          {t === 'all' ? 'Any' : t}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                {marketCards.length === 0 ? (
+                  <div className="basalt-recess p-6 text-center space-y-2">
+                    <p className="font-[var(--font-display)] text-xs font-bold text-[#f0c76e]">
+                      No blueprints match “{searchQuery || 'current filters'}”.
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        sound.select();
+                        setSearchQuery('');
+                        setOwnershipFilter('all');
+                        setRarityFilter('all');
+                        setTypeFilter('all');
+                      }}
+                      className="iron-btn px-3 py-1.5 text-xs font-[var(--font-display)] text-[#efe3cd] cursor-pointer"
+                    >
+                      Reset Filters
+                    </button>
+                  </div>
+                ) : (
+                  <div className="max-h-[520px] overflow-y-auto space-y-1.5 pr-1">
+                    {marketCards.map((card) => {
+                      const copies = sortCardCopies(profile.inventory[card.id] ?? []);
+                      const ownedCount = copies.length;
+                      const best = copies[0];
+                      const isSelected = selectedBlueprint?.id === card.id;
+                      const canAfford = profile.gold >= card.price;
+
+                      return (
+                        <button
+                          key={card.id}
+                          type="button"
+                          onClick={() => {
+                            sound.select();
+                            setSelectedBlueprintId(card.id);
+                            setFocusedCopyUid(best?.uid ?? null);
+                          }}
+                          className={`w-full p-2 border flex items-center gap-2.5 text-left transition-colors cursor-pointer ${
+                            isSelected
+                              ? 'brass-plaque border-[#dca342]'
+                              : 'basalt-recess hover:border-[#6e522b]'
+                          }`}
+                        >
+                          <img
+                            src={getCardThumbUrl(card.image)}
+                            alt=""
+                            width={44}
+                            height={44}
+                            loading="lazy"
+                            decoding="async"
+                            className={`w-11 h-11 object-cover rounded-[3px] border border-[#564028] shrink-0 ${
+                              card.artFilter ?? ''
+                            }`}
+                          />
+
+                          <div className="min-w-0 flex-1 space-y-0.5">
+                            <div className="flex items-center justify-between gap-2">
+                              <span className="font-[var(--font-display)] text-xs sm:text-[13px] font-bold text-[#f5e7cd] truncate">
+                                <span className="font-mono text-[10.5px] text-[#9b896f] mr-1">
+                                  #{String(card.number).padStart(2, '0')}
+                                </span>
+                                {card.name}
+                              </span>
+                              <span
+                                className={`font-mono text-xs font-bold shrink-0 ${
+                                  canAfford ? 'text-[#f0c76e]' : 'text-[#776651]'
+                                }`}
+                              >
+                                {card.price.toLocaleString()}g
+                              </span>
+                            </div>
+
+                            <div className="flex flex-wrap items-center justify-between gap-1.5 text-[10.5px]">
+                              <div className="flex items-center gap-1.5">
+                                <span
+                                  className={`capitalize font-semibold ${RARITY_COLOR[card.rarity]}`}
+                                >
+                                  {card.rarity}
+                                </span>
+                                <span className="text-[#5e4d3a]">·</span>
+                                <span className="font-mono text-[#cbb89a]">
+                                  Base {formatTetraCode(card.stats)}
+                                </span>
+                              </div>
+
+                              {ownedCount > 0 ? (
+                                <span className="organic-tag px-2 py-0.5 bg-[#1d2b1f] text-emerald-300 font-mono font-bold text-[10px]">
+                                  ×{ownedCount} Owned
+                                  {best ? ` · Best ${formatTetraCode(best.stats)}` : ''}
+                                </span>
+                              ) : (
+                                <span className="text-[10px] text-[#8d7a61] italic">Unowned</span>
+                              )}
+                            </div>
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+
+              {/* STATION 2: Crucible Pedestal & Roll Press */}
+              <div className="lg:col-span-4 brass-panel riveted-frame p-4 sm:p-5 space-y-4">
+                <div className="flex items-center justify-between gap-2">
+                  <h2 className="font-[var(--font-display)] text-xs font-bold uppercase tracking-wider text-[#f3d492] flex items-center gap-1.5">
+                    <Flame className="w-3.5 h-3.5 text-orange-400" />
+                    <span>2. Crucible Pedestal</span>
+                  </h2>
+                  {selectedBlueprint && (
+                    <span
+                      className={`text-xs font-semibold capitalize ${
+                        RARITY_COLOR[selectedBlueprint.rarity]
+                      }`}
+                    >
+                      #{String(selectedBlueprint.number).padStart(2, '0')} ·{' '}
+                      {selectedBlueprint.rarity}
+                    </span>
+                  )}
+                </div>
+
+                {selectedBlueprint ? (
+                  <>
+                    <div className="max-w-[292px] mx-auto">
+                      <GameCard
+                        cardId={selectedBlueprint.id}
+                        stats={pedestalPreviewCopy?.stats}
+                        arrows={pedestalPreviewCopy?.arrows}
+                        augmentId={pedestalPreviewCopy?.augmentId}
+                        owner={
+                          pedestalPreviewCopy && activeDeckUidSet.has(pedestalPreviewCopy.uid)
+                            ? 'player'
+                            : 'neutral'
+                        }
+                        variant="tarot"
+                        size="lg"
+                        disableLongPress
+                      />
+                    </div>
+
+                    <div className="basalt-recess p-3 space-y-2 text-xs">
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <CardTraitPills
+                          element={selectedBlueprint.element}
+                          tribe={selectedBlueprint.tribe}
+                        />
+                        <span className="font-mono text-[11px] text-[#d6c3a5]">
+                          Rolls {RARITY_STAT_RANGE[selectedBlueprint.rarity].label} ·{' '}
+                          {RARITY_ARROW_RANGE[selectedBlueprint.rarity].label}
+                        </span>
+                      </div>
+
+                      <div className="flex items-center justify-between gap-2 pt-1 border-t border-[#3b2c1e]/80">
+                        <span className="text-[#9b896f]">
+                          {pedestalPreviewCopy ? 'Displayed Roll' : 'Blueprint Baseline'}
+                        </span>
+                        <span className="font-mono font-bold text-[#f0c76e]">
+                          {pedestalPreviewCopy
+                            ? `${formatTetraCode(pedestalPreviewCopy.stats)} · ${
+                                pedestalPreviewCopy.arrows.length
+                              }▲ (${formatArrowsCompact(pedestalPreviewCopy.arrows)})`
+                            : `${formatTetraCode(selectedBlueprint.stats)} · ${
+                                selectedBlueprint.arrows.length
+                              }▲`}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <button
+                        type="button"
+                        disabled={profile.gold < selectedBlueprint.price}
+                        onClick={() => handleDirectBuy(selectedBlueprint.id)}
+                        className={`w-full min-h-[46px] px-4 py-2.5 font-bold text-sm flex items-center justify-center gap-2 transition-all ${
+                          justBoughtRoll?.cardId === selectedBlueprint.id
+                            ? 'bg-emerald-600 text-[#0d0a08] font-[var(--font-display)]'
+                            : profile.gold >= selectedBlueprint.price
+                            ? 'brass-btn cursor-pointer'
+                            : 'basalt-recess text-[#6e5f4c] font-[var(--font-display)] cursor-not-allowed'
+                        }`}
+                      >
+                        {justBoughtRoll?.cardId === selectedBlueprint.id ? (
+                          <span>
+                            Forged [{justBoughtRoll.code}] · {justBoughtRoll.arrowCount}▲!
+                          </span>
+                        ) : (
+                          <>
+                            <Dices className="w-4 h-4" />
+                            <span>
+                              Commission Fresh Roll · {selectedBlueprint.price.toLocaleString()}g
+                            </span>
+                          </>
+                        )}
+                      </button>
+
+                      {pedestalPreviewCopy && !selectedBlueprint.augment && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            sound.nav();
+                            setSelectedForgeUid(pedestalPreviewCopy.uid);
+                            setSectionTab('runeforge');
+                          }}
+                          className="w-full min-h-[38px] px-3 py-1.5 iron-btn text-xs font-[var(--font-display)] font-semibold text-violet-200 hover:text-white flex items-center justify-center gap-1.5 cursor-pointer"
+                        >
+                          <Wand2 className="w-3.5 h-3.5 text-violet-300" />
+                          <span>Imbue Selected Copy at Runeforge Anvil →</span>
+                        </button>
+                      )}
+                    </div>
+                  </>
+                ) : null}
+              </div>
+
+              {/* STATION 3: Owned Copies Vault & Smelter */}
+              <div className="lg:col-span-3 iron-panel p-4 space-y-3">
+                <div className="flex items-center justify-between gap-2">
+                  <h2 className="font-[var(--font-display)] text-xs font-bold uppercase tracking-wider text-[#e6b85c]">
+                    3. Owned Rolls &amp; Smelter
+                  </h2>
+                  <span className="font-mono text-[11px] text-[#cbb89a]">
+                    ×{selectedBlueprintCopies.length} owned
+                  </span>
+                </div>
+
+                {selectedBlueprintCopies.length > 1 && selectedBlueprint && (
+                  <button
+                    type="button"
+                    onClick={() => handleBulkSellExtras(selectedBlueprint.id)}
+                    className="w-full min-h-[34px] px-3 py-1.5 brass-plaque hover:border-[#e2b053] text-[11px] font-[var(--font-display)] font-semibold text-[#f5d593] flex items-center justify-center gap-1.5 cursor-pointer"
+                  >
+                    <Coins className="w-3.5 h-3.5 text-[#e2b053]" />
+                    <span>Smelt Extras (Keep Best)</span>
+                  </button>
+                )}
+
+                {selectedBlueprintCopies.length === 0 ? (
+                  <div className="basalt-recess p-6 text-center font-[var(--font-serif)] text-sm text-[#9b896f]">
+                    You don&apos;t own any rolled copies of{' '}
+                    <strong className="text-[#e6d3b3]">{selectedBlueprint?.name}</strong> yet.
+                    Commission a fresh roll on the Crucible Pedestal!
+                  </div>
+                ) : (
+                  <div className="max-h-[470px] overflow-y-auto space-y-2 pr-1">
+                    {selectedBlueprintCopies.map((inst, idx) => {
+                      if (!selectedBlueprint) return null;
+                      const isFocused = pedestalPreviewCopy?.uid === inst.uid;
+                      const inDeck = activeDeckUidSet.has(inst.uid);
+                      const instRune = inst.augmentId
+                        ? CRAFTABLE_AUGMENT_MAP[inst.augmentId]
+                        : null;
+                      const sellVal = getCardSellValue(
+                        selectedBlueprint,
+                        inst.stats,
+                        inst.arrows,
+                        inst.augmentId
+                      );
+
+                      return (
+                        <div
+                          key={inst.uid}
+                          onClick={() => {
+                            sound.select();
+                            setFocusedCopyUid(inst.uid);
+                          }}
+                          className={`p-2.5 border space-y-2 transition-colors cursor-pointer ${
+                            isFocused
+                              ? 'brass-plaque border-[#d8a243]'
+                              : 'basalt-recess hover:border-[#6e522b]'
+                          }`}
+                        >
+                          <div className="flex items-center justify-between gap-2">
+                            <div className="flex items-center gap-1.5">
+                              <span className="font-mono text-[10.5px] font-bold text-[#a89478]">
+                                #{idx + 1}
+                              </span>
+                              <span className="font-mono text-xs font-bold text-[#f0c76e]">
+                                {formatTetraCode(inst.stats)}
+                              </span>
+                              <span className="font-mono text-[11px] text-[#dfd0b6]">
+                                · {inst.arrows.length}▲
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-1">
+                              {idx === 0 && (
+                                <span className="organic-tag px-1.5 py-0.5 bg-emerald-950/90 text-emerald-300 font-mono text-[9.5px] font-bold">
+                                  Best
+                                </span>
+                              )}
+                              {inDeck && (
+                                <span className="organic-tag px-1.5 py-0.5 bg-[#162944] text-[#bcd9f7] font-mono text-[9.5px] font-bold">
+                                  In Hand
+                                </span>
+                              )}
+                            </div>
+                          </div>
+
+                          <div className="text-[10.5px] font-mono text-[#9b896f] truncate">
+                            Arrows: {formatArrowsCompact(inst.arrows)}
+                          </div>
+
+                          {instRune && (
+                            <div className="organic-tag inline-flex items-center gap-1 px-2 py-0.5 bg-violet-950/90 text-[10px] font-mono text-violet-200 max-w-full">
+                              <Wand2 className="w-2.5 h-2.5 text-violet-300 shrink-0" />
+                              <span className="truncate">{instRune.name}</span>
+                            </div>
+                          )}
+
+                          <div className="flex items-center gap-1.5 pt-0.5">
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleSellSingleCopy(inst);
+                              }}
+                              className="flex-1 min-h-[30px] px-2.5 py-1 crimson-btn text-[11px] font-[var(--font-display)] font-bold flex items-center justify-center gap-1 cursor-pointer"
+                            >
+                              <Trash2 className="w-3 h-3" />
+                              <span>Sell +{sellVal}g</span>
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            </section>
+          </div>
+        )}
+
+        {/* ================================================================= */}
+        {/* MODE 2: RUNEFORGE — AUGMENT CRAFTING ANVIL                        */}
+        {/* ================================================================= */}
+        {sectionTab === 'runeforge' && (
+          <section className="space-y-5">
+            <div className="iron-panel p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div className="space-y-1">
+                <div className="flex items-center gap-2 text-[#f3d492] font-[var(--font-display)] text-base font-bold tracking-wide">
+                  <Wand2 className="w-4 h-4 text-violet-300" />
+                  <span>Arcane Runeforge Anvil</span>
+                </div>
+                <p className="font-[var(--font-serif)] text-sm text-[#cbb89a] leading-relaxed">
+                  Select any owned card copy and imbue it with a permanent battlefield Augment Rune.
+                  Use the search bar above to jump straight to any card by name.
+                </p>
+              </div>
+              <div className="flex flex-wrap items-center gap-2 text-[11px] shrink-0">
+                <span className="organic-tag px-2.5 py-1 bg-emerald-950/90 text-emerald-200 font-mono">
+                  Minor · 350–450g
+                </span>
+                <span className="organic-tag px-2.5 py-1 bg-sky-950/90 text-sky-200 font-mono">
+                  Major · 1.1k–1.4k
+                </span>
+                <span className="px-2.5 py-1 brass-plaque text-[#f0c76e] font-mono">
+                  Sovereign · 2.8k–3.4k
+                </span>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
+              {/* Step 1: Select Owned Card Copy */}
+              <div className="lg:col-span-4 iron-panel p-4 space-y-3">
+                <div className="flex items-center justify-between gap-2">
+                  <h2 className="font-[var(--font-display)] text-xs font-bold uppercase tracking-wider text-[#e6b85c]">
+                    1. Choose Card Copy
+                  </h2>
+                  <span className="text-[11px] font-mono text-[#9b896f]">
+                    {visibleForgeCopies.length} shown
+                  </span>
+                </div>
+
+                <div className="flex items-center gap-1 p-1 basalt-recess">
+                  {(
+                    [
+                      { id: 'all', label: `All (${forgeableCopies.length})` },
+                      { id: 'deck', label: `Active Hand` },
+                      { id: 'crafted', label: `Forged (${craftedCopyCount})` },
+                    ] as const
+                  ).map((f) => (
+                    <button
+                      key={f.id}
+                      type="button"
+                      onClick={() => {
+                        sound.select();
+                        setForgeCopyFilter(f.id);
+                      }}
+                      className={`flex-1 min-h-[32px] px-2 py-1 font-[var(--font-display)] text-[11px] transition-colors cursor-pointer ${
+                        forgeCopyFilter === f.id
+                          ? 'brass-btn font-bold'
+                          : 'text-[#a69277] hover:text-[#f0e4cc]'
+                      }`}
+                    >
+                      {f.label}
+                    </button>
+                  ))}
+                </div>
+
+                {visibleForgeCopies.length === 0 ? (
+                  <div className="basalt-recess p-6 text-center font-[var(--font-serif)] text-sm text-[#9b896f]">
+                    {normalizedQuery
+                      ? `No owned forgeable copies match “${searchQuery}”.`
+                      : forgeCopyFilter === 'crafted'
+                      ? 'No cards have crafted augments yet. Pick a card from All or Active Hand to forge your first rune!'
+                      : 'No forgeable copies in this filter.'}
+                  </div>
+                ) : (
+                  <div className="max-h-[480px] overflow-y-auto space-y-1.5 pr-1">
+                    {visibleForgeCopies.map((inst) => {
+                      const def = CARD_MAP[inst.cardId];
+                      if (!def) return null;
+                      const isSelected = activeForgeCopy?.uid === inst.uid;
+                      const inDeck = activeDeckUidSet.has(inst.uid);
+                      const instRune = inst.augmentId
+                        ? CRAFTABLE_AUGMENT_MAP[inst.augmentId]
+                        : null;
+
+                      return (
+                        <button
+                          key={inst.uid}
+                          type="button"
+                          onClick={() => {
+                            sound.select();
+                            setSelectedForgeUid(inst.uid);
+                          }}
+                          className={`w-full p-2 border flex items-center gap-2.5 text-left transition-colors cursor-pointer ${
+                            isSelected
+                              ? 'brass-plaque border-[#d8a243]'
+                              : 'basalt-recess hover:border-[#6e522b]'
+                          }`}
+                        >
+                          <div className="w-12 shrink-0">
+                            <GameCard
+                              cardId={inst.cardId}
+                              stats={inst.stats}
+                              arrows={inst.arrows}
+                              augmentId={inst.augmentId}
+                              owner={inDeck ? 'player' : 'neutral'}
+                              size="xs"
+                              disableLongPress
+                            />
+                          </div>
+                          <div className="min-w-0 flex-1 space-y-0.5">
+                            <div className="flex items-start justify-between gap-1.5">
+                              <span className="font-[var(--font-display)] text-xs font-bold text-[#f3e5cb] leading-snug">
+                                {def.name}
+                              </span>
+                              <span className="font-mono text-[11px] font-bold text-[#f0c76e] shrink-0">
+                                {formatTetraCode(inst.stats)}
+                              </span>
+                            </div>
+                            <div className="flex flex-wrap items-center gap-1.5 text-[10px]">
+                              <span className={`capitalize font-medium ${RARITY_COLOR[def.rarity]}`}>
+                                {def.rarity}
+                              </span>
+                              <span className="text-[#5e4d3a]">·</span>
+                              <span className="font-mono text-[#cbb89a]">
+                                {inst.arrows.length}▲
+                              </span>
+                              {inDeck && (
+                                <span className="organic-tag px-1.5 py-0.2 bg-[#162944] text-[#bcd9f7] font-semibold">
+                                  In Hand
+                                </span>
+                              )}
+                            </div>
+                            {instRune ? (
+                              <div className="organic-tag inline-flex items-center gap-1 text-[10px] font-mono text-violet-200 bg-violet-950/85 px-1.5 py-0.5 max-w-full">
+                                <Wand2 className="w-2.5 h-2.5 text-violet-300 shrink-0" />
+                                <span className="truncate">{instRune.name}</span>
+                              </div>
+                            ) : (
+                              <div className="text-[10px] text-[#7d6c56]">No augment socketed</div>
+                            )}
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+
+              {/* Step 2: Select Craftable Augment Rune */}
+              <div className="lg:col-span-4 iron-panel p-4 space-y-3">
+                <div className="flex items-center justify-between gap-2">
+                  <h2 className="font-[var(--font-display)] text-xs font-bold uppercase tracking-wider text-violet-300">
+                    2. Select Augment Rune
+                  </h2>
+                  <span className="text-[11px] font-mono text-[#9b896f]">
+                    {visibleRunes.length} runes
+                  </span>
+                </div>
+
+                <div className="flex items-center gap-1 p-1 basalt-recess">
+                  {(['all', 'minor', 'major', 'sovereign'] as const).map((tier) => (
+                    <button
+                      key={tier}
+                      type="button"
+                      onClick={() => {
+                        sound.select();
+                        setForgeRuneTier(tier);
+                      }}
+                      className={`flex-1 min-h-[32px] px-2 py-1 font-[var(--font-display)] text-[11px] capitalize transition-colors cursor-pointer ${
+                        forgeRuneTier === tier
+                          ? 'bg-[#5c2d78] border border-violet-300/60 text-white font-bold'
+                          : 'text-[#a69277] hover:text-[#f0e4cc]'
+                      }`}
+                    >
+                      {tier}
+                    </button>
+                  ))}
+                </div>
+
+                <div className="max-h-[480px] overflow-y-auto space-y-2 pr-1">
+                  {visibleRunes.map((rune) => {
+                    const isSelected = activeRune.id === rune.id;
+                    const isAlreadyOnCopy = activeForgeCopy?.augmentId === rune.id;
+                    const canAfford = profile.gold >= rune.craftCost;
+                    const tierMeta = RUNE_TIER_BADGE[rune.tier];
+
+                    return (
+                      <button
+                        key={rune.id}
+                        type="button"
+                        onClick={() => {
+                          sound.select();
+                          setSelectedRuneId(rune.id);
+                        }}
+                        className={`w-full p-3 border text-left space-y-1.5 transition-colors cursor-pointer ${
+                          isSelected
+                            ? 'bg-[#261830] border-violet-400/80 shadow'
+                            : 'basalt-recess hover:border-[#6e522b]'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between gap-2">
+                          <div className="flex items-center gap-1.5 min-w-0">
+                            <Wand2 className="w-3.5 h-3.5 text-violet-300 shrink-0" />
+                            <span className="font-[var(--font-display)] text-xs font-bold text-[#f3e5cb] truncate">
+                              {rune.name}
+                            </span>
+                          </div>
+                          <span
+                            className={`font-mono text-xs font-bold shrink-0 flex items-center gap-1 ${
+                              isAlreadyOnCopy
+                                ? 'text-emerald-400'
+                                : canAfford
+                                ? 'text-[#f0c76e]'
+                                : 'text-[#6e5f4c]'
+                            }`}
+                          >
+                            {isAlreadyOnCopy ? (
+                              <>
+                                <Check className="w-3 h-3" />
+                                <span>Socketed</span>
+                              </>
+                            ) : (
+                              <>
+                                <Coins className="w-3 h-3" />
+                                <span>{rune.craftCost.toLocaleString()}g</span>
+                              </>
+                            )}
+                          </span>
+                        </div>
+
+                        <div className="flex flex-wrap items-center gap-1.5">
+                          <span
+                            className={`organic-tag px-2 py-0.5 text-[9.5px] font-bold uppercase tracking-wider ${tierMeta.badgeClass}`}
+                          >
+                            {tierMeta.label}
+                          </span>
+                          <span className="organic-tag px-2 py-0.5 bg-violet-950/95 font-mono text-[10px] font-semibold text-violet-200">
+                            {rune.shortTag}
+                          </span>
+                        </div>
+
+                        <p className="font-[var(--font-serif)] text-[13.5px] text-[#cbb89a] leading-snug">
+                          {rune.description}
+                        </p>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Step 3: Live Tarot Forging Preview & Craft Button */}
+              <div className="lg:col-span-4 brass-panel riveted-frame p-4 sm:p-5 space-y-4">
+                <div className="flex items-center justify-between gap-2">
+                  <h2 className="font-[var(--font-display)] text-xs font-bold uppercase tracking-wider text-[#f3d492] flex items-center gap-1.5">
+                    <Sparkles className="w-3.5 h-3.5 text-[#e2b053]" />
+                    <span>3. Forging Anvil</span>
+                  </h2>
+                  {currentCraftedRune && (
+                    <span className="organic-tag text-[10px] font-mono text-violet-200 px-2 py-0.5 bg-violet-950/85">
+                      Re-forge Slot
+                    </span>
+                  )}
+                </div>
+
+                {activeForgeCopy && activeForgeCard ? (
+                  <>
+                    <div className="max-w-[300px] mx-auto">
+                      <GameCard
+                        cardId={activeForgeCopy.cardId}
+                        stats={activeForgeCopy.stats}
+                        arrows={activeForgeCopy.arrows}
+                        augmentId={activeRune.id}
+                        owner="neutral"
+                        variant="tarot"
+                        size="lg"
+                        disableLongPress
+                      />
+                    </div>
+
+                    <div className="basalt-recess p-3 space-y-1.5 text-xs">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-[#9b896f]">Target Copy</span>
+                        <span className="font-semibold text-[#f3e5cb]">
+                          {activeForgeCard.name}{' '}
+                          <span className="font-mono text-[#f0c76e]">
+                            ({formatTetraCode(activeForgeCopy.stats)} ·{' '}
+                            {activeForgeCopy.arrows.length}▲)
+                          </span>
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-[#9b896f]">Current Augment</span>
+                        <span className="text-violet-200 font-medium">
+                          {currentCraftedRune ? currentCraftedRune.name : 'None'}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-[#9b896f]">New Augment</span>
+                        <span className="text-emerald-400 font-semibold">{activeRune.name}</span>
+                      </div>
+                    </div>
+
+                    {(() => {
+                      const isSameRune = activeForgeCopy.augmentId === activeRune.id;
+                      const canAfford = profile.gold >= activeRune.craftCost;
+                      const isDisabled = isSameRune || !canAfford;
+                      const sellVal = getCardSellValue(
+                        activeForgeCard,
+                        activeForgeCopy.stats,
+                        activeForgeCopy.arrows,
+                        activeForgeCopy.augmentId
+                      );
+
+                      return (
+                        <div className="space-y-2">
+                          <button
+                            type="button"
+                            disabled={isDisabled}
+                            onClick={handleForgeImbue}
+                            className={`w-full min-h-[46px] px-4 py-2.5 font-bold text-sm flex items-center justify-center gap-2 transition-all ${
+                              isSameRune
+                                ? 'bg-emerald-950/75 border border-emerald-500/45 text-emerald-300 font-[var(--font-display)] cursor-not-allowed'
+                                : canAfford
+                                ? 'brass-btn cursor-pointer'
+                                : 'basalt-recess text-[#6e5f4c] font-[var(--font-display)] cursor-not-allowed'
+                            }`}
+                          >
+                            {isSameRune ? (
+                              <>
+                                <Check className="w-4 h-4" />
+                                <span>Already Socketed</span>
+                              </>
+                            ) : (
+                              <>
+                                <Hammer className="w-4 h-4" />
+                                <span>
+                                  {currentCraftedRune ? 'Re-forge' : 'Imbue'} {activeRune.name} ·{' '}
+                                  {activeRune.craftCost.toLocaleString()}g
+                                </span>
+                              </>
+                            )}
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => handleSellSingleCopy(activeForgeCopy)}
+                            className="w-full min-h-[34px] px-3 py-1.5 basalt-recess hover:border-rose-500/50 text-xs font-[var(--font-display)] text-[#b8a386] hover:text-rose-200 flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                            <span>Smelt This Copy for +{sellVal}g</span>
+                          </button>
+                        </div>
+                      );
+                    })()}
+                  </>
+                ) : (
+                  <div className="basalt-recess p-8 text-center font-[var(--font-serif)] text-sm text-[#9b896f]">
+                    Select an owned card copy on the left to preview and craft an augment.
+                  </div>
+                )}
+              </div>
+            </div>
+          </section>
+        )}
+      </div>
+
+      {/* =================================================================== */}
+      {/* BOOSTER RELIQUARY COLLECT & SELL MODAL (Never Auto-Sold!)           */}
+      {/* =================================================================== */}
       {packModal && (
         <div
           className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-[#060403]/92 p-0 sm:p-5"
@@ -1155,80 +1472,131 @@ export const ShopView: React.FC<ShopViewProps> = ({
           aria-modal="true"
           aria-labelledby="pack-modal-title"
         >
-          <div className="w-full max-w-4xl max-h-[94dvh] flex flex-col rounded-t-[6px] sm:rounded-[5px] brass-panel riveted-frame shadow-[0_28px_80px_rgba(0,0,0,0.9)] overflow-hidden">
+          <div className="w-full max-w-4xl max-h-[94dvh] flex flex-col brass-panel riveted-frame shadow-[0_28px_80px_rgba(0,0,0,0.92)] overflow-hidden">
             <div className="sm:hidden w-10 h-1 rounded-full bg-[#6d573e] mx-auto mt-2.5" />
 
-            <div className="flex items-center justify-between px-6 py-4 border-b border-[#4b3a26]/85">
+            <div className="flex flex-wrap items-center justify-between gap-2 px-5 sm:px-6 py-4 border-b border-[#4b3a26]/85">
               <div className="flex items-center gap-2">
                 <Sparkles className="w-5 h-5 text-[#e2b053]" />
                 <h2
                   id="pack-modal-title"
-                  className="font-[var(--font-display)] text-xl font-bold text-[#f6e1b5] tracking-wide"
+                  className="font-[var(--font-display)] text-lg sm:text-xl font-bold text-[#f6e1b5] tracking-wide"
                 >
                   {packModal.packName}
                 </h2>
               </div>
-              <button
-                type="button"
-                onClick={() => setPackModal(null)}
-                aria-label="Close pack reveal"
-                className="iron-btn min-h-[40px] min-w-[40px] flex items-center justify-center rounded-[3px] cursor-pointer"
-              >
-                <X className="w-5 h-5" />
-              </button>
+
+              <div className="flex items-center gap-2.5">
+                <span className="brass-plaque px-3 py-1 font-mono text-xs sm:text-sm font-bold text-[#f0c76e] inline-flex items-center gap-1.5">
+                  <Coins className="w-3.5 h-3.5 text-[#dca342]" />
+                  <span>{profile.gold.toLocaleString()}g</span>
+                </span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    sound.drawer(false);
+                    setPackModal(null);
+                  }}
+                  aria-label="Close pack reveal"
+                  className="iron-btn min-h-[38px] min-w-[38px] flex items-center justify-center cursor-pointer"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
             </div>
 
             <div className="overflow-y-auto px-5 sm:px-6 py-5 space-y-5">
-              <p className="font-[var(--font-serif)] text-base text-[#cbb89a] text-center">
+              <p className="font-[var(--font-serif)] text-sm sm:text-base text-[#cbb89a] text-center">
                 {packModal.revealed.every(Boolean)
-                  ? 'All 3 rolled cards processed into your collection!'
+                  ? 'Every pulled card is saved to your Vault — keep the rolls you want or sell any card for Gold below!'
                   : 'Tap each sealed card to flip and reveal its rolled stats & arrows'}
               </p>
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-5 max-w-3xl mx-auto">
                 {packModal.items.map((item, idx) => {
                   const isFlipped = packModal.revealed[idx];
+                  const soldGold = packModal.soldGoldByUid[item.instance.uid];
+                  const isSold = soldGold !== undefined;
+                  const sellValue = getCardSellValue(
+                    item.card,
+                    item.instance.stats,
+                    item.instance.arrows,
+                    item.instance.augmentId
+                  );
+
                   return (
-                    <div key={`${item.instance.uid}-${idx}`} className="space-y-2.5 text-center max-w-[260px] sm:max-w-none mx-auto w-full">
-                      <GameCard
-                        cardId={item.card.id}
-                        stats={item.instance.stats}
-                        arrows={item.instance.arrows}
-                        faceDown={!isFlipped}
-                        owner="neutral"
-                        size="lg"
-                        showName={isFlipped}
-                        flipKey={isFlipped ? idx + 100 : undefined}
-                        onClick={() => revealIndex(idx)}
-                      />
-                      <div className="min-h-[38px]">
+                    <div
+                      key={`${item.instance.uid}-${idx}`}
+                      className="space-y-2.5 text-center max-w-[260px] sm:max-w-none mx-auto w-full flex flex-col"
+                    >
+                      <div className={`relative transition-opacity ${isSold ? 'opacity-55' : ''}`}>
+                        <GameCard
+                          cardId={item.card.id}
+                          stats={item.instance.stats}
+                          arrows={item.instance.arrows}
+                          faceDown={!isFlipped}
+                          owner="neutral"
+                          size="lg"
+                          showName={isFlipped}
+                          flipKey={isFlipped ? idx + 100 : undefined}
+                          onClick={!isFlipped ? () => revealIndex(idx) : undefined}
+                        />
+                        {isSold && (
+                          <div className="pointer-events-none absolute inset-0 z-30 flex items-center justify-center">
+                            <span className="brass-plaque px-3 py-1.5 font-[var(--font-display)] text-xs font-bold uppercase tracking-wider text-[#f5d593] shadow-xl">
+                              Sold +{soldGold}g
+                            </span>
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="min-h-[68px] flex flex-col justify-between gap-2">
                         {isFlipped ? (
                           <>
-                            <p
-                              className={`text-xs font-semibold capitalize ${
-                                RARITY_COLOR[item.card.rarity]
-                              }`}
-                            >
-                              {formatTetraCode(item.instance.stats)} · {item.instance.arrows.length}▲
-                            </p>
-                            <p className="text-[11px] text-[#cbb89a]">
-                              {item.wasOverflowSold ? (
-                                <span className="font-mono text-[#f0c76e]">
-                                  5/5 Full · Sold +{item.overflowGold}g
-                                </span>
-                              ) : item.isNewUnlock ? (
-                                <span className="text-emerald-400 font-semibold">
-                                  New Unlock (1/{MAX_COPIES_PER_CARD})
-                                </span>
-                              ) : (
-                                <span className="text-[#e8d5b3] font-medium">
-                                  Copy #{item.copyNumber}/{MAX_COPIES_PER_CARD} Saved
-                                </span>
-                              )}
-                            </p>
+                            <div>
+                              <p
+                                className={`text-xs font-semibold capitalize ${
+                                  RARITY_COLOR[item.card.rarity]
+                                }`}
+                              >
+                                {formatTetraCode(item.instance.stats)} ·{' '}
+                                {item.instance.arrows.length}▲
+                              </p>
+                              <p className="text-[11px] text-[#cbb89a]">
+                                {isSold ? (
+                                  <span className="font-mono text-[#f0c76e]">
+                                    Converted to +{soldGold} Gold
+                                  </span>
+                                ) : item.isNewUnlock ? (
+                                  <span className="text-emerald-400 font-semibold">
+                                    ★ New Unlock!
+                                  </span>
+                                ) : (
+                                  <span className="text-[#e8d5b3] font-medium">
+                                    Copy #{item.copyNumber} in Vault
+                                  </span>
+                                )}
+                              </p>
+                            </div>
+
+                            {isSold ? (
+                              <div className="min-h-[34px] px-3 py-1.5 basalt-recess font-[var(--font-display)] text-[11px] font-semibold text-[#a89478] flex items-center justify-center gap-1">
+                                <Check className="w-3.5 h-3.5 text-emerald-400" />
+                                <span>+{soldGold}g Added</span>
+                              </div>
+                            ) : (
+                              <button
+                                type="button"
+                                onClick={() => handleSellPackItem(item)}
+                                className="w-full min-h-[34px] px-3 py-1.5 iron-btn hover:border-[#e2b053] text-xs font-[var(--font-display)] font-bold text-[#f0c76e] flex items-center justify-center gap-1.5 cursor-pointer"
+                              >
+                                <Coins className="w-3.5 h-3.5 text-[#dca342]" />
+                                <span>Sell for +{sellValue}g</span>
+                              </button>
+                            )}
                           </>
                         ) : (
-                          <p className="font-[var(--font-serif)] italic text-sm text-[#e2b053]">
+                          <p className="font-[var(--font-serif)] italic text-sm text-[#e2b053] pt-2">
                             Tap to reveal
                           </p>
                         )}
@@ -1239,23 +1607,61 @@ export const ShopView: React.FC<ShopViewProps> = ({
               </div>
             </div>
 
-            <div className="px-5 py-4 border-t border-[#4b3a26]/85 bg-[#120d0a] flex items-center gap-3">
+            <div className="px-5 py-4 border-t border-[#4b3a26]/85 bg-[#120d0a] flex flex-col sm:flex-row items-center gap-2.5">
               {!packModal.revealed.every(Boolean) ? (
                 <button
                   type="button"
                   onClick={revealAll}
-                  className="brass-btn w-full min-h-[44px] rounded-[3px] font-bold text-sm cursor-pointer"
+                  className="brass-btn w-full min-h-[44px] font-bold text-sm cursor-pointer"
                 >
                   Reveal All 3 Cards
                 </button>
               ) : (
-                <button
-                  type="button"
-                  onClick={() => setPackModal(null)}
-                  className="brass-btn w-full min-h-[44px] rounded-[3px] font-bold text-sm cursor-pointer"
-                >
-                  Collect Cards
-                </button>
+                <>
+                  {(() => {
+                    const unsoldItems = packModal.items.filter(
+                      (it) => packModal.soldGoldByUid[it.instance.uid] === undefined
+                    );
+                    const unsoldTotalGold = unsoldItems.reduce(
+                      (sum, it) =>
+                        sum +
+                        getCardSellValue(
+                          it.card,
+                          it.instance.stats,
+                          it.instance.arrows,
+                          it.instance.augmentId
+                        ),
+                      0
+                    );
+
+                    return unsoldItems.length > 0 ? (
+                      <button
+                        type="button"
+                        onClick={handleSellAllPackItems}
+                        className="iron-btn hover:border-[#e2b053] w-full sm:w-auto min-h-[44px] px-4 font-[var(--font-display)] font-semibold text-xs sm:text-sm text-[#f0c76e] flex items-center justify-center gap-1.5 shrink-0 cursor-pointer"
+                      >
+                        <Coins className="w-4 h-4 text-[#dca342]" />
+                        <span>
+                          Sell {unsoldItems.length === 3 ? 'All 3' : `${unsoldItems.length} Remaining`}{' '}
+                          (+{unsoldTotalGold}g)
+                        </span>
+                      </button>
+                    ) : null;
+                  })()}
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      sound.drawer(false);
+                      setPackModal(null);
+                    }}
+                    className="brass-btn w-full flex-1 min-h-[44px] font-bold text-sm cursor-pointer"
+                  >
+                    {Object.keys(packModal.soldGoldByUid).length === packModal.items.length
+                      ? 'Done'
+                      : 'Keep Remaining & Close'}
+                  </button>
+                </>
               )}
             </div>
           </div>

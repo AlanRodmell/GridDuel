@@ -1341,7 +1341,7 @@ export const DeckBuilderWorkspace: React.FC<DeckBuilderWorkspaceProps> = ({
                           className="absolute top-1.5 left-1.5 z-20 px-1.5 py-0.5 brass-plaque font-mono text-[10px] font-bold text-[#f5d593] shadow cursor-pointer"
                         >
                           {groupByCard
-                            ? `${copyCount}/${MAX_COPIES_PER_CARD}`
+                            ? `×${copyCount}`
                             : `#${copyRank + 1}/${copyCount}`}
                         </button>
                       )}
@@ -1453,8 +1453,7 @@ export const DeckBuilderWorkspace: React.FC<DeckBuilderWorkspaceProps> = ({
               <div>
                 <div className="flex items-center gap-2">
                   <h3 className="font-[var(--font-display)] text-lg sm:text-xl font-bold text-[#f6e1b5] tracking-wide">
-                    {compareCardDef.name} — Rolled Copies ({compareCopies.length}/
-                    {MAX_COPIES_PER_CARD})
+                    {compareCardDef.name} — Rolled Copies ({compareCopies.length})
                   </h3>
                   <span
                     className={`text-xs font-semibold capitalize ${RARITY_TEXT[compareCardDef.rarity]}`}

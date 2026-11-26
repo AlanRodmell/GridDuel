@@ -70,7 +70,7 @@ function syncOwnedCounts(
   const counts: Record<string, number> = {};
   for (const [cardId, list] of Object.entries(inventory)) {
     if (Array.isArray(list) && list.length > 0) {
-      counts[cardId] = Math.min(MAX_COPIES_PER_CARD, list.length);
+      counts[cardId] = list.length;
     }
   }
   return counts;
@@ -217,7 +217,6 @@ function parseAndSanitizeProfile(raw: string): PlayerProfile | null {
         const seenArrowSigs = new Set<string>();
         const validCopies = list
           .filter((item) => item && typeof item.uid === 'string' && item.stats)
-          .slice(0, MAX_COPIES_PER_CARD)
           .map((item) => {
             let arrows = Array.isArray(item.arrows)
               ? [...item.arrows]
@@ -254,10 +253,9 @@ function parseAndSanitizeProfile(raw: string): PlayerProfile | null {
 
     for (const [cardId, count] of Object.entries(rawOwned)) {
       if (!CARD_MAP[cardId] || count <= 0) continue;
-      const clampedCount = Math.min(MAX_COPIES_PER_CARD, count);
       const existing = inventory[cardId] ?? [];
-      if (existing.length < clampedCount) {
-        const needed = clampedCount - existing.length;
+      if (existing.length < count) {
+        const needed = count - existing.length;
         const added: RolledCardInstance[] = [];
         for (let i = 0; i < needed; i++) {
           added.push(rollCardInstance(cardId, false));
@@ -831,7 +829,7 @@ export function useProfile() {
       const card = CARD_MAP[cardId];
       if (!card || card.rarity === 'mythic' || card.price <= 0) return null;
       const currentCopies = profile.inventory[cardId] ?? [];
-      if (profile.gold < card.price || currentCopies.length >= MAX_COPIES_PER_CARD) {
+      if (profile.gold < card.price) {
         return null;
       }
 
@@ -850,7 +848,7 @@ export function useProfile() {
 
       setProfile((prev) => {
         const existing = prev.inventory[cardId] ?? [];
-        if (prev.gold < card.price || existing.length >= MAX_COPIES_PER_CARD) return prev;
+        if (prev.gold < card.price) return prev;
         const nextInv = {
           ...prev.inventory,
           [cardId]: sortCardCopies([...existing, rolled]),
@@ -875,17 +873,6 @@ export function useProfile() {
       const target = instanceMap[instanceUid];
       if (!target) {
         return { ok: false, goldEarned: 0, message: 'Card copy not found.' };
-      }
-      const totalOwnedInstances = Object.values(profile.inventory).reduce(
-        (sum, arr) => sum + arr.length,
-        0
-      );
-      if (totalOwnedInstances <= MAX_UNIT_CAPACITY) {
-        return {
-          ok: false,
-          goldEarned: 0,
-          message: `Keep at least ${MAX_UNIT_CAPACITY} unit cards in your collection for Grand Siege decks.`,
-        };
       }
 
       const card = CARD_MAP[target.cardId];
@@ -1009,7 +996,6 @@ export function useProfile() {
         nextInv[cid] = [...list];
       }
 
-      let overflowTotal = 0;
       const revealItems: PackRevealItem[] = pulls.map((card) => {
         const existing = nextInv[card.id] ?? [];
         const existingSigs = new Set(existing.map((c) => [...c.arrows].sort().join(',')));
@@ -1020,25 +1006,6 @@ export function useProfile() {
           instance = { ...instance, arrows: rollCardArrows(card, false) };
         }
         const isNewUnlock = existing.length === 0;
-
-        if (existing.length >= MAX_COPIES_PER_CARD) {
-          const overflowGold = getCardSellValue(
-            card,
-            instance.stats,
-            instance.arrows,
-            instance.augmentId
-          );
-          overflowTotal += overflowGold;
-          return {
-            card,
-            instance,
-            isNewUnlock: false,
-            wasOverflowSold: true,
-            overflowGold,
-            copyNumber: MAX_COPIES_PER_CARD,
-          };
-        }
-
         const updated = sortCardCopies([...existing, instance]);
         nextInv[card.id] = updated;
         return {
@@ -1053,7 +1020,7 @@ export function useProfile() {
 
       setProfile((prev) => ({
         ...prev,
-        gold: prev.gold - pack.price + overflowTotal,
+        gold: prev.gold - pack.price,
         inventory: nextInv,
         owned: syncOwnedCounts(nextInv),
       }));
@@ -1104,7 +1071,13 @@ export function useProfile() {
   const claimSpoilCard = useCallback(
     (
       spoilCard: HandCard
-    ): { isNew: boolean; wasOverflow: boolean; bonusGold: number; copyCount: number } => {
+    ): {
+      isNew: boolean;
+      wasOverflow: boolean;
+      bonusGold: number;
+      copyCount: number;
+      claimedInstanceUid?: string;
+    } => {
       const card = CARD_MAP[spoilCard.cardId];
       if (!card) {
         return { isNew: false, wasOverflow: false, bonusGold: 0, copyCount: 0 };
@@ -1112,10 +1085,6 @@ export function useProfile() {
 
       const existing = profile.inventory[card.id] ?? [];
       const isNew = existing.length === 0;
-      const wasOverflow = existing.length >= MAX_COPIES_PER_CARD;
-      const bonusGold = wasOverflow
-        ? getCardSellValue(card, spoilCard.stats, spoilCard.arrows, spoilCard.augmentId)
-        : 0;
 
       const newInstance: RolledCardInstance = {
         uid: `inst-${card.id}-${Date.now().toString(36)}-${Math.random()
@@ -1129,12 +1098,6 @@ export function useProfile() {
 
       setProfile((prev) => {
         const cur = prev.inventory[card.id] ?? [];
-        if (cur.length >= MAX_COPIES_PER_CARD) {
-          return {
-            ...prev,
-            gold: prev.gold + bonusGold,
-          };
-        }
         const nextInv = {
           ...prev.inventory,
           [card.id]: sortCardCopies([...cur, newInstance]),
@@ -1149,9 +1112,10 @@ export function useProfile() {
       sound.packReveal(card.rarity === 'epic' || card.rarity === 'mythic' || isNew);
       return {
         isNew,
-        wasOverflow,
-        bonusGold,
-        copyCount: wasOverflow ? MAX_COPIES_PER_CARD : existing.length + 1,
+        wasOverflow: false,
+        bonusGold: 0,
+        copyCount: existing.length + 1,
+        claimedInstanceUid: newInstance.uid,
       };
     },
     [profile.inventory]

@@ -2,7 +2,7 @@
 // Plays rich acoustic & orchestral fantasy game music (Tavern Lute/Flute, Duel Strings/Horns, Boss Symphonic)
 // with zero external API keys required, plus supports loading custom local MP3/OGG files.
 
-export type MusicThemeId = 'tavern' | 'duel' | 'boss';
+export type MusicThemeId = 'wardrums' | 'tavern' | 'duel' | 'boss';
 
 export interface MusicTrackMeta {
   id: MusicThemeId;
@@ -11,7 +11,15 @@ export interface MusicTrackMeta {
   bpm: number;
 }
 
+const BUILTIN_WARDRUMS_M4A = new URL('../assets/sfx/war_drums_loop.m4a', import.meta.url).href;
+
 export const MUSIC_TRACKS: MusicTrackMeta[] = [
+  {
+    id: 'wardrums',
+    title: 'Sanctuary War Drums',
+    subtitle: 'Trimmed & Attenuated 24-Bar Seamless Percussion Loop',
+    bpm: 140,
+  },
   {
     id: 'tavern',
     title: 'Hearthfire Tavern',
@@ -283,7 +291,7 @@ const BOSS_PATTERN: StepNote[] = [
   {},
 ];
 
-const PATTERNS: Record<MusicThemeId, StepNote[]> = {
+const PATTERNS: Record<Exclude<MusicThemeId, 'wardrums'>, StepNote[]> = {
   tavern: TAVERN_PATTERN,
   duel: DUEL_PATTERN,
   boss: BOSS_PATTERN,
@@ -296,16 +304,116 @@ class MusicEngine {
   private pinkNoise: AudioBuffer | null = null;
 
   private isPlaying = false;
-  private currentTheme: MusicThemeId = 'tavern';
-  private volume = 0.48;
+  private currentTheme: MusicThemeId = 'wardrums';
+  private volume = 0.36;
   private stepIndex = 0;
   private nextNoteTime = 0;
   private timerId: number | null = null;
+
+  // Built-in seamless Web Audio buffer loop for 'wardrums'
+  private warDrumsRawBytes: ArrayBuffer | null = null;
+  private warDrumsBuffer: AudioBuffer | null = null;
+  private warDrumsDecoding = false;
+  private warDrumsSource: AudioBufferSourceNode | null = null;
+  private warDrumsGain: GainNode | null = null;
+  private unlockBound = false;
 
   // Optional user-loaded custom MP3/OGG URLs per theme
   private customAudioUrls: Partial<Record<MusicThemeId, string>> = {};
   private customAudioEl: HTMLAudioElement | null = null;
   private activeCustomUrl: string | null = null;
+
+  constructor() {
+    if (typeof window !== 'undefined' && typeof fetch === 'function') {
+      fetch(BUILTIN_WARDRUMS_M4A)
+        .then((res) => (res.ok ? res.arrayBuffer() : Promise.reject()))
+        .then((bytes) => {
+          this.warDrumsRawBytes = bytes;
+          if (this.ctx) {
+            this.decodeWarDrumsBuffer(this.ctx);
+          }
+        })
+        .catch(() => {});
+    }
+  }
+
+  private decodeWarDrumsBuffer(ctx: AudioContext) {
+    if (this.warDrumsBuffer || this.warDrumsDecoding || !this.warDrumsRawBytes) return;
+    this.warDrumsDecoding = true;
+    ctx
+      .decodeAudioData(this.warDrumsRawBytes.slice(0))
+      .then((decoded) => {
+        this.warDrumsBuffer = decoded;
+        if (this.isPlaying && this.currentTheme === 'wardrums' && !this.customAudioUrls.wardrums) {
+          this.ensureWarDrumsLoopPlaying();
+        }
+      })
+      .catch(() => {})
+      .finally(() => {
+        this.warDrumsDecoding = false;
+      });
+  }
+
+  private bindGestureUnlock() {
+    if (this.unlockBound || typeof window === 'undefined') return;
+    this.unlockBound = true;
+    const resumeAudio = () => {
+      if (!this.isPlaying) return;
+      const ctx = this.initContext();
+      if (ctx && ctx.state === 'suspended') {
+        ctx.resume().then(() => {
+          if (this.isPlaying) this.schedulerTick();
+        }).catch(() => {});
+      } else if (this.isPlaying) {
+        this.schedulerTick();
+      }
+    };
+    window.addEventListener('pointerdown', resumeAudio, { passive: true });
+    window.addEventListener('keydown', resumeAudio, { passive: true });
+  }
+
+  private ensureWarDrumsLoopPlaying() {
+    const ctx = this.initContext();
+    if (!ctx || !this.masterGain) return;
+    this.decodeWarDrumsBuffer(ctx);
+    if (!this.warDrumsBuffer) return;
+    if (this.warDrumsSource) return;
+
+    const src = ctx.createBufferSource();
+    src.buffer = this.warDrumsBuffer;
+    src.loop = true;
+
+    const loopGain = ctx.createGain();
+    loopGain.gain.setValueAtTime(0.0001, ctx.currentTime);
+    loopGain.gain.linearRampToValueAtTime(0.85, ctx.currentTime + 0.65);
+
+    src.connect(loopGain);
+    loopGain.connect(this.masterGain);
+    src.start(0);
+
+    this.warDrumsSource = src;
+    this.warDrumsGain = loopGain;
+  }
+
+  private stopWarDrumsLoop() {
+    if (this.warDrumsSource) {
+      try {
+        this.warDrumsSource.stop();
+        this.warDrumsSource.disconnect();
+      } catch {
+        // Ignore if already stopped
+      }
+      this.warDrumsSource = null;
+    }
+    if (this.warDrumsGain) {
+      try {
+        this.warDrumsGain.disconnect();
+      } catch {
+        // Ignore
+      }
+      this.warDrumsGain = null;
+    }
+  }
 
   private initContext(): AudioContext | null {
     if (typeof window === 'undefined') return null;
@@ -325,6 +433,7 @@ class MusicEngine {
 
       this.buildNoise(ctx);
       this.buildReverb(ctx, master);
+      this.decodeWarDrumsBuffer(ctx);
     }
 
     if (this.ctx.state === 'suspended') {
@@ -651,11 +760,20 @@ class MusicEngine {
     // If a custom MP3 file is loaded for the current theme, use HTMLAudioElement instead
     const customUrl = this.customAudioUrls[this.currentTheme];
     if (customUrl) {
+      this.stopWarDrumsLoop();
       this.ensureCustomAudioPlaying(customUrl);
       return;
     } else if (this.customAudioEl && !this.customAudioEl.paused) {
       this.customAudioEl.pause();
       this.activeCustomUrl = null;
+    }
+
+    // Built-in gapless Web Audio buffer loop for Sanctuary War Drums
+    if (this.currentTheme === 'wardrums') {
+      this.ensureWarDrumsLoopPlaying();
+      return;
+    } else {
+      this.stopWarDrumsLoop();
     }
 
     const ctx = this.initContext();
@@ -719,6 +837,7 @@ class MusicEngine {
   }
 
   public start() {
+    this.bindGestureUnlock();
     if (this.isPlaying) return;
     this.isPlaying = true;
     const ctx = this.initContext();
@@ -738,6 +857,7 @@ class MusicEngine {
       window.clearInterval(this.timerId);
       this.timerId = null;
     }
+    this.stopWarDrumsLoop();
     if (this.customAudioEl && !this.customAudioEl.paused) {
       this.customAudioEl.pause();
     }
@@ -767,6 +887,7 @@ class MusicEngine {
 
   public setTheme(theme: MusicThemeId) {
     if (this.currentTheme === theme) return;
+    this.stopWarDrumsLoop();
     this.currentTheme = theme;
     this.stepIndex = 0;
     if (this.ctx) {
