@@ -282,6 +282,7 @@ export interface MatchSummary {
 export interface PlayerProfile {
   gold: number;
   owned: Record<string, number>;
+  discovered?: Record<string, boolean>;
   inventory: Record<string, RolledCardInstance[]>;
   decks: DeckSlot[];
   activeDeckIndex: number;

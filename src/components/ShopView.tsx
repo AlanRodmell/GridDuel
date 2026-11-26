@@ -29,7 +29,12 @@ import {
   RARITY_STAT_RANGE,
   sortCardCopies,
 } from '../data/cards';
-import { PackRevealItem } from '../store/useProfile';
+import {
+  ForgeableRarity,
+  getRandomForgeCost,
+  PackRevealItem,
+  RandomForgeResult,
+} from '../store/useProfile';
 import {
   AttackType,
   AugmentTier,
@@ -51,6 +56,10 @@ interface ShopViewProps {
   profile: PlayerProfile;
   activeDeck: DeckSlot;
   onBuyCard: (cardId: string) => RolledCardInstance | null;
+  onForgeRandomCard: (
+    rarity: ForgeableRarity,
+    targetType?: 'all' | AttackType
+  ) => RandomForgeResult | null;
   onOpenPack: (packId: PackTierId) => PackRevealItem[] | null;
   onCraftAugment: (
     instanceUid: string,
@@ -121,10 +130,53 @@ const PACK_STYLE: Record<
   },
 };
 
+const TYPE_FOCUS_LABEL: Record<'all' | AttackType, string> = {
+  all: 'Any Type (Base Cost)',
+  P: 'Type P · Physical (+15%)',
+  M: 'Type M · Magical (+15%)',
+  X: 'Type X · Flexible (+18%)',
+  A: 'Type A · Assault (+22%)',
+};
+
+const RANDOM_CRUCIBLE_TIERS: Array<{
+  rarity: ForgeableRarity;
+  title: string;
+  subtitle: string;
+  accentText: string;
+  borderClass: string;
+  bgClass: string;
+}> = [
+  {
+    rarity: 'common',
+    title: 'Common Crucible',
+    subtitle: 'Rolls 0–5 · 1–6▲',
+    accentText: 'text-slate-200',
+    borderClass: 'border-[#5a4a38] hover:border-[#cfa052]',
+    bgClass: 'from-[#221a14] via-[#17120d] to-[#100c09]',
+  },
+  {
+    rarity: 'rare',
+    title: 'Rare Crucible',
+    subtitle: 'Rolls 4–8 · 2–7▲',
+    accentText: 'text-sky-300',
+    borderClass: 'border-sky-500/45 hover:border-sky-300/80',
+    bgClass: 'from-[#162230] via-[#111822] to-[#0c1016]',
+  },
+  {
+    rarity: 'epic',
+    title: 'Epic Crucible',
+    subtitle: 'Rolls 7–B · 3–8▲',
+    accentText: 'text-violet-300',
+    borderClass: 'border-violet-500/50 hover:border-violet-300/85',
+    bgClass: 'from-[#261733] via-[#191022] to-[#100b15]',
+  },
+];
+
 export const ShopView: React.FC<ShopViewProps> = ({
   profile,
   activeDeck,
   onBuyCard,
+  onForgeRandomCard,
   onOpenPack,
   onCraftAugment,
   onSellCardInstance,
@@ -139,6 +191,12 @@ export const ShopView: React.FC<ShopViewProps> = ({
   const [typeFilter, setTypeFilter] = useState<'all' | AttackType>('all');
   const [selectedBlueprintId, setSelectedBlueprintId] = useState<string>(CARDS[0]?.id ?? '');
   const [focusedCopyUid, setFocusedCopyUid] = useState<string | null>(null);
+  const [randomForgeType, setRandomForgeType] = useState<'all' | AttackType>('all');
+  const [randomForgeModal, setRandomForgeModal] = useState<{
+    result: RandomForgeResult;
+    targetType: 'all' | AttackType;
+    soldGold?: number;
+  } | null>(null);
 
   const [forgeCopyFilter, setForgeCopyFilter] = useState<ForgeCopyFilter>('all');
   const [forgeRuneTier, setForgeRuneTier] = useState<'all' | AugmentTier>('all');
@@ -248,11 +306,60 @@ export const ShopView: React.FC<ShopViewProps> = ({
     return CRAFTABLE_AUGMENTS.filter((r) => r.tier === forgeRuneTier);
   }, [forgeRuneTier]);
 
+  const discoveredSet = useMemo(() => {
+    const set = new Set<string>();
+    if (profile.discovered) {
+      for (const [cid, val] of Object.entries(profile.discovered)) {
+        if (val) set.add(cid);
+      }
+    }
+    for (const [cid, list] of Object.entries(profile.inventory)) {
+      if (list.length > 0) set.add(cid);
+    }
+    for (const [cid, count] of Object.entries(profile.owned)) {
+      if (count > 0) set.add(cid);
+    }
+    return set;
+  }, [profile.discovered, profile.inventory, profile.owned]);
+
   // Purchasable Blueprints (Common, Rare, Epic; Mythics are Boss/Arena drops)
   const purchasableCatalog = useMemo(
     () => CARDS.filter((c) => c.rarity !== 'mythic'),
     []
   );
+
+  // Only discovered blueprints appear in the Registry so Unknown cards stay a mystery!
+  const discoveredBlueprints = useMemo(
+    () => purchasableCatalog.filter((c) => discoveredSet.has(c.id)),
+    [discoveredSet, purchasableCatalog]
+  );
+
+  const undiscoveredBlueprintCount = Math.max(
+    0,
+    purchasableCatalog.length - discoveredBlueprints.length
+  );
+
+  // Pool stats for Mystery Crucible (Random Card Forge per Rarity & Combat Type)
+  const randomCruciblePools = useMemo(() => {
+    const map = {} as Record<
+      ForgeableRarity,
+      { total: number; undiscovered: number; cost: number }
+    >;
+    for (const r of ['common', 'rare', 'epic'] as ForgeableRarity[]) {
+      const pool = purchasableCatalog.filter(
+        (c) =>
+          c.rarity === r &&
+          (randomForgeType === 'all' || c.stats.type === randomForgeType)
+      );
+      const undiscovered = pool.filter((c) => !discoveredSet.has(c.id)).length;
+      map[r] = {
+        total: pool.length,
+        undiscovered,
+        cost: getRandomForgeCost(r, randomForgeType),
+      };
+    }
+    return map;
+  }, [discoveredSet, purchasableCatalog, randomForgeType]);
 
   const extraCopiesSummary = useMemo(() => {
     let extraCount = 0;
@@ -275,7 +382,7 @@ export const ShopView: React.FC<ShopViewProps> = ({
   }, [equippedUidsSet, profile.inventory]);
 
   const marketCards = useMemo(() => {
-    return purchasableCatalog.filter((c) => {
+    return discoveredBlueprints.filter((c) => {
       const count = profile.inventory[c.id]?.length ?? 0;
       if (ownershipFilter === 'unowned' && count > 0) return false;
       if (ownershipFilter === 'owned' && count === 0) return false;
@@ -287,10 +394,10 @@ export const ShopView: React.FC<ShopViewProps> = ({
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
+    discoveredBlueprints,
     normalizedQuery,
     ownershipFilter,
     profile.inventory,
-    purchasableCatalog,
     rarityFilter,
     typeFilter,
   ]);
@@ -298,10 +405,10 @@ export const ShopView: React.FC<ShopViewProps> = ({
   const selectedBlueprint = useMemo(() => {
     const inFiltered = marketCards.find((c) => c.id === selectedBlueprintId);
     if (inFiltered) return inFiltered;
-    const exact = purchasableCatalog.find((c) => c.id === selectedBlueprintId);
+    const exact = discoveredBlueprints.find((c) => c.id === selectedBlueprintId);
     if (exact && !normalizedQuery) return exact;
-    return marketCards[0] ?? purchasableCatalog[0];
-  }, [marketCards, normalizedQuery, purchasableCatalog, selectedBlueprintId]);
+    return marketCards[0] ?? discoveredBlueprints[0];
+  }, [discoveredBlueprints, marketCards, normalizedQuery, selectedBlueprintId]);
 
   const selectedBlueprintCopies = useMemo(() => {
     if (!selectedBlueprint) return [];
@@ -424,6 +531,32 @@ export const ShopView: React.FC<ShopViewProps> = ({
       window.setTimeout(() => {
         setJustBoughtRoll((cur) => (cur?.uid === rolled.uid ? null : cur));
       }, 2200);
+    }
+  };
+
+  const handleForgeRandom = (
+    rarity: ForgeableRarity,
+    targetType: 'all' | AttackType = randomForgeType
+  ) => {
+    const res = onForgeRandomCard(rarity, targetType);
+    if (!res) return;
+    setSelectedBlueprintId(res.card.id);
+    setFocusedCopyUid(res.instance.uid);
+    setRandomForgeModal({
+      result: res,
+      targetType,
+    });
+  };
+
+  const handleSellRandomForgedCard = () => {
+    if (!randomForgeModal || randomForgeModal.soldGold !== undefined) return;
+    const res = onSellCardInstance(randomForgeModal.result.instance.uid);
+    if (res.ok) {
+      setRandomForgeModal((prev) =>
+        prev ? { ...prev, soldGold: res.goldEarned } : null
+      );
+    } else if (res.message) {
+      showToast(res.message);
     }
   };
 
@@ -678,16 +811,130 @@ export const ShopView: React.FC<ShopViewProps> = ({
               </div>
             </section>
 
+            {/* MYSTERY CRUCIBLE — RANDOM CARD FORGE (Per Rarity & Combat Type, Uncovers Unknowns!) */}
+            <section className="brass-panel riveted-frame p-4 sm:p-5 space-y-3.5">
+              <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-2.5">
+                <div className="space-y-0.5">
+                  <div className="flex items-center gap-2">
+                    <Dices className="w-4 h-4 text-[#f0c76e]" />
+                    <h2 className="font-[var(--font-display)] text-xs sm:text-sm font-bold uppercase tracking-[0.12em] text-[#f6e1b5]">
+                      Mystery Crucible — Random Card Forge
+                    </h2>
+                    {undiscoveredBlueprintCount > 0 && (
+                      <span className="organic-tag px-2 py-0.5 bg-[#281b10] border border-[#b98739]/50 font-mono text-[10px] font-bold text-[#f0c76e]">
+                        ??? {undiscoveredBlueprintCount} Unknown Blueprints
+                      </span>
+                    )}
+                  </div>
+                  <p className="font-[var(--font-serif)] text-xs sm:text-sm text-[#c8b496]">
+                    Forge a random card by Rarity Tier and optional Attack Type to discover unknown
+                    blueprints (heavily favors undiscovered cards in that pool!).
+                  </p>
+                </div>
+
+                {/* Attack Type Focus Selector (Adjusts Crucible Cost) */}
+                <div className="flex flex-wrap items-center gap-1 p-1 basalt-recess self-start lg:self-auto">
+                  {(['all', 'P', 'M', 'X', 'A'] as const).map((t) => (
+                    <button
+                      key={t}
+                      type="button"
+                      onClick={() => {
+                        sound.select();
+                        setRandomForgeType(t);
+                      }}
+                      title={TYPE_FOCUS_LABEL[t]}
+                      className={`min-h-[32px] px-2.5 py-1 font-[var(--font-display)] text-xs transition-colors cursor-pointer ${
+                        randomForgeType === t
+                          ? 'brass-btn font-bold'
+                          : 'text-[#cbb89a] hover:text-[#f6e1b5]'
+                      }`}
+                    >
+                      {t === 'all' ? 'Any Type' : `Type ${t}`}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5">
+                {RANDOM_CRUCIBLE_TIERS.map((tier) => {
+                  const poolInfo = randomCruciblePools[tier.rarity];
+                  const hasCards = poolInfo.total > 0;
+                  const canAfford = hasCards && profile.gold >= poolInfo.cost;
+
+                  return (
+                    <div
+                      key={tier.rarity}
+                      className={`riveted-frame border bg-gradient-to-br ${tier.bgClass} ${tier.borderClass} p-3.5 flex items-center justify-between gap-3 shadow-[0_10px_24px_rgba(0,0,0,0.5)] transition-all`}
+                    >
+                      <div className="min-w-0 space-y-1">
+                        <div className="flex items-center gap-2">
+                          <h3
+                            className={`font-[var(--font-display)] text-sm sm:text-base font-bold ${tier.accentText} truncate`}
+                          >
+                            {tier.title}
+                          </h3>
+                          {randomForgeType !== 'all' && (
+                            <span className="organic-tag px-1.5 py-0.5 bg-black/45 font-mono text-[10px] font-bold text-[#f0c76e]">
+                              Type {randomForgeType}
+                            </span>
+                          )}
+                        </div>
+                        <p className="font-mono text-[11px] text-[#cbb89a]">{tier.subtitle}</p>
+                        <p className="text-[11px] text-[#a89478]">
+                          {!hasCards ? (
+                            <span className="text-amber-300/90">
+                              Innate Type A starts at Epic tier
+                            </span>
+                          ) : poolInfo.undiscovered > 0 ? (
+                            <span className="text-emerald-300 font-semibold">
+                              ??? {poolInfo.undiscovered} Unknown of {poolInfo.total} in pool
+                            </span>
+                          ) : (
+                            <span>All {poolInfo.total} discovered · Fresh roll</span>
+                          )}
+                        </p>
+                      </div>
+
+                      <button
+                        type="button"
+                        disabled={!canAfford}
+                        onClick={() => handleForgeRandom(tier.rarity, randomForgeType)}
+                        className={`shrink-0 min-h-[40px] px-3.5 py-2 font-bold text-xs flex items-center gap-1.5 ${
+                          canAfford
+                            ? 'brass-btn cursor-pointer'
+                            : 'basalt-recess text-[#6e5f4c] font-[var(--font-display)] cursor-not-allowed'
+                        }`}
+                      >
+                        {!hasCards ? (
+                          <span>Epic Only</span>
+                        ) : (
+                          <>
+                            <Dices className="w-3.5 h-3.5" />
+                            <span className="font-mono tabular-nums">
+                              {poolInfo.cost.toLocaleString()}g
+                            </span>
+                          </>
+                        )}
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+            </section>
+
             {/* 3-STATION ARTISAN FOUNDRY WORKBENCH (Blueprint Ledger | Crucible Pedestal | Copy Smelter) */}
             <section className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
-              {/* STATION 1: Blueprint Registry Ledger */}
+              {/* STATION 1: Blueprint Registry Ledger (Discovered Only!) */}
               <div className="lg:col-span-5 iron-panel p-4 space-y-3">
                 <div className="flex items-center justify-between gap-2">
                   <h2 className="font-[var(--font-display)] text-xs font-bold uppercase tracking-wider text-[#e6b85c]">
-                    1. Blueprint Registry
+                    1. Discovered Blueprints
                   </h2>
                   <span className="text-[11px] font-mono text-[#9b896f]">
-                    {marketCards.length} / {purchasableCatalog.length} blueprints
+                    {marketCards.length} shown
+                    {undiscoveredBlueprintCount > 0
+                      ? ` · ??? ${undiscoveredBlueprintCount} unknown`
+                      : ''}
                   </span>
                 </div>
 
@@ -696,10 +943,10 @@ export const ShopView: React.FC<ShopViewProps> = ({
                   <div className="flex items-center gap-1 p-1 basalt-recess">
                     {(
                       [
-                        { id: 'all', label: 'All' },
-                        { id: 'unowned', label: 'Unowned' },
-                        { id: 'owned', label: 'Owned' },
+                        { id: 'all', label: 'Discovered' },
+                        { id: 'owned', label: 'In Vault' },
                         { id: 'duplicates', label: '2+ Copies' },
+                        { id: 'unowned', label: '0 Copies' },
                       ] as const
                     ).map((f) => (
                       <button
@@ -1461,6 +1708,173 @@ export const ShopView: React.FC<ShopViewProps> = ({
           </section>
         )}
       </div>
+
+      {/* =================================================================== */}
+      {/* RANDOM CRUCIBLE FORGE REVEAL MODAL (Keep or Sell Right Away!)       */}
+      {/* =================================================================== */}
+      {randomForgeModal && (
+        <div
+          className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-[#060403]/92 p-0 sm:p-5"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="random-forge-modal-title"
+          onClick={() => {
+            sound.drawer(false);
+            setRandomForgeModal(null);
+          }}
+        >
+          <div
+            className="w-full max-w-lg max-h-[94dvh] flex flex-col brass-panel riveted-frame shadow-[0_28px_80px_rgba(0,0,0,0.92)] overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between gap-2 px-5 py-3.5 border-b border-[#4b3a26]/85">
+              <div className="flex items-center gap-2">
+                <Dices className="w-5 h-5 text-[#e2b053]" />
+                <h2
+                  id="random-forge-modal-title"
+                  className="font-[var(--font-display)] text-base sm:text-lg font-bold text-[#f6e1b5] tracking-wide"
+                >
+                  Mystery Crucible Forged!
+                </h2>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  sound.drawer(false);
+                  setRandomForgeModal(null);
+                }}
+                aria-label="Close Crucible reveal"
+                className="iron-btn min-h-[36px] min-w-[36px] flex items-center justify-center cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {(() => {
+              const { result, targetType, soldGold } = randomForgeModal;
+              const isSold = soldGold !== undefined;
+              const sellValue = getCardSellValue(
+                result.card,
+                result.instance.stats,
+                result.instance.arrows,
+                result.instance.augmentId
+              );
+              const nextCost = getRandomForgeCost(
+                result.card.rarity as ForgeableRarity,
+                targetType
+              );
+              const canRollAgain = profile.gold >= nextCost;
+
+              return (
+                <>
+                  <div className="overflow-y-auto px-5 py-5 space-y-4 text-center">
+                    {result.isNewDiscovery ? (
+                      <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-950/90 border border-emerald-400/60 text-xs font-[var(--font-display)] font-bold text-emerald-300">
+                        <Sparkles className="w-3.5 h-3.5" />
+                        <span>★ New Blueprint Discovered!</span>
+                      </div>
+                    ) : (
+                      <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#1e1610] border border-[#5a452d] text-xs font-mono text-[#d8c4a4]">
+                        <span>Copy #{result.copyNumber} Added to Vault</span>
+                      </div>
+                    )}
+
+                    <div
+                      className={`relative max-w-[265px] mx-auto transition-opacity ${
+                        isSold ? 'opacity-55' : ''
+                      }`}
+                    >
+                      <GameCard
+                        key={result.instance.uid}
+                        cardId={result.card.id}
+                        stats={result.instance.stats}
+                        arrows={result.instance.arrows}
+                        owner="neutral"
+                        variant="tarot"
+                        size="lg"
+                        flipKey={1}
+                      />
+                      {isSold && (
+                        <div className="pointer-events-none absolute inset-0 z-30 flex items-center justify-center">
+                          <span className="brass-plaque px-3.5 py-1.5 font-[var(--font-display)] text-xs font-bold uppercase tracking-wider text-[#f5d593] shadow-xl">
+                            Sold +{soldGold}g
+                          </span>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="basalt-recess p-3 space-y-1.5 text-xs">
+                      <div className="flex items-center justify-between gap-2">
+                        <CardTraitPills
+                          element={result.card.element}
+                          tribe={result.card.tribe}
+                        />
+                        <span className="font-mono font-bold text-[#f0c76e]">
+                          {formatTetraCode(result.instance.stats)} ·{' '}
+                          {result.instance.arrows.length}▲ (
+                          {formatArrowsCompact(result.instance.arrows)})
+                        </span>
+                      </div>
+                    </div>
+
+                    {isSold ? (
+                      <div className="min-h-[38px] px-3 py-2 basalt-recess font-[var(--font-display)] text-xs font-semibold text-emerald-300 flex items-center justify-center gap-1.5">
+                        <Check className="w-4 h-4" />
+                        <span>
+                          Converted to +{soldGold}g (Blueprint stays unlocked in Compendium!)
+                        </span>
+                      </div>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={handleSellRandomForgedCard}
+                        className="w-full min-h-[38px] px-3.5 py-2 iron-btn hover:border-[#e2b053] text-xs font-[var(--font-display)] font-bold text-[#f0c76e] flex items-center justify-center gap-1.5 cursor-pointer"
+                      >
+                        <Coins className="w-4 h-4 text-[#dca342]" />
+                        <span>Sell Roll for +{sellValue}g</span>
+                      </button>
+                    )}
+                  </div>
+
+                  <div className="px-5 py-3.5 border-t border-[#4b3a26]/85 bg-[#120d0a] flex flex-col sm:flex-row items-center gap-2.5">
+                    <button
+                      type="button"
+                      disabled={!canRollAgain}
+                      onClick={() =>
+                        handleForgeRandom(
+                          result.card.rarity as ForgeableRarity,
+                          targetType
+                        )
+                      }
+                      className={`w-full sm:w-auto min-h-[42px] px-4 text-xs font-bold flex items-center justify-center gap-1.5 ${
+                        canRollAgain
+                          ? 'iron-btn hover:border-[#e2b053] text-[#f5d593] font-[var(--font-display)] cursor-pointer'
+                          : 'basalt-recess text-[#6e5f4c] font-[var(--font-display)] cursor-not-allowed'
+                      }`}
+                    >
+                      <Dices className="w-3.5 h-3.5" />
+                      <span>
+                        Forge Another ({nextCost.toLocaleString()}g)
+                      </span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        sound.drawer(false);
+                        setRandomForgeModal(null);
+                      }}
+                      className="brass-btn w-full flex-1 min-h-[42px] font-bold text-sm cursor-pointer"
+                    >
+                      {isSold ? 'Done' : 'Keep in Vault'}
+                    </button>
+                  </div>
+                </>
+              );
+            })()}
+          </div>
+        </div>
+      )}
 
       {/* =================================================================== */}
       {/* BOOSTER RELIQUARY COLLECT & SELL MODAL (Never Auto-Sold!)           */}

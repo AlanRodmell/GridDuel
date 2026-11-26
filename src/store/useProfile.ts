@@ -34,6 +34,7 @@ import {
   PlayerProfile,
   Rarity,
   RolledCardInstance,
+  AttackType,
 } from '../types/game';
 import { sound } from '../utils/sound';
 
@@ -74,6 +75,53 @@ function syncOwnedCounts(
     }
   }
   return counts;
+}
+
+function syncDiscoveredMap(
+  prevDiscovered: Record<string, boolean> | undefined,
+  inventory: Record<string, RolledCardInstance[]>
+): Record<string, boolean> {
+  const next: Record<string, boolean> = {};
+  for (const starterId of STARTER_CARD_IDS) {
+    if (CARD_MAP[starterId]) next[starterId] = true;
+  }
+  if (prevDiscovered && typeof prevDiscovered === 'object') {
+    for (const [cid, val] of Object.entries(prevDiscovered)) {
+      if (val && CARD_MAP[cid]) next[cid] = true;
+    }
+  }
+  for (const [cid, list] of Object.entries(inventory)) {
+    if (Array.isArray(list) && list.length > 0 && CARD_MAP[cid]) {
+      next[cid] = true;
+    }
+  }
+  return next;
+}
+
+export type ForgeableRarity = 'common' | 'rare' | 'epic';
+
+export const RANDOM_FORGE_BASE_COST: Record<ForgeableRarity, number> = {
+  common: 180,
+  rare: 1150,
+  epic: 4200,
+};
+
+export function getRandomForgeCost(
+  rarity: ForgeableRarity,
+  targetType: 'all' | AttackType = 'all'
+): number {
+  const base = RANDOM_FORGE_BASE_COST[rarity];
+  if (targetType === 'all') return base;
+  const multiplier = targetType === 'A' ? 1.22 : targetType === 'X' ? 1.18 : 1.15;
+  return Math.round((base * multiplier) / 10) * 10;
+}
+
+export interface RandomForgeResult {
+  card: CardDef;
+  instance: RolledCardInstance;
+  isNewDiscovery: boolean;
+  copyNumber: number;
+  cost: number;
 }
 
 function buildDefaultDecksFromInventory(
@@ -121,10 +169,12 @@ function buildDefaultDecksFromInventory(
 
 const DEFAULT_INVENTORY = createStarterInventory();
 const DEFAULT_OWNED = syncOwnedCounts(DEFAULT_INVENTORY);
+const DEFAULT_DISCOVERED = syncDiscoveredMap(undefined, DEFAULT_INVENTORY);
 
 const DEFAULT_PROFILE: PlayerProfile = {
   gold: 100,
   owned: DEFAULT_OWNED,
+  discovered: DEFAULT_DISCOVERED,
   inventory: DEFAULT_INVENTORY,
   decks: buildDefaultDecksFromInventory(DEFAULT_INVENTORY),
   activeDeckIndex: 0,
@@ -265,6 +315,7 @@ function parseAndSanitizeProfile(raw: string): PlayerProfile | null {
     }
 
     const owned = syncOwnedCounts(inventory);
+    const discovered = syncDiscoveredMap(parsed.discovered, inventory);
     const fighterWins = parsed.fighterWins ?? {};
     const unlockedPowerSet = getUnlockedPowerCardIdSet(fighterWins);
     const validScale: BoardScale =
@@ -326,6 +377,7 @@ function parseAndSanitizeProfile(raw: string): PlayerProfile | null {
           ? Math.max(0, Math.floor(parsed.gold))
           : DEFAULT_PROFILE.gold,
       owned,
+      discovered,
       inventory,
       decks,
       activeDeckIndex,
@@ -858,12 +910,82 @@ export function useProfile() {
           gold: prev.gold - card.price,
           inventory: nextInv,
           owned: syncOwnedCounts(nextInv),
+          discovered: syncDiscoveredMap(prev.discovered, nextInv),
         };
       });
       sound.coin();
       return rolled;
     },
     [profile.gold, profile.inventory]
+  );
+
+  const forgeRandomCard = useCallback(
+    (
+      rarity: ForgeableRarity,
+      targetType: 'all' | AttackType = 'all'
+    ): RandomForgeResult | null => {
+      const pool = CARDS.filter(
+        (c) =>
+          c.rarity === rarity &&
+          (targetType === 'all' || c.stats.type === targetType)
+      );
+      if (pool.length === 0) return null;
+
+      const cost = getRandomForgeCost(rarity, targetType);
+      if (profile.gold < cost) return null;
+
+      const discoveredMap = syncDiscoveredMap(profile.discovered, profile.inventory);
+      const undiscoveredPool = pool.filter((c) => !discoveredMap[c.id]);
+      const chosenPool =
+        undiscoveredPool.length > 0 && Math.random() < 0.75
+          ? undiscoveredPool
+          : pool;
+      const chosenCard =
+        chosenPool[Math.floor(Math.random() * chosenPool.length)] ?? pool[0];
+
+      const existingCopies = profile.inventory[chosenCard.id] ?? [];
+      const existingSigs = new Set(
+        existingCopies.map((c) => [...c.arrows].sort().join(','))
+      );
+      let rolled = rollCardInstance(chosenCard.id, false);
+      for (let attempt = 0; attempt < 6; attempt++) {
+        const sig = [...rolled.arrows].sort().join(',');
+        if (!existingSigs.has(sig)) break;
+        rolled = {
+          ...rolled,
+          arrows: rollCardArrows(chosenCard, false),
+        };
+      }
+
+      const isNewDiscovery = !discoveredMap[chosenCard.id];
+      const copyNumber = existingCopies.length + 1;
+
+      setProfile((prev) => {
+        if (prev.gold < cost) return prev;
+        const cur = prev.inventory[chosenCard.id] ?? [];
+        const nextInv = {
+          ...prev.inventory,
+          [chosenCard.id]: sortCardCopies([...cur, rolled]),
+        };
+        return {
+          ...prev,
+          gold: prev.gold - cost,
+          inventory: nextInv,
+          owned: syncOwnedCounts(nextInv),
+          discovered: syncDiscoveredMap(prev.discovered, nextInv),
+        };
+      });
+
+      sound.packReveal(rarity === 'epic' || isNewDiscovery);
+      return {
+        card: chosenCard,
+        instance: rolled,
+        isNewDiscovery,
+        copyNumber,
+        cost,
+      };
+    },
+    [profile.discovered, profile.gold, profile.inventory]
   );
 
   const sellCardInstance = useCallback(
@@ -1023,6 +1145,7 @@ export function useProfile() {
         gold: prev.gold - pack.price,
         inventory: nextInv,
         owned: syncOwnedCounts(nextInv),
+        discovered: syncDiscoveredMap(prev.discovered, nextInv),
       }));
       sound.packOpen();
       return revealItems;
@@ -1106,6 +1229,7 @@ export function useProfile() {
           ...prev,
           inventory: nextInv,
           owned: syncOwnedCounts(nextInv),
+          discovered: syncDiscoveredMap(prev.discovered, nextInv),
         };
       });
 
@@ -1249,6 +1373,7 @@ export function useProfile() {
     const freshProfile: PlayerProfile = {
       ...DEFAULT_PROFILE,
       owned: syncOwnedCounts(freshInv),
+      discovered: syncDiscoveredMap(undefined, freshInv),
       inventory: freshInv,
       decks: buildDefaultDecksFromInventory(freshInv),
       activeDeckIndex: 0,
@@ -1286,6 +1411,7 @@ export function useProfile() {
     clearActiveDeck,
     autoBuildActiveDeck,
     buyCard,
+    forgeRandomCard,
     sellCardInstance,
     sellExtraCopies,
     openBoosterPack,

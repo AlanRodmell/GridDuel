@@ -20,7 +20,6 @@ import { ALL_ELEMENTS, ALL_TRIBES, ELEMENT_META, TRIBE_META } from '../data/biom
 import {
   CARD_MAP,
   CARDS,
-  MAX_COPIES_PER_CARD,
   RARITY_ARROW_RANGE,
   RARITY_STAT_RANGE,
   formatArrowsCompact,
@@ -87,7 +86,7 @@ interface GalleryViewProps {
   onGoToShop: () => void;
 }
 
-type OwnershipFilter = 'all' | 'owned' | 'duplicates' | 'augments' | 'locked';
+type OwnershipFilter = 'all' | 'owned' | 'duplicates' | 'augments';
 type RarityFilter = 'all' | Rarity;
 type TypeFilter = 'all' | AttackType;
 
@@ -210,9 +209,32 @@ export const GalleryView: React.FC<GalleryViewProps> = ({
     return Object.values(profile.inventory).reduce((sum, list) => sum + list.length, 0);
   }, [profile.inventory]);
 
+  const discoveredSet = useMemo(() => {
+    const set = new Set<string>();
+    if (profile.discovered) {
+      for (const [cid, val] of Object.entries(profile.discovered)) {
+        if (val) set.add(cid);
+      }
+    }
+    for (const [cid, list] of Object.entries(profile.inventory)) {
+      if (list.length > 0) set.add(cid);
+    }
+    for (const [cid, count] of Object.entries(profile.owned)) {
+      if (count > 0) set.add(cid);
+    }
+    return set;
+  }, [profile.discovered, profile.inventory, profile.owned]);
+
+  const discoveredCount = useMemo(
+    () => CARDS.filter((c) => discoveredSet.has(c.id)).length,
+    [discoveredSet]
+  );
+  const unknownCount = Math.max(0, totalCards - discoveredCount);
+
   const filteredCards = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
     return CARDS.filter((card) => {
+      if (!discoveredSet.has(card.id)) return false;
       const copies = profile.inventory[card.id] ?? [];
       const owned = copies.length > 0;
       if (ownershipFilter === 'owned' && !owned) return false;
@@ -224,7 +246,6 @@ export const GalleryView: React.FC<GalleryViewProps> = ({
       ) {
         return false;
       }
-      if (ownershipFilter === 'locked' && owned) return false;
       if (rarityFilter !== 'all' && card.rarity !== rarityFilter) return false;
       if (elementFilter !== 'all' && card.element !== elementFilter) return false;
       if (tribeFilter !== 'all' && card.tribe !== tribeFilter) return false;
@@ -252,6 +273,7 @@ export const GalleryView: React.FC<GalleryViewProps> = ({
       return true;
     });
   }, [
+    discoveredSet,
     elementFilter,
     ownershipFilter,
     profile.inventory,
@@ -292,7 +314,7 @@ export const GalleryView: React.FC<GalleryViewProps> = ({
     [activeDeckSlots]
   );
 
-  const pct = Math.round((ownedUniqueCount / totalCards) * 100);
+  const pct = Math.round((discoveredCount / totalCards) * 100);
 
   return (
     <div className="w-full px-4 sm:px-6 lg:px-8 py-5 lg:py-7 space-y-6">
@@ -308,15 +330,23 @@ export const GalleryView: React.FC<GalleryViewProps> = ({
       <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-4">
         <div>
           <h1 className="font-[var(--font-display)] text-2xl sm:text-3xl font-bold text-[#f3dfb6] tracking-[0.06em]">
-            {totalCards}-Card Compendium &amp; Rolled Vault
+            Compendium &amp; Rolled Vault
           </h1>
           <div className="flex flex-wrap items-center gap-2 text-xs sm:text-sm text-[#a69277] mt-1">
             <span className="font-mono tabular-nums text-[#f0c76e] font-semibold">
-              {ownedUniqueCount} / {totalCards} Types ({pct}%)
+              {discoveredCount} Discovered ({pct}%)
             </span>
+            {unknownCount > 0 && (
+              <>
+                <span aria-hidden="true">·</span>
+                <span className="font-mono tabular-nums text-[#9e8a6f]">
+                  ??? {unknownCount} Unknown
+                </span>
+              </>
+            )}
             <span aria-hidden="true">·</span>
             <span className="font-mono tabular-nums text-[#d6c5a9]">
-              {totalOwnedCopies} Total Rolled Copies
+              {ownedUniqueCount} Owned ({totalOwnedCopies} Rolls)
             </span>
           </div>
         </div>
@@ -675,7 +705,7 @@ export const GalleryView: React.FC<GalleryViewProps> = ({
       <div className="flex flex-wrap items-center justify-between gap-2.5">
         <div className="flex flex-wrap items-center gap-2">
           <div className="inline-flex items-center gap-1 p-1 rounded-[3px] basalt-recess overflow-x-auto max-w-full">
-            {(['all', 'owned', 'duplicates', 'augments', 'locked'] as OwnershipFilter[]).map((key) => (
+            {(['all', 'owned', 'duplicates', 'augments'] as OwnershipFilter[]).map((key) => (
               <button
                 key={key}
                 type="button"
@@ -689,7 +719,9 @@ export const GalleryView: React.FC<GalleryViewProps> = ({
                     : 'text-[#a69277] hover:text-[#f0e4cc]'
                 }`}
               >
-                {key === 'duplicates'
+                {key === 'all'
+                  ? 'Discovered'
+                  : key === 'duplicates'
                   ? '2+ Copies'
                   : key === 'augments'
                   ? '★ Augments'
@@ -787,15 +819,27 @@ export const GalleryView: React.FC<GalleryViewProps> = ({
         </div>
       </div>
 
-      {/* Compendium Card Grid */}
+      {/* Compendium Card Grid (Only Discovered Cards Shown — Unknowns Remain Mystery!) */}
       {filteredCards.length === 0 ? (
-        <div className="iron-panel rounded-[4px] p-10 text-center space-y-2">
+        <div className="iron-panel rounded-[4px] p-10 text-center space-y-3">
           <p className="font-[var(--font-display)] text-sm font-semibold text-[#f0c76e]">
-            No cards match this filter.
+            No discovered cards match this filter.
           </p>
           <p className="font-[var(--font-serif)] text-sm text-[#a69277]">
-            Try clearing a filter or visit the Vault &amp; Forge to unlock new cards.
+            Unknown cards remain hidden until you discover them in battle, Sealed Reliquaries, or
+            the Sanctuary Forge&apos;s Mystery Crucible ({unknownCount} unknown remaining).
           </p>
+          <button
+            type="button"
+            onClick={() => {
+              sound.nav();
+              onGoToShop();
+            }}
+            className="brass-btn inline-flex items-center gap-2 min-h-[38px] px-4 py-1.5 text-xs font-bold cursor-pointer"
+          >
+            <ShoppingBag className="w-3.5 h-3.5" />
+            <span>Visit Sanctuary Forge</span>
+          </button>
         </div>
       ) : (
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-4 sm:gap-5">
@@ -809,39 +853,11 @@ export const GalleryView: React.FC<GalleryViewProps> = ({
             ).length;
             const inDeck = equippedCountForType > 0;
 
-            if (!isOwned) {
-              return (
-                <button
-                  key={card.id}
-                  type="button"
-                  onClick={() => {
-                    sound.select();
-                    setInspectedId(card.id);
-                    setSelectedCopyUid(null);
-                  }}
-                  className="card-grid-item group relative aspect-[5/7] rounded-[4px] border border-dashed border-[#4a3b2c] bg-[#120e0b] hover:border-[#b98739] flex flex-col items-center justify-center p-3 text-center transition-transform duration-150 hover:-translate-y-1 cursor-pointer"
-                >
-                  <Lock className="w-6 h-6 text-[#685744] group-hover:text-[#d8a243] transition-colors mb-1.5" />
-                  <span className="font-mono text-xs text-[#a69277] tabular-nums font-semibold">
-                    #{String(card.number).padStart(2, '0')}
-                  </span>
-                  <span
-                    className={`text-xs font-medium mt-0.5 ${RARITY_TEXT_COLOR[card.rarity]} opacity-85`}
-                  >
-                    {RARITY_LABEL[card.rarity]} · Roll {RARITY_STAT_RANGE[card.rarity].label}
-                  </span>
-                  {card.augment && (
-                    <span className="mt-1 inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-[2px] bg-violet-950/80 border border-violet-500/40 text-[10px] font-mono text-violet-200">
-                      <Wand2 className="w-2.5 h-2.5 text-violet-300" />
-                      <span>{card.augment.badgeLabel}</span>
-                    </span>
-                  )}
-                </button>
-              );
-            }
-
             return (
-              <div key={card.id} className="card-grid-item space-y-1.5">
+              <div
+                key={card.id}
+                className={`card-grid-item space-y-1.5 ${!isOwned ? 'opacity-65 hover:opacity-95 transition-opacity' : ''}`}
+              >
                 <div className="relative">
                   <GameCard
                     cardId={card.id}
@@ -862,10 +878,12 @@ export const GalleryView: React.FC<GalleryViewProps> = ({
                     className={`organic-tag pointer-events-none absolute top-2 left-2 z-20 px-2 py-0.5 font-mono text-[10px] font-bold tabular-nums shadow ${
                       count > 1
                         ? 'brass-plaque text-[#f0c76e]'
-                        : 'bg-[#19120c]/95 text-[#cbb89a]'
+                        : count === 1
+                        ? 'bg-[#19120c]/95 text-[#cbb89a]'
+                        : 'bg-[#2a1614]/95 text-rose-200'
                     }`}
                   >
-                    ×{count}
+                    {count > 0 ? `×${count}` : '0 Copies'}
                   </span>
                   {inDeck && (
                     <span
@@ -881,7 +899,7 @@ export const GalleryView: React.FC<GalleryViewProps> = ({
                   <span className={RARITY_TEXT_COLOR[card.rarity]}>
                     #{String(card.number).padStart(2, '0')} · {RARITY_LABEL[card.rarity]}
                   </span>
-                  {count > 1 && (
+                  {count > 1 ? (
                     <button
                       type="button"
                       onClick={() => {
@@ -893,7 +911,9 @@ export const GalleryView: React.FC<GalleryViewProps> = ({
                     >
                       Compare {count} →
                     </button>
-                  )}
+                  ) : count === 0 ? (
+                    <span className="text-[10.5px] text-[#8d7a61] italic">Smelted</span>
+                  ) : null}
                 </div>
               </div>
             );
@@ -925,9 +945,7 @@ export const GalleryView: React.FC<GalleryViewProps> = ({
                   id="inspector-title"
                   className="font-[var(--font-display)] text-xl sm:text-2xl font-bold text-[#f6e1b5] tracking-wide"
                 >
-                  {inspectedCopies.length > 0
-                    ? `#${String(inspectedCard.number).padStart(2, '0')} ${inspectedCard.name}`
-                    : `Locked Card #${String(inspectedCard.number).padStart(2, '0')}`}
+                  #{String(inspectedCard.number).padStart(2, '0')} {inspectedCard.name}
                 </h2>
                 <div className="flex items-center gap-2 text-xs sm:text-sm text-[#a69277] mt-0.5">
                   <span className={RARITY_TEXT_COLOR[inspectedCard.rarity]}>
@@ -1257,53 +1275,69 @@ export const GalleryView: React.FC<GalleryViewProps> = ({
                   </div>
                 </div>
               ) : (
-                <div className="py-4 text-center space-y-4">
-                  <div className="w-28 h-28 mx-auto rounded-[4px] border border-dashed border-[#4a3b2c] basalt-recess flex flex-col items-center justify-center">
-                    <Lock className="w-7 h-7 text-[#6d5b46] mb-1.5" />
-                    <span className="text-xs font-mono text-[#a69277]">
-                      #{String(inspectedCard.number).padStart(2, '0')}
-                    </span>
-                  </div>
-                  {inspectedCard.rarity === 'mythic' ? (
-                    <div className="rounded-[3px] brass-plaque p-3.5 space-y-1.5 text-center">
-                      <p className="font-[var(--font-display)] text-xs font-bold uppercase tracking-wider text-[#f0c76e]">
-                        Arena Trophy Exclusive
-                      </p>
-                      <p className="font-[var(--font-serif)] text-sm text-[#cbb89a] leading-relaxed">
-                        Mythic legends are never sold in the Vault or Booster Packs. Win them via{' '}
-                        <strong className="text-[#f5d593]">High-Tier Battle RNG (Tiers 6–10)</strong>{' '}
-                        or claim them directly from{' '}
-                        <strong className="text-[#f5d593]">Tier 9–10 Bosses</strong>!
-                      </p>
+                <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-start">
+                  <div className="md:col-span-5 flex flex-col items-center opacity-85">
+                    <div className="w-full max-w-[300px]">
+                      <GameCard
+                        cardId={inspectedCard.id}
+                        owner="neutral"
+                        variant="tarot"
+                        size="lg"
+                      />
                     </div>
-                  ) : (
-                    <>
-                      <div className="space-y-1">
-                        <p className="font-[var(--font-display)] text-sm font-semibold text-[#f3dfb6]">
-                          Not yet unlocked in your compendium
+                  </div>
+                  <div className="md:col-span-7 space-y-4">
+                    <div className="flex flex-wrap items-center justify-between gap-2 rounded-[3px] basalt-recess px-3.5 py-2.5 text-xs">
+                      <span className="font-[var(--font-display)] uppercase tracking-wider text-[11px] text-[#9b886e]">
+                        Element &amp; Tribe
+                      </span>
+                      <CardTraitPills
+                        element={inspectedCard.element}
+                        tribe={inspectedCard.tribe}
+                      />
+                    </div>
+                    {inspectedCard.rarity === 'mythic' ? (
+                      <div className="rounded-[3px] brass-plaque p-3.5 space-y-1.5">
+                        <p className="font-[var(--font-display)] text-xs font-bold uppercase tracking-wider text-[#f0c76e]">
+                          0 Copies in Vault · Arena Trophy Exclusive
                         </p>
-                        <p className="font-[var(--font-serif)] text-sm text-[#b39e81]">
-                          Win matches against challengers in its card range, pull it from booster
-                          reliquaries, or buy a rolled copy in the Vault for{' '}
-                          <span className="font-mono text-[#f0c76e]">
-                            {inspectedCard.price.toLocaleString()}g
-                          </span>
-                          .
+                        <p className="font-[var(--font-serif)] text-sm text-[#cbb89a] leading-relaxed">
+                          You discovered this Mythic legend earlier, though all copies have been
+                          smelted. Re-earn it via{' '}
+                          <strong className="text-[#f5d593]">High-Tier Battle RNG (Tiers 6–10)</strong>{' '}
+                          or <strong className="text-[#f5d593]">Tier 9–10 Bosses</strong>!
                         </p>
                       </div>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setInspectedId(null);
-                          onGoToShop();
-                        }}
-                        className="brass-btn w-full min-h-[46px] rounded-[3px] font-bold text-sm flex items-center justify-center gap-2 cursor-pointer"
-                      >
-                        <ShoppingBag className="w-4 h-4" />
-                        <span>Visit Merchant Vault</span>
-                      </button>
-                    </>
-                  )}
+                    ) : (
+                      <div className="space-y-3">
+                        <div className="basalt-recess p-4 space-y-1.5">
+                          <p className="font-[var(--font-display)] text-sm font-semibold text-[#f3dfb6]">
+                            Discovered Blueprint · 0 Rolled Copies Owned
+                          </p>
+                          <p className="font-[var(--font-serif)] text-sm text-[#b39e81]">
+                            Because you&apos;ve already discovered{' '}
+                            <strong className="text-[#f5e7cd]">{inspectedCard.name}</strong>, its
+                            blueprint remains unlocked in the Sanctuary Forge for{' '}
+                            <span className="font-mono text-[#f0c76e]">
+                              {inspectedCard.price.toLocaleString()}g
+                            </span>
+                            .
+                          </p>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setInspectedId(null);
+                            onGoToShop();
+                          }}
+                          className="brass-btn w-full min-h-[46px] rounded-[3px] font-bold text-sm flex items-center justify-center gap-2 cursor-pointer"
+                        >
+                          <ShoppingBag className="w-4 h-4" />
+                          <span>Commission Fresh Roll in Sanctuary Forge</span>
+                        </button>
+                      </div>
+                    )}
+                  </div>
                 </div>
               )}
             </div>

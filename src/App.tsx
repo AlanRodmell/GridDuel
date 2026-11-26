@@ -69,6 +69,7 @@ export default function App() {
     clearActiveDeck,
     autoBuildActiveDeck,
     buyCard,
+    forgeRandomCard,
     openBoosterPack,
     craftAugmentOnCopy,
     recordMatchOutcome,
@@ -766,6 +767,7 @@ export default function App() {
                 profile={profile}
                 activeDeck={activeDeck}
                 onBuyCard={buyCard}
+                onForgeRandomCard={forgeRandomCard}
                 onOpenPack={openBoosterPack}
                 onCraftAugment={craftAugmentOnCopy}
                 onSellCardInstance={sellCardInstance}
