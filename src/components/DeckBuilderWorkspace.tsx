@@ -772,7 +772,7 @@ export const DeckBuilderWorkspace: React.FC<DeckBuilderWorkspaceProps> = ({
         </div>
 
         {/* FIXED UNIT SLOTS + DEDICATED POWER RELIC SLOT */}
-        <div className={`grid ${dockGridColsClass} gap-1.5 sm:gap-2 lg:gap-2 pt-0.5 items-start`}>
+        <div className={`grid ${dockGridColsClass} gap-1.5 sm:gap-2 lg:gap-2 pt-2 pb-1 items-start`}>
           {fixedDeckSlots.map((slotInst, slotIdx) => {
             const isTargeted = targetSlotIdx === slotIdx && vaultTab === 'units';
 
@@ -1172,7 +1172,7 @@ export const DeckBuilderWorkspace: React.FC<DeckBuilderWorkspaceProps> = ({
         </div>
 
         {/* Scrollable Grid: Either Unit Cards or 12 Power Relics */}
-        <div className="lg:flex-1 lg:min-h-0 lg:overflow-y-auto pr-1 pt-1">
+        <div className="lg:flex-1 lg:min-h-0 lg:overflow-y-auto px-2 pt-3 pb-2">
           {vaultTab === 'relics' ? (
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-6 gap-3.5 sm:gap-4 pb-2">
               {POWER_CARDS.map((pCard) => {

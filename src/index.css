@@ -878,8 +878,7 @@ select.organic-control {
 }
 
 .card-grid-item {
-  content-visibility: auto;
-  contain-intrinsic-size: auto 295px;
+  overflow: visible;
 }
 
 .drag-card-ghost {

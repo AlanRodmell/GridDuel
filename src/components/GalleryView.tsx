@@ -646,7 +646,7 @@ export const GalleryView: React.FC<GalleryViewProps> = ({
         </button>
 
         {relicsExpanded && (
-          <div className="px-4 sm:px-5 pb-4 pt-2 border-t border-[#3b2e22]/80 space-y-3">
+          <div className="px-4 sm:px-5 pb-4 pt-3 border-t border-[#3b2e22]/80 space-y-3">
             <p className="font-[var(--font-serif)] text-xs sm:text-sm text-[#b7a285]">
               Conquer all 5 challengers in each Campaign Tier (Tiers 1–10) to unlock un-flippable
               directional Totems for your Dedicated Relic Slot.
