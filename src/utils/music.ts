@@ -321,7 +321,6 @@ class MusicEngine {
   private activeStudioSource: AudioBufferSourceNode | null = null;
   private activeStudioGain: GainNode | null = null;
   private unlockBound = false;
-  private userUnlocked = false;
 
   // Optional user-loaded custom MP3/OGG URLs per theme
   private customAudioUrls: Partial<Record<MusicThemeId, string>> = {};
@@ -383,8 +382,7 @@ class MusicEngine {
     if (this.unlockBound || typeof window === 'undefined') return;
     this.unlockBound = true;
 
-    const unlockFromButtonAction = () => {
-      this.userUnlocked = true;
+    const resumeAudio = () => {
       if (!this.isPlaying) return;
       const ctx = this.initContext();
       if (ctx && ctx.state === 'suspended') {
@@ -399,36 +397,16 @@ class MusicEngine {
       }
     };
 
-    const handleClick = (e: MouseEvent) => {
-      const target = e.target as Element | null;
-      if (
-        target?.closest?.(
-          'button, [role="button"], [role="tab"], a, input, select, summary'
-        )
-      ) {
-        unlockFromButtonAction();
-      }
-    };
-
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Enter' || e.key === ' ') {
-        const target = e.target as Element | null;
-        if (
-          target?.closest?.(
-            'button, [role="button"], [role="tab"], a, input, select, summary'
-          )
-        ) {
-          unlockFromButtonAction();
-        }
-      }
-    };
-
-    window.addEventListener('click', handleClick, true);
-    window.addEventListener('keydown', handleKeyDown, true);
+    // Attempt autoplay immediately when the page finishes loading (when browser policy allows)
+    window.addEventListener('load', resumeAudio, { once: true });
+    // Fallback for browsers that suspend AudioContext until the first user interaction
+    window.addEventListener('pointerdown', resumeAudio, { passive: true, capture: true });
+    window.addEventListener('touchstart', resumeAudio, { passive: true, capture: true });
+    window.addEventListener('keydown', resumeAudio, { passive: true, capture: true });
   }
 
   private startSchedulerLoop() {
-    if (!this.isPlaying || !this.userUnlocked) return;
+    if (!this.isPlaying) return;
     const ctx = this.initContext();
     if (ctx && this.timerId === null) {
       this.nextNoteTime = ctx.currentTime + 0.04;
@@ -853,7 +831,7 @@ class MusicEngine {
   }
 
   private schedulerTick = () => {
-    if (!this.isPlaying || !this.userUnlocked) return;
+    if (!this.isPlaying) return;
 
     // If a custom MP3 file is loaded for the current theme, use HTMLAudioElement instead
     const customUrl = this.customAudioUrls[this.currentTheme];
@@ -937,21 +915,14 @@ class MusicEngine {
   public start() {
     this.bindGestureUnlock();
     if (this.isPlaying) {
-      if (this.userUnlocked) {
-        this.startSchedulerLoop();
-      }
+      this.startSchedulerLoop();
       return;
     }
     this.isPlaying = true;
-    if (!this.userUnlocked) {
-      // Wait silently until the user clicks a button in the app
-      return;
-    }
     this.startSchedulerLoop();
   }
 
   public unlockAndSetEnabled(enabled: boolean) {
-    this.userUnlocked = true;
     this.setEnabled(enabled);
   }
 
